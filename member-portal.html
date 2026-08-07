@@ -81,8 +81,12 @@
   .nav-cta-slot{margin-left:auto;display:flex;align-items:center;gap:16px;}
   .nav-cta-slot:empty{margin-left:auto;}
 
-  /* Floating logout control — fixed top-right, one item only. */
-  .fab-account{position:fixed;top:18px;right:22px;z-index:80;}
+  /* Floating logout control — fixed top-right, one item only. Right
+     inset matches .wrap's own side padding (52px desktop, 22px
+     mobile) so the avatar sits exactly as far from the right edge
+     as the logo sits from the left — otherwise the row reads as
+     off-center even though the nav links themselves are centered. */
+  .fab-account{position:fixed;top:18px;right:52px;z-index:80;}
   .fab-account__trigger{width:44px;height:44px;border-radius:50%;background:var(--teal);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(10,34,38,.28);transition:background .15s,transform .1s;}
   .fab-account__trigger:hover{background:var(--green);}
   .fab-account__trigger:active{transform:scale(.96);}
@@ -438,6 +442,11 @@
      the fix for the Post-event defect where every registered
      program was forced into the same "reg" state together.
      ========================================================= */
+  /* #program-grid-root has no wrapping <section class="block"> (it's a
+     bare root Portal.programGrid.render() fills directly), so without
+     this the grid runs flush into the footer with zero separation —
+     2026-08-07 review round. */
+  #program-grid-root{padding-bottom:70px;}
   .phead{padding:64px 0 10px;}
   .phead h1{font-size:clamp(32px,3.8vw,48px);font-weight:650;letter-spacing:-.02em;color:var(--ink);margin:14px 0 12px;line-height:1.15;}
   .phead .plede{font-size:16.5px;color:var(--muted);max-width:640px;line-height:1.65;}
@@ -506,11 +515,11 @@
   .pc-grad{font-size:14px;color:var(--gray);}
   .pc-grad span{color:var(--green);font-weight:600;}
   .pc-fine{font-size:12.5px;color:var(--gray);border-top:1px solid var(--line);padding-top:14px;margin-top:16px;line-height:1.5;}
-  .pc-cta{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:22px;flex-wrap:wrap;}
-  .pc-logo{height:69px;margin:11px 0 11px 10px;position:relative;top:-5px;width:auto;display:block;flex:none;}
+  .pc-cta{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:22px;flex-wrap:nowrap;}
+  .pc-logo{height:60px;margin:11px 0 11px 10px;position:relative;top:-5px;width:auto;display:block;flex:none;}
   .pc-note{font-size:12.5px;color:var(--gray);line-height:1.5;margin-top:16px;}
   .pc-note b{color:var(--ink);font-weight:600;}
-  .btn-join{background:var(--green-bright);color:#fff;border:none;border-radius:5px;padding:15px 22px 11px;font-family:var(--sans);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;display:inline-flex;align-items:center;gap:10px;text-decoration:none;}
+  .btn-join{background:var(--green-bright);color:#fff;border:none;border-radius:5px;padding:15px 18px 11px;font-family:var(--sans);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap;flex:none;}
   .btn-join:hover{background:var(--green);}
   .btn-join[aria-disabled="true"]{background:var(--muted);cursor:default;pointer-events:none;}
 
@@ -590,11 +599,19 @@
   .inv-copy .tip{position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%);background:var(--teal);color:#fff;font-size:11px;font-weight:600;padding:5px 10px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s;}
   .inv-copy:hover .tip{opacity:1;}
   .inv-copy.copied{border-color:var(--green-bright);color:var(--green-bright);}
-  .inv-more{display:inline-flex;align-items:center;gap:8px;margin-top:18px;border:1.5px solid var(--green);border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;color:var(--green);cursor:pointer;text-decoration:none;transition:background .15s,border-color .15s;}
+  .inv-more{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--green);border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;color:var(--green);cursor:pointer;text-decoration:none;transition:background .15s,border-color .15s;}
   .inv-more:hover{background:rgba(45,174,14,.07);}
   .inv-more svg{width:14px;height:14px;}
-  .inv-pager{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line);}
+  /* "Invite another guest" + the pager share one row, pager pushed to
+     the right via space-between (2026-08-07 review round — was two
+     stacked rows, pager centered). Pager buttons are borderless (also
+     per that round) — .inv-more keeps its own pill border, unchanged. */
+  .inv-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line);flex-wrap:wrap;}
+  .inv-pager{display:flex;align-items:center;gap:14px;}
   .inv-pager-count{font-size:12.5px;color:var(--gray);}
+  .inv-pager-btn{background:none;border:none;padding:6px 2px;font-family:var(--sans);font-size:13px;font-weight:600;color:var(--green);cursor:pointer;}
+  .inv-pager-btn:hover{color:var(--green-bright);}
+  .inv-pager-btn:disabled{color:rgba(13,45,49,.3);cursor:not-allowed;}
 
   /* =========================================================
      RESPONSIVE
@@ -611,7 +628,7 @@
        "Join Your Forum" pill) used to visually collide with it here; the
        hero's own Join button already duplicates that CTA below the fold. */
     .nav-cta-slot{display:none;}
-    .fab-account{top:14px;right:16px;}
+    .fab-account{top:14px;right:22px;}
     footer.foot .wrap{flex-direction:column;text-align:center;}
     .pgrid{grid-template-columns:1fr;}
     .hero-inner{grid-template-columns:1fr;gap:34px;padding-top:52px;padding-bottom:60px;}

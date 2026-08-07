@@ -1029,7 +1029,7 @@ Portal.render.during = function(data){
         '<div class="pc-cta">' +
           '<img class="pc-logo" src="Assets/lm-mp-lmf-logo.png" alt="The Landmark ' + courseType + '">' +
           (data.zoomJoin ?
-            '<a class="btn-join" href="' + joinHref() + '" target="_blank" rel="noopener">' + joinLabel() + ' <svg viewBox="0 0 36 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M0 7h30M24 1l8 6-8 6"/></svg></a>' :
+            '<a class="btn-join" href="' + joinHref() + '" target="_blank" rel="noopener">' + joinLabel() + ' <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></a>' :
             '<span class="btn-join" aria-disabled="true">Link available soon</span>') +
         '</div>' +
         (hasStart ? '<div class="pc-note">Please arrive at least 15 minutes before the ' + Portal.format.time(startTs, ianaId) + ' start time. The room opens at <b>' + Portal.format.time(roomOpenTs, ianaId) + '</b> each morning, in the time zone of your ' + courseType + ' — we’ll see you there.</div>' : '') +
@@ -1090,7 +1090,7 @@ Portal.render.during = function(data){
     var pillHtml = isCurrent ? '<span class="pill pill-current">Today</span> &middot; ' : '';
     return '<div class="' + cardClass + '"><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + DOC_ICON + '</svg></div>' +
       '<div class="tbody"><div class="teye">' + pillHtml + escapeHtml(session.label) + '</div>' +
-      '<h3>' + escapeHtml(session.label) + ' Assignment</h3>' + body + '</div></div>';
+      '<h3>' + escapeHtml(session.label) + ' Assignments</h3>' + body + '</div></div>';
   }
 
   var sessionsToShow = sessions.slice().sort(function(a, b){ return a.index - b.index; });
@@ -1146,13 +1146,23 @@ Portal.render.during = function(data){
   function guestPagerHtml(){
     if(guests.length <= GUESTS_PER_PAGE) return '';
     return '<div class="inv-pager">' +
-      '<button class="pbtn2 ghost tc-inline" id="guestPrev" type="button"' + (guestPage === 0 ? ' disabled' : '') + '>&larr; Prev</button>' +
+      '<button class="inv-pager-btn" id="guestPrev" type="button"' + (guestPage === 0 ? ' disabled' : '') + '>&larr; Prev</button>' +
       '<span class="inv-pager-count">Page ' + (guestPage + 1) + ' of ' + guestPageCount() + '</span>' +
-      '<button class="pbtn2 ghost tc-inline" id="guestNext" type="button"' + (guestPage >= guestPageCount() - 1 ? ' disabled' : '') + '>Next &rarr;</button>' +
+      '<button class="inv-pager-btn" id="guestNext" type="button"' + (guestPage >= guestPageCount() - 1 ? ' disabled' : '') + '>Next &rarr;</button>' +
+    '</div>';
+  }
+  // "Invite another guest" and the pager share one row (right-aligned
+  // pager via justify-content:space-between) — 2026-08-07 review round,
+  // was two stacked rows. Regenerated on every page change along with
+  // the pager even though its own content is static; harmless.
+  function guestFooterHtml(){
+    return '<div class="inv-footer">' +
+      '<a class="inv-more" href="invite-hub.html" target="_blank" rel="noopener">Invite another guest <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>' +
+      guestPagerHtml() +
     '</div>';
   }
   function guestListWrapHtml(){
-    return '<div class="inv-list">' + guestRowsHtml() + '</div>' + guestPagerHtml();
+    return '<div class="inv-list">' + guestRowsHtml() + '</div>' + guestFooterHtml();
   }
 
   // The whole invitees card is omitted (not an empty-state message) when
@@ -1165,7 +1175,6 @@ Portal.render.during = function(data){
       '<h3>' + (firstName ? escapeHtml(firstName) + '’s' : 'Your') + ' <span class="serif-it">Invitees.</span></h3>' +
       '<p class="inv-sub">Each guest has their own Zoom link for the evening &mdash; copy it and send it their way.</p>' +
       '<div id="guestListWrap">' + guestListWrapHtml() + '</div>' +
-      '<a class="inv-more" href="invite-hub.html" target="_blank" rel="noopener">Invite another guest <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>' +
     '</div></div>' : '';
 
   var graduationHtml =
