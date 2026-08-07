@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Member Portal — Landmark Worldwide</title>
+<style>
+  /* =========================================================
+     FONTS
+     Avenir Next Variable replaces objektiv-mk1 everywhere.
+     Self-hosted (Cloudinary), no Typekit dependency. Tiempos
+     Headline moved to the same Ontraport-hosted URL already
+     used by the Forum Journey design system, for the same
+     reason — one less external dependency on the ONTRApage.
+     BUILD RULE: never request a font-weight heavier than 650
+     anywhere in this file — the variable axis supports more,
+     but our type scale is capped by design decision, not by
+     what the file can render.
+     ========================================================= */
+  @font-face{
+    font-family:"Avenir Next Variable";
+    src:url("https://res.cloudinary.com/mynd/raw/upload/v1785641322/AvenirNext_Variable_wmaeay.woff2") format("woff2-variations"),
+        url("https://res.cloudinary.com/mynd/raw/upload/v1785641322/AvenirNext_Variable_wmaeay.woff2") format("woff2");
+    font-weight:100 900;
+    font-style:normal;
+    font-display:swap;
+  }
+  @font-face{
+    font-family:"Tiempos Headline";
+    src:url("https://file.ontraport.com/media/3fdc22625d3b4f91a262f71fd5245252.phpbg4i9h?Expires=4938729250&Signature=Wvo5HyxM78OtwV1Aw20xmzg-5wImCXP2O53Xc145Vi6pnfp9s-kQ0AWfhrTTzaclT8zRkOMX4s40oW5WzqOP8Dhl1BZch6CSIM0BVXN97093tElhZwKi2wMHLeMMZf4RTPsY~AVlQX91LjkCDbXsBrkCI4MyOgFlaqoLz1qfzW5jfjiSqO-snsWVEpsagiAZD2JGwajiulMP76uSuTXrrI8FWxZBQrAD9-7Mcy-MXF2EHjSSFR3R4xFaWYVZ6PCrvJ3pngv5WuZvI-ry6TZqh0ICgeKn6B0dqYdYx3MZ53YrSwWKqeFy3Tdc30-tz~idjr5bJU13K23F46pyCuODtw__&Key-Pair-Id=APKAJVAAMVW6XQYWSTNA") format("woff2");
+    font-weight:300;
+    font-style:italic;
+    font-display:swap;
+  }
+
+  /* =========================================================
+     DESIGN TOKENS
+     Reconciled from all 4 mockups — identical values in each,
+     just centralized once here.
+     ========================================================= */
+  :root{
+    --teal:#0d2d31; --teal-deep:#0a2226;
+    --green:#217a00; --green-bright:#2ea203;
+    --almond:#efede7; --paper:#f7f5ef; --white:#ffffff;
+    --coral:#f06449; --coral-ink:#c8452a;
+    --gray:#6f6b66; --muted:#8ba7a4; --ink:#0e1a19; --line:#e6e2d8; --tabbar:#41454a;
+    --shadow:0 14px 44px rgba(14,26,25,.10); --shadow-sm:0 4px 18px rgba(14,26,25,.06);
+    --serif:"Tiempos Headline",Georgia,serif;
+    --sans:"Avenir Next Variable","Helvetica Neue",Arial,sans-serif;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{font-family:var(--sans);font-weight:400;font-synthesis:none;color:var(--ink);background:var(--paper);-webkit-font-smoothing:antialiased;line-height:1.55;}
+  a{color:inherit;text-decoration:none;}
+  .wrap{width:100%;max-width:1200px;margin:0 auto;padding:0 52px;}
+  .eyebrow{font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--green-bright);}
+  .serif-it{font-family:var(--serif);font-style:italic;font-weight:300;}
+
+  /* =========================================================
+     NAV
+     No hamburger, no drawer, no tablet tier — desktop nav
+     links simply disappear below the mobile breakpoint (this
+     was a locked decision, not an oversight: on mobile there
+     is no nav-link affordance at all, just logo + the floating
+     logout control). Logo is the hosted Assets/ file, not an
+     inline base64 blob — fixes the duplicate-logo defect at
+     the source since there is no second (drawer) logo anymore.
+     nav-links / nav-cta-slot are intentionally empty here —
+     their contents are phase-specific (Prepare/Guidance/FAQ on
+     Pre-event vs Today/Programs/Graduation on During vs a
+     single Explore link Post-event) and get populated by each
+     phase's renderer, same pattern as #portal-root below.
+     ========================================================= */
+  .topnav{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid var(--line);}
+  .topnav .row{display:flex;align-items:center;gap:24px;height:78px;}
+  .nav-logo{height:40px;width:auto;display:block;}
+  .nav-links{margin-left:auto;display:flex;align-items:center;gap:30px;}
+  .nav-links a{color:var(--green-bright);font-size:14.5px;font-weight:400;}
+  .nav-links a:hover{color:var(--ink);}
+  .nav-cta-slot{margin-left:auto;display:flex;align-items:center;gap:16px;}
+  .nav-cta-slot:empty{margin-left:auto;}
+
+  /* Floating logout control — fixed top-right, one item only. */
+  .fab-account{position:fixed;top:18px;right:22px;z-index:80;}
+  .fab-account__trigger{width:44px;height:44px;border-radius:50%;background:var(--teal);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(10,34,38,.28);transition:background .15s,transform .1s;}
+  .fab-account__trigger:hover{background:var(--green);}
+  .fab-account__trigger:active{transform:scale(.96);}
+  .fab-account__trigger svg{width:19px;height:19px;}
+  .fab-account__trigger #fabAccountIcon{width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .fab-account__trigger .fab-account__avatar{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;}
+  .fab-account__menu{position:absolute;top:calc(100% + 10px);right:0;min-width:150px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 20px 50px rgba(14,26,25,.22);padding:6px;opacity:0;transform:translateY(-6px);pointer-events:none;transition:opacity .15s,transform .15s;}
+  .fab-account.open .fab-account__menu{opacity:1;transform:none;pointer-events:auto;}
+  .fab-account__logout{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;padding:11px 12px;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:600;color:var(--coral-ink);cursor:pointer;text-align:left;}
+  .fab-account__logout:hover{background:var(--paper);}
+  .fab-account__logout svg{width:16px;height:16px;flex:none;}
+
+  .progtabs{background:var(--tabbar);position:sticky;top:78px;z-index:49;}
+  .progtabs .row{display:flex;justify-content:center;gap:66px;height:48px;align-items:center;}
+  .progtabs button{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.55);font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;height:100%;position:relative;}
+  .progtabs button.active{color:#fff;}
+  .progtabs button.active::after{content:"";position:absolute;left:50%;transform:translateX(-50%);bottom:0;width:210px;height:3px;background:var(--green-bright);border-radius:2px;}
+
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+  /* =========================================================
+     SHARED BUTTON / CARD PRIMITIVES
+     Weight ceiling applied: former 800-weight headings now cap
+     at 650; former 700-weight UI labels now cap at 600.
+     ========================================================= */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:none;border-radius:5px;cursor:pointer;font-family:var(--sans);font-weight:600;transition:background .15s,transform .05s;}
+
+  footer.foot{background:var(--teal-deep);color:rgba(255,255,255,.5);}
+  footer.foot .wrap{padding:30px 40px;display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;font-size:13px;}
+  footer.foot a{color:rgba(255,255,255,.6);}
+
+  /* =========================================================
+     MODALS — shared scaffold + all 7 modal bodies, authored
+     once. (The plan's "6 shared modals" count was one short:
+     the During-event contact-form "Support" modal and the
+     Post-event document-list "Forum Resources" modal are two
+     distinct pieces of functionality, not two states of one
+     modal — see 2026-08-07 plan revision.)
+     ========================================================= */
+  .modal-scrim{position:fixed;inset:0;background:rgba(8,20,19,.55);z-index:90;opacity:0;pointer-events:none;transition:opacity .25s;}
+  .modal-scrim.open{opacity:1;pointer-events:auto;}
+  .modal{position:fixed;z-index:91;top:50%;left:50%;transform:translate(-50%,-46%);width:min(600px,92vw);max-height:88vh;overflow-y:auto;background:var(--paper);border-radius:20px;box-shadow:0 30px 90px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;}
+  .modal.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%);}
+  .modal .mhead{position:sticky;top:0;background:var(--teal);color:#fff;padding:24px 30px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;z-index:2;}
+  .modal .mhead .eyebrow{color:var(--green-bright);}
+  .modal .mhead h3{font-size:24px;font-weight:650;letter-spacing:-.01em;margin-top:8px;}
+  .modal .mclose{background:rgba(255,255,255,.12);border:none;color:#fff;width:34px;height:34px;border-radius:50%;font-size:20px;cursor:pointer;flex:none;line-height:1;}
+  .modal .mbody{padding:26px 30px 30px;}
+  .modal .mbody h4{font-size:15px;font-weight:600;color:var(--ink);margin:20px 0 6px;}
+  .modal .mbody p{font-size:14.5px;color:var(--gray);line-height:1.6;}
+  .modal .mbody p.lead{color:var(--ink);}
+  .mclosepar{margin-top:24px;text-align:center;font-family:var(--serif);font-style:italic;font-weight:300;font-size:18px;letter-spacing:.03em;line-height:1.6;color:var(--teal);}
+
+  /* Health Resources */
+  .crisis{margin-top:24px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--coral);border-radius:14px;padding:22px 24px;}
+  .crisis .crisis-h{color:var(--green-bright);margin-bottom:10px;}
+  .crisis ul{list-style:none;display:grid;gap:14px;margin-top:14px;}
+  .crisis li .rn{font-weight:600;color:var(--teal);font-size:15px;}
+  .crisis li .rd{color:var(--gray);font-size:13.5px;margin-top:2px;}
+  .crisis .emg{margin-top:16px;font-size:13px;color:var(--coral-ink);font-weight:600;}
+
+  /* Feedback */
+  .fbform textarea{width:100%;background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 15px;font-family:var(--sans);font-size:14.5px;color:var(--ink);resize:vertical;min-height:120px;margin-top:6px;}
+  .fbform button{margin-top:14px;background:var(--green-bright);color:#fff;border:none;border-radius:5px;padding:14px 22px 10px;font-family:var(--sans);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;}
+  .fbform button:hover{background:var(--green);}
+
+  /* Program Detail — shell only; Portal.pdata content lands in Stage 2 */
+  #pgModal .mbody{padding:26px 30px 30px;}
+  #pgModal .mbody p{font-size:15px;line-height:1.65;color:var(--ink);margin:0 0 14px;}
+  #pgModal .pgstatus{font-size:11.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--green);margin-bottom:14px;line-height:1.8;}
+  #pgModal .pgnext{background:var(--almond);border-radius:12px;padding:16px 20px;font-size:14px;line-height:1.6;color:var(--ink);margin:18px 0 20px;}
+  #pgModal .pgnext b{color:var(--green);}
+  .pbtn2{margin-top:auto;width:100%;text-align:center;background:var(--green-bright);color:#fff;border:none;border-radius:5px;padding:15px 22px 11px;font-family:var(--sans);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;transition:background .15s,color .15s;}
+  .pbtn2:hover{background:var(--green);}
+  .pbtn2.ghost{background:transparent;color:var(--teal);border:1.5px solid rgba(13,45,49,.35);}
+  .pbtn2.ghost:hover{background:var(--teal);color:#fff;border-color:var(--teal);}
+  .pbtn2.gcert{background:transparent;color:var(--green-bright);border:1.5px solid var(--green-bright);}
+  .pbtn2.gcert:hover{background:var(--green-bright);color:#fff;}
+
+  /* My Account */
+  .acct-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;}
+  .acct-grid .full{grid-column:1 / -1;}
+  .acct-lab{display:block;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);margin:0 0 5px;}
+  .acct-in{width:100%;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-family:var(--sans);font-size:14.5px;color:var(--ink);}
+  .acct-in:focus{outline:none;border-color:var(--green-bright);}
+  .acct-sec{margin-top:22px;padding-top:18px;border-top:1px solid var(--line);}
+  .acct-sec:first-child{margin-top:0;padding-top:0;border-top:none;}
+  .acct-sec .sec-t{font-size:12px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--green-bright);margin-bottom:12px;}
+  .acct-card{display:flex;align-items:center;justify-content:space-between;gap:14px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+  .acct-card .cc{font-size:14.5px;font-weight:600;color:var(--ink);}
+  .acct-card .cc span{color:var(--gray);font-weight:400;font-size:13px;display:block;}
+  .acct-link{font-size:13px;font-weight:600;color:var(--green);cursor:pointer;border-bottom:1.5px solid rgba(45,174,14,.35);}
+  .acct-check{display:flex;align-items:center;gap:10px;font-size:14.5px;color:var(--ink);margin-bottom:9px;}
+  .acct-check input{width:17px;height:17px;accent-color:var(--green-bright);}
+  .acct-save{margin-top:22px;background:var(--green-bright);color:#fff;border:none;border-radius:5px;padding:14px 26px;font-family:var(--sans);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;}
+  .acct-save:hover{background:var(--green);}
+  .acct-fine{font-size:12.5px;color:var(--gray);margin-top:14px;}
+
+  /* Certificate */
+  .certwrap{padding:10px;}
+  .certcard{background:#fff;border:1px solid var(--line);outline:3px double rgba(13,45,49,.25);outline-offset:-12px;border-radius:6px;padding:52px 44px 44px;text-align:center;}
+  .certcard .clogo{height:30px;width:auto;display:inline-block;margin-bottom:22px;}
+  .certcard .ceye{font-size:11px;font-weight:600;letter-spacing:.34em;text-transform:uppercase;color:var(--green);margin-bottom:20px;}
+  .certcard .cname{font-family:var(--serif);font-style:italic;font-weight:300;font-size:44px;color:var(--teal);line-height:1.1;margin-bottom:14px;}
+  .certcard .chas{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray);margin-bottom:6px;}
+  .certcard .cprog{font-size:24px;font-weight:650;letter-spacing:-.01em;color:var(--ink);margin-bottom:14px;}
+  .certcard .cdates{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:22px;}
+  .certcard .csum{font-size:14.5px;color:var(--gray);line-height:1.65;max-width:420px;margin:0 auto 30px;}
+  .certcard .crule{width:180px;height:1px;background:var(--line);margin:0 auto 14px;}
+  .certcard .csig{font-family:var(--serif);font-style:italic;font-weight:300;font-size:24px;color:var(--ink);}
+  .certcard .ctitle{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gray);margin-top:5px;}
+  .cert-print-btn{margin-top:24px;background:none;border:1.5px solid var(--teal);color:var(--teal);border-radius:5px;padding:11px 22px;font-family:var(--sans);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;}
+  .cert-print-btn:hover{background:var(--teal);color:#fff;}
+
+  /* =========================================================
+     PRINT — CERTIFICATE ONLY
+     Ported from the live post-event template. The certificate
+     is nested inside modal wrappers, so "body > *" can't be used
+     to hide the page — instead JS tags the card [data-print="target"]
+     and every ancestor [data-print="keep"]; anything neither gets
+     hidden. Works at any nesting depth.
+     ========================================================= */
+  @media print{
+    html.is-printing, html.is-printing body{background:#fff !important;margin:0 !important;padding:0 !important;height:auto !important;overflow:visible !important;}
+    html.is-printing [data-print="keep"] > *:not([data-print="keep"]):not([data-print="target"]){display:none !important;}
+    html.is-printing [data-print="keep"]{display:block !important;position:static !important;opacity:1 !important;transform:none !important;visibility:visible !important;overflow:visible !important;max-height:none !important;max-width:none !important;width:auto !important;height:auto !important;margin:0 !important;padding:0 !important;background:#fff !important;box-shadow:none !important;border:0 !important;border-radius:0 !important;inset:auto !important;}
+    html.is-printing [data-print="target"]{display:block !important;margin:0 auto !important;box-shadow:none !important;page-break-inside:avoid;break-inside:avoid;}
+    html.is-printing [data-print="target"], html.is-printing [data-print="target"] *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+    @page{margin:14mm;}
+  }
+
+  /* Support (contact form) */
+  .mform{margin-top:18px;}
+  .mform label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);margin:14px 0 6px;}
+  .mform textarea,.mform input{width:100%;background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 15px;font-family:var(--sans);font-size:14.5px;color:var(--ink);}
+  .mform textarea{resize:vertical;min-height:110px;}
+  .mform textarea::placeholder,.mform input::placeholder{color:#9aa3a2;}
+  .mform button{margin-top:16px;background:var(--green-bright);color:#fff;border:none;border-radius:5px;padding:14px 26px;font-family:var(--sans);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;}
+  .mform button:hover{background:var(--green);}
+  .mform .fine{font-size:12.5px;color:var(--gray);margin-top:12px;}
+  .mform .checkrow{display:flex;gap:22px;margin-top:8px;flex-wrap:wrap;}
+  .mform .checkrow label{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink);cursor:pointer;margin:0;}
+  .mform .checkrow input{width:17px;height:17px;accent-color:var(--green);}
+  .mform .callus{display:flex;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin-bottom:14px;font-size:14px;color:var(--ink);}
+  .mform .callus a{color:var(--green);font-weight:600;}
+
+  /* Forum Resources (Course Materials) — day-sectioned, driven by
+     each item's own `released` flag per the CS dashboard's Course
+     Materials tab (see 2026-08-07 plan revision). During-event a
+     day-section with nothing released yet renders the empty state
+     instead of being hidden; Post-event every section shows fully
+     regardless of the flag. */
+  .res-group{margin-top:18px;}
+  .res-group:first-child{margin-top:0;}
+  .res-group .rg-t{font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--coral);margin-bottom:8px;}
+  .res-group a{display:flex;align-items:center;gap:8px;color:var(--green-bright);font-weight:600;font-size:15px;margin:8px 0 0;cursor:pointer;}
+  .res-group a:hover{color:var(--green);}
+  .res-group a svg{width:13px;height:13px;flex:none;}
+  .res-group .res-empty{font-size:13.5px;color:var(--muted);font-style:italic;margin-top:4px;}
+  .res-note{margin-top:20px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--gray);line-height:1.6;}
+
+  /* Tech Check — 4-step setup wizard (camera/mic, connection speed,
+     Zoom test, confirm), opened from the Pre-event "Tech Check"
+     Prepare card. The shipped Pre-event mockup's card was inert
+     copy only, with no href or handler — this restyles the working
+     version found in the prototype build (Portal Build/Outdated/
+     member-portal-preevent.html) to this file's own tokens and
+     button components (.pbtn2) instead of porting its CSS as-is.
+     Step logic lives in Portal.techCheck, which also owns this
+     modal's close/scrim/Escape handling directly (not the shared
+     wire() list below) because closing must also release the
+     camera/mic stream. */
+  .tc-dots{display:flex;gap:8px;justify-content:center;margin-bottom:18px;}
+  .tc-dot{width:8px;height:8px;border-radius:50%;background:var(--line);transition:background .2s;}
+  .tc-dot.active{background:var(--green-bright);}
+  .tc-dot.done{background:var(--green);}
+  .tc-step{display:none;}
+  .tc-step.active{display:block;}
+  .tc-step p{font-size:14.5px;color:var(--gray);line-height:1.62;margin-bottom:16px;}
+  .tc-step p b{color:var(--ink);}
+  .tc-preview{position:relative;background:var(--teal-deep);border-radius:12px;overflow:hidden;aspect-ratio:16/9;margin:0 0 14px;display:flex;align-items:center;justify-content:center;}
+  .tc-preview video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block;}
+  .tc-preview .tc-note{position:absolute;color:rgba(255,255,255,.6);font-size:13px;padding:0 20px;text-align:center;}
+  .tc-status{font-size:12.5px;color:var(--gray);margin:8px 0 0;min-height:16px;}
+  .tc-io{margin:16px 0;}
+  .tc-io-lab{font-size:11.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);margin-bottom:7px;display:flex;justify-content:space-between;gap:10px;}
+  .tc-io-lab span+span{text-transform:none;letter-spacing:0;font-weight:400;color:#9aa3a2;}
+  .tc-meter{height:12px;background:var(--line);border-radius:999px;overflow:hidden;}
+  .tc-level{height:100%;width:0;background:linear-gradient(90deg,var(--green-bright),var(--green));border-radius:999px;transition:width .06s linear;}
+  .pbtn2.tc-inline{display:inline-flex;align-items:center;gap:8px;width:auto;margin-top:0;text-decoration:none;}
+  .tc-check{display:flex;gap:11px;align-items:flex-start;margin-top:16px;padding:14px 16px;background:var(--paper);border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:14px;color:var(--ink);line-height:1.45;}
+  .tc-check input{margin-top:1px;width:18px;height:18px;accent-color:var(--green);flex:none;cursor:pointer;}
+  .tc-nav{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:22px;padding-top:16px;border-top:1px solid var(--line);}
+  .pbtn2.tc-inline:disabled{opacity:.45;cursor:not-allowed;}
+  .tc-back{background:none;border:none;color:var(--gray);font-weight:600;font-size:13px;cursor:pointer;}
+  .tc-back[hidden]{visibility:hidden;display:inline-block;}
+  .tc-congrats{text-align:center;padding:8px 0 4px;}
+  .tc-ring{width:70px;height:70px;border-radius:50%;background:rgba(45,174,14,.12);color:var(--green);display:flex;align-items:center;justify-content:center;margin:4px auto 16px;}
+  .tc-congrats h4{font-size:24px;font-weight:650;letter-spacing:-.01em;color:var(--ink);margin-bottom:8px;}
+  .tc-congrats p{max-width:380px;margin:0 auto;}
+  .tc-trouble{margin-top:16px;font-size:13px;color:var(--gray);text-align:center;}
+  .tc-trouble a{color:var(--green);font-weight:600;cursor:pointer;}
+
+  /* =========================================================
+     PRE-EVENT
+     Ported from member-portal-preevent_7.html. Two defects fixed
+     at the source: the countdown target and the hero's date copy
+     were two independently-hardcoded literals that could silently
+     drift — Portal.render.pre() now derives both from the same
+     Portal.dateUtil.resolveStart() call. The "Add to Calendar"
+     button (both hero and Prepare-card copies) had no click
+     handler at all in the mockup — Portal.calendar.download()
+     wires it for real.
+     ========================================================= */
+  section.block{padding:70px 0;}
+  .sec-head{max-width:660px;margin-bottom:36px;}
+  .sec-head h2{font-size:clamp(26px,3vw,36px);font-weight:650;letter-spacing:-.02em;margin:12px 0 10px;color:var(--ink);}
+  .sec-head p{color:var(--gray);font-size:16.5px;}
+  .alt{background:var(--almond);} .paper{background:var(--paper);}
+
+  .hero{background:var(--almond);color:var(--ink);}
+  /* .hero-inner shares this div with .wrap ("<div class="wrap hero-inner">").
+     Only top/bottom padding declared here on purpose — a `padding` shorthand
+     would zero left/right and silently clobber .wrap's side padding on the
+     same specificity/later-in-source basis, which is exactly what was
+     happening (hero content ran flush to the viewport edge below 1200px). */
+  .hero-inner{display:grid;grid-template-columns:1.25fr .95fr;gap:54px;align-items:center;padding-top:70px;padding-bottom:78px;}
+  .hero h1{font-size:clamp(38px,4.6vw,60px);font-weight:650;line-height:1.02;letter-spacing:-.02em;margin:14px 0 20px;color:var(--ink);}
+  .hero h1 .serif-it{font-weight:300;}
+  .hero .lede{font-size:18px;line-height:1.62;color:var(--gray);max-width:520px;}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px;max-width:560px;}
+  .chip{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:9px 15px;font-size:13.5px;color:var(--ink);box-shadow:var(--shadow-sm);}
+  .chip svg{width:15px;height:15px;color:var(--green);flex:none;}
+
+  .anchor{background:#fff;border:1px solid var(--line);border-radius:18px;padding:28px 30px;box-shadow:var(--shadow);}
+  .anchor .k{font-size:12px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--green-bright);}
+  .anchor .when{font-size:20px;font-weight:600;letter-spacing:-.01em;color:var(--ink);margin:7px 0 20px;}
+  .anchor .when .serif-it{font-weight:300;}
+  .countdown{display:flex;gap:10px;margin:0 0 20px;}
+  .cd-cell{flex:1;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 6px;text-align:center;}
+  .cd-num{font-size:30px;font-weight:650;line-height:1;letter-spacing:-.02em;color:var(--teal);}
+  .cd-lab{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-top:7px;}
+  .anchor .note{font-size:13.5px;color:var(--gray);line-height:1.55;margin-bottom:20px;}
+  .anchor .note b{color:var(--ink);font-weight:600;}
+  .btn-lg{width:100%;background:var(--green);color:#fff;padding:16px;font-size:14px;text-transform:uppercase;letter-spacing:.09em;box-shadow:0 8px 22px rgba(33,122,0,.20);}
+  .btn-lg:hover{background:var(--green-bright);} .btn-lg:active{transform:translateY(1px);}
+  .btn-lg svg{width:17px;height:17px;}
+
+  /* PREPARE — dark photo cards */
+  .pcards{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+  .pcard{position:relative;background:var(--teal);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;border-left:5px solid var(--coral);transition:box-shadow .25s;}
+  .pcard:hover{box-shadow:0 22px 54px rgba(14,26,25,.22);}
+  .pcard .ph{height:186px;overflow:hidden;position:relative;}
+  .pcard .ph img{width:100%;height:100%;object-fit:cover;display:block;}
+  .pcard .pbody{padding:24px 26px 26px;display:flex;flex-direction:column;flex:1;}
+  .pcard .ptag{font-family:var(--serif);font-style:italic;font-weight:300;color:var(--green-bright);font-size:18px;margin-bottom:3px;}
+  .pcard h3{font-size:20px;font-weight:600;color:#fff;margin-bottom:9px;letter-spacing:-.01em;}
+  .pcard p{font-size:14.5px;color:rgba(255,255,255,.82);line-height:1.55;flex:1;}
+  .pcard .go{margin-top:18px;font-size:13px;font-weight:600;color:var(--green-bright);display:inline-flex;align-items:center;gap:8px;cursor:pointer;}
+  .pcard .go:hover{color:#fff;}
+  /* Completed state (Information Form card, once registrations.f2579 is
+     checked) — scoped to .pcards so it can't reach the Program Grid's
+     own unrelated .pcard component further down this file. Reuses the
+     .pill/.pill-done component built for that grid rather than a new one. */
+  .pcards .pcard.done .ptag,.pcards .pcard.done h3{text-decoration:line-through;}
+
+  /* FLIP CARDS */
+  .flips{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  .flip{perspective:1200px;height:196px;cursor:pointer;outline:none;}
+  .flip-in{position:relative;width:100%;height:100%;transition:transform .55s cubic-bezier(.4,.15,.2,1);transform-style:preserve-3d;}
+  .flip:hover .flip-in,.flip:focus-visible .flip-in,.flip.flipped .flip-in{transform:rotateY(180deg);}
+  .flip-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:16px;padding:24px 22px;display:flex;flex-direction:column;justify-content:center;box-shadow:var(--shadow-sm);}
+  .flip-front{background:var(--white);border:1px solid var(--line);}
+  .flip-front .fico{width:40px;height:40px;border-radius:10px;background:rgba(33,122,0,.10);color:var(--green);display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
+  .flip-front .fico svg{width:20px;height:20px;}
+  .flip-front h4{font-size:16px;font-weight:600;margin-bottom:6px;}
+  .flip-front p{font-size:13.5px;color:var(--gray);line-height:1.5;}
+  .flip-badge{position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--green);transition:transform .5s ease,border-color .2s;}
+  .flip-badge svg{width:13px;height:13px;}
+  .flip:hover .flip-badge,.flip:focus-visible .flip-badge{transform:rotate(-180deg);border-color:var(--green);}
+  .flip-back{background:linear-gradient(150deg,var(--coral),#e0512e);color:#fff;transform:rotateY(180deg);}
+  .flip-back p{font-family:var(--serif);font-style:italic;font-weight:300;font-size:20px;line-height:1.3;}
+
+  /* BE PRESENT */
+  .g-note{margin-top:28px;background:var(--teal);color:#fff;border-radius:16px;overflow:hidden;padding:32px 34px;display:flex;gap:24px;align-items:center;border-left:5px solid var(--coral);line-height:0;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease;}
+  .g-note.in{opacity:1;transform:none;}
+  .g-note .np{flex:none;width:140px;height:140px;border-radius:14px;overflow:hidden;box-shadow:0 10px 26px rgba(0,0,0,.28);font-size:0;}
+  .g-note .np img{width:100%;height:100%;object-fit:cover;object-position:40% 38%;display:block;}
+  .g-note .gtxt{line-height:1.55;}
+  .g-note h4{font-size:21px;font-weight:600;margin-bottom:8px;letter-spacing:-.01em;}
+  .g-note h4 .swipe{font-family:var(--serif);font-style:italic;font-weight:300;color:rgba(255,255,255,.42);transition:color .9s ease .25s;}
+  .g-note.in h4 .swipe{color:var(--green-bright);}
+  .g-note p{color:rgba(255,255,255,.85);font-size:15px;line-height:1.6;max-width:720px;}
+
+  /* AGREEMENTS — staggered reveal + hover */
+  .rules{display:grid;grid-template-columns:1.1fr 1.4fr;gap:40px;align-items:center;background:var(--white);border:1px solid var(--line);border-radius:20px;padding:42px 46px;box-shadow:var(--shadow-sm);}
+  .rules .big{font-family:var(--serif);font-style:italic;font-weight:300;font-size:clamp(28px,3.4vw,40px);line-height:1.15;color:var(--teal);}
+  .rules ul{list-style:none;display:grid;gap:16px;}
+  .rules li{display:flex;gap:14px;align-items:flex-start;font-size:18px;line-height:1.45;color:var(--ink);opacity:0;transform:translateY(12px);transition:opacity .5s ease,transform .5s ease,color .2s;}
+  .rules.in li{opacity:1;transform:none;}
+  .rules.in li:nth-child(1){transition-delay:.05s,.05s,0s}
+  .rules.in li:nth-child(2){transition-delay:.17s,.17s,0s}
+  .rules.in li:nth-child(3){transition-delay:.29s,.29s,0s}
+  .rules.in li:nth-child(4){transition-delay:.41s,.41s,0s}
+  .rules.in li:nth-child(5){transition-delay:.53s,.53s,0s}
+  .rules li svg{width:23px;height:23px;color:var(--green-bright);flex:none;margin-top:2px;stroke-width:2.6;transition:transform .2s;}
+  .rules li .gd{color:var(--green-bright);font-weight:650;}
+  .rules li:hover{color:var(--green);}
+  .rules li:hover svg{transform:scale(1.18);}
+
+  /* FAQ — sticky title */
+  .faq{display:grid;grid-template-columns:.7fr 1.3fr;gap:44px;align-items:start;}
+  .faq .huge{font-family:var(--serif);font-style:italic;font-weight:300;font-size:clamp(40px,6vw,74px);line-height:.95;color:var(--teal);position:sticky;top:96px;}
+  .faq .huge span{color:var(--green-bright);}
+  .acc{border-top:1px solid var(--line);}
+  .acc details{border-bottom:1px solid var(--line);}
+  .acc summary{list-style:none;cursor:pointer;padding:22px 4px;display:flex;justify-content:space-between;align-items:center;gap:20px;font-size:20.5px;font-weight:600;color:var(--green-bright);transition:color .14s;}
+  .acc summary:hover{color:var(--green);}
+  .acc summary::-webkit-details-marker{display:none;}
+  .acc summary .chev{width:22px;height:22px;flex:none;color:var(--green);transition:transform .25s;stroke-width:2.4;}
+  .acc details[open] summary .chev{transform:rotate(90deg);}
+  .acc .body{padding:0 4px 22px;color:var(--gray);font-size:15px;line-height:1.65;max-width:640px;}
+
+  /* LMF logo band */
+  .lmf-band{background:var(--almond);border-top:1px solid var(--line);padding:50px 0;text-align:center;}
+  .lmf-band img{height:64px;width:auto;opacity:.92;}
+
+  /* CONTACT */
+  .contact{background:var(--teal);color:#fff;}
+  .contact .wrap{padding:64px 40px;}
+  .contact-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:50px;align-items:start;}
+  .contact h2{font-size:clamp(26px,3vw,34px);font-weight:650;letter-spacing:-.02em;margin-bottom:10px;}
+  .contact h2 .serif-it{font-weight:300;}
+  .contact p{color:rgba(255,255,255,.82);font-size:16px;max-width:460px;}
+  .ways{display:grid;gap:14px;}
+  .cway{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:16px 18px;width:100%;text-align:left;font-family:var(--sans);}
+  a.cway,button.cway{cursor:pointer;transition:background .15s,border-color .15s;}
+  a.cway:hover,button.cway:hover{background:rgba(255,255,255,.11);border-color:rgba(46,162,3,.4);}
+  .cway .gi{width:40px;height:40px;border-radius:10px;background:rgba(33,122,0,.22);color:var(--green-bright);display:flex;align-items:center;justify-content:center;flex:none;}
+  .cway .lab{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+  .cway .val{font-size:15.5px;font-weight:600;color:#fff;}
+  .health{margin-top:22px;display:flex;align-items:center;gap:12px;font-size:14px;color:rgba(255,255,255,.82);}
+  .health a{color:var(--green-bright);font-weight:600;cursor:pointer;}
+
+  /* =========================================================
+     PROGRAM GRID
+     Portal.programGrid.render() (portal-engine.js) builds this
+     from a `cards` array supplied by each phase's renderer — the
+     card's state ('reg' | 'plain' | 'dim'), pill, detail rows and
+     CTA are each computed independently per program from that
+     program's own booleans (e.g. post.hasSeminarReg vs
+     post.hasACReg), never bundled from one shared flag. That's
+     the fix for the Post-event defect where every registered
+     program was forced into the same "reg" state together.
+     ========================================================= */
+  .phead{padding:64px 0 10px;}
+  .phead h1{font-size:clamp(32px,3.8vw,48px);font-weight:650;letter-spacing:-.02em;color:var(--ink);margin:14px 0 12px;line-height:1.15;}
+  .phead .plede{font-size:16.5px;color:var(--muted);max-width:640px;line-height:1.65;}
+  .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;}
+  .pcard{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;cursor:pointer;transition:box-shadow .22s,transform .18s;}
+  .pav{position:relative;height:190px;flex:none;background:var(--teal);}
+  .pav img{width:100%;height:100%;object-fit:cover;display:block;}
+  .pcard[data-p="ac"] .pav img{object-position:50% 15%;}
+  .pill{position:absolute;top:14px;left:14px;font-size:10.5px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;padding:6px 12px 4px;border-radius:999px;display:inline-flex;align-items:center;line-height:1;}
+  .pill.pr{left:auto;right:14px;}
+  .pill-current{background:var(--green-bright);color:#fff;}
+  .pill-upcoming{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.5);}
+  .pill-next{background:var(--coral);color:#fff;}
+  .pill-done{background:#fff;color:var(--teal);}
+  .pbody{padding:24px 26px 26px;display:flex;flex-direction:column;gap:11px;flex:1;}
+  .pbody h3{font-size:20px;font-weight:650;letter-spacing:-.01em;color:var(--ink);line-height:1.25;}
+  .pcard.reg h3{color:var(--green);}
+  .pbody p{font-size:14.5px;line-height:1.62;color:var(--muted);}
+  .pres-link{display:inline-flex;align-items:center;gap:7px;color:var(--green-bright);font-weight:600;font-size:14.5px;margin:10px 0 12px;cursor:pointer;}
+  .pres-link:hover{color:var(--green);}
+  .pres-link svg{width:13px;height:13px;flex:none;}
+  .pdet{border-top:1px solid var(--line);padding-top:14px;margin-top:4px;display:flex;flex-direction:column;gap:7px;}
+  .pdet div{display:flex;align-items:baseline;gap:12px;font-size:13.5px;color:var(--ink);font-weight:600;}
+  .pdet span{flex:none;width:92px;font-size:10px;font-weight:650;letter-spacing:.12em;text-transform:uppercase;color:var(--green-bright);}
+  .pcard.dim .pav{background:#fff;}
+  .pcard.dim .pav img{filter:grayscale(1) brightness(1.18) contrast(.78);opacity:.88;transition:filter .3s,opacity .3s;}
+  .pcard.dim h3{color:rgba(14,26,25,.38);transition:color .3s;}
+  .pcard.dim .pbody p{color:rgba(14,26,25,.32);transition:color .3s;}
+  .pcard.dim .pbtn2.ghost{color:rgba(13,45,49,.5);border-color:rgba(13,45,49,.18);}
+  .pcard.dim:hover .pav img{filter:none;opacity:1;}
+  .pcard.dim:hover h3{color:var(--ink);}
+  .pcard.dim:hover .pbody p{color:var(--muted);}
+  .pcard.dim:hover .pbtn2.ghost{color:var(--teal);border-color:rgba(13,45,49,.35);}
+  .curric{background:radial-gradient(90% 140% at 50% -30%, rgba(46,162,3,.28), transparent 60%),var(--teal);color:#fff;padding:70px 0;text-align:center;}
+  .curric h2{font-size:clamp(26px,3vw,36px);font-weight:650;letter-spacing:-.01em;}
+  .curric h2 .serif-it{color:var(--green-bright);}
+  .curric p{color:rgba(255,255,255,.75);margin:14px auto 28px;max-width:520px;font-size:15.5px;line-height:1.65;}
+  .cbtn{display:inline-flex;align-items:center;gap:11px;background:var(--green-bright);color:#fff;border-radius:5px;padding:16px 26px 12px;font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;text-decoration:none;transition:background .15s;}
+  .cbtn:hover{background:var(--green);}
+
+  /* =========================================================
+     DURING-EVENT
+     Ported from member-portal-during.html. Reuses .hero/.hero-
+     inner/.pgrid/.pcard/.pill/.curric/.lmf-band as-is — already
+     shared/reconciled by Stage 1-3, and this mockup used the
+     same proportions. Only the pieces unique to this phase are
+     added here. One defect fixed at the source: the hero
+     hardcoded "Day One" while the assignments section
+     simultaneously hardcoded "Day Three" as current — the
+     mockup's own comment admits the "inbox stack" day logic
+     this implies was never wired up. Portal.render.during() now
+     derives both, and the whole assignments stack, from one
+     Portal.session.resolveCurrent() call, so that contradiction
+     is structurally impossible. Font weights capped at 650 per
+     the build rule (the source mockup used 700/800 throughout).
+     ========================================================= */
+  .nav-join{background:var(--green-bright);color:#fff;border:none;padding:11px 20px;border-radius:5px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;display:inline-flex;align-items:center;gap:8px;cursor:pointer;transition:background .15s;text-decoration:none;}
+  .nav-join:hover{background:var(--green);}
+  .nav-join .dot{width:8px;height:8px;border-radius:50%;background:#fff;animation:pulse 1.6s infinite;}
+  .nav-join[aria-disabled="true"]{background:var(--muted);cursor:default;}
+  .nav-join[aria-disabled="true"]:hover{background:var(--muted);}
+
+  .progcard{background:#fff;border:1px solid var(--line);border-radius:20px;padding:30px 34px;box-shadow:var(--shadow);}
+  .pc-eyebrow{font-size:12px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--green-bright);}
+  .pc-dates{font-size:25px;font-weight:650;letter-spacing:-.02em;color:var(--ink);line-height:1.12;margin:8px 0 5px;}
+  .pc-grad{font-size:14px;color:var(--gray);}
+  .pc-grad span{color:var(--green);font-weight:600;}
+  .pc-fine{font-size:12.5px;color:var(--gray);border-top:1px solid var(--line);padding-top:14px;margin-top:16px;line-height:1.5;}
+  .pc-cta{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:22px;flex-wrap:wrap;}
+  .pc-logo{height:69px;margin:11px 0 11px 10px;position:relative;top:-5px;width:auto;display:block;flex:none;}
+  .pc-note{font-size:12.5px;color:var(--gray);line-height:1.5;margin-top:16px;}
+  .pc-note b{color:var(--ink);font-weight:600;}
+  .btn-join{background:var(--green-bright);color:#fff;border:none;border-radius:5px;padding:15px 22px 11px;font-family:var(--sans);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;display:inline-flex;align-items:center;gap:10px;text-decoration:none;}
+  .btn-join:hover{background:var(--green);}
+  .btn-join[aria-disabled="true"]{background:var(--muted);cursor:default;pointer-events:none;}
+
+  /* Today / assignments. Every session always renders, in strict
+     chronological order (Day 1 -> 2 -> 3, 2026-08-07 review round —
+     replaces the original "newest on top" inbox ordering). The
+     current session gets a .pill.pill-current "Today" badge (same
+     component the program grid uses for its own "Current" pill) and
+     a highlighted border; sessions beyond currentIdx render dimmed
+     with a "not yet begun" empty state, reusing .pcard.dim's exact
+     rgba() values below rather than inventing new ones. Never a
+     fixed 3-slot shape: item count and session count both come from
+     array length (Data Contract, 2026-08-07 corrections). */
+  .today-row{display:flex;flex-direction:column;gap:18px;}
+  .today{display:flex;gap:16px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);width:100%;align-items:flex-start;padding:22px 24px;transition:background .2s,border-color .2s;}
+  .today .ti{width:46px;height:46px;border-radius:13px;background:rgba(33,122,0,.10);color:var(--green);display:flex;align-items:center;justify-content:center;flex:none;transition:background .2s,color .2s;}
+  .today .ti svg{width:23px;height:23px;}
+  .today .tbody{flex:1;}
+  .today h3{font-size:18px;font-weight:650;color:var(--ink);letter-spacing:-.01em;transition:color .2s;}
+  .today .teye{font-size:11.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--green-bright);display:flex;align-items:center;gap:8px;transition:color .2s;}
+  .today .teye .pill{position:static;}
+  .today .alinks{margin-top:14px;}
+  .alinks a{display:flex;align-items:center;gap:7px;color:var(--green-bright);font-weight:600;font-size:15px;margin:10px 0 0;cursor:pointer;}
+  .alinks a:hover{color:var(--green);}
+  .alinks a svg{width:13px;height:13px;flex:none;}
+  .today .res-empty{font-size:13.5px;color:var(--muted);font-style:italic;margin-top:10px;transition:color .2s;}
+  .today.current{border-color:var(--green-bright);box-shadow:0 0 0 2px rgba(46,162,3,.14), var(--shadow-sm);}
+  .today.dim{background:var(--paper);}
+  .today.dim .ti{background:rgba(14,26,25,.06);color:rgba(14,26,25,.3);}
+  .today.dim h3,.today.dim .teye{color:rgba(14,26,25,.38);}
+  .today.dim .res-empty{color:rgba(14,26,25,.32);}
+  .today-empty{background:#fff;border:1px solid var(--line);border-radius:16px;padding:28px 24px;text-align:center;color:var(--muted);font-style:italic;font-size:14.5px;}
+
+  /* Action CTAs — generic, not participant-specific (same as the
+     Pre-event flip tips), so authored once as static markup. */
+  .actions{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;}
+  .acard{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;transition:box-shadow .2s;position:relative;}
+  .acard:hover{box-shadow:var(--shadow);}
+  .acard .aph{height:138px;overflow:hidden;}
+  .acard .aph img{width:100%;height:100%;object-fit:cover;display:block;}
+  .acard .abadge{position:absolute;top:12px;left:12px;background:var(--coral);color:#fff;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:5px 10px;border-radius:999px;box-shadow:0 4px 12px rgba(0,0,0,.2);}
+  .acard .abody{padding:20px 20px 22px;display:flex;flex-direction:column;flex:1;}
+  .acard .aeye{font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--green-bright);margin-bottom:7px;}
+  .acard h4{font-size:16.5px;font-weight:650;letter-spacing:-.01em;margin-bottom:7px;line-height:1.2;}
+  .acard p{font-size:13.5px;color:var(--gray);line-height:1.5;flex:1;}
+  .acard .go{margin-top:15px;font-size:13px;font-weight:600;color:var(--green-bright);display:inline-flex;align-items:center;gap:7px;cursor:pointer;}
+  .acard:hover .go{color:var(--green);}
+
+  /* Graduation */
+  .gradfeat{background:#fff;border:1px solid var(--line);border-radius:20px;display:grid;grid-template-columns:430px 1fr;align-items:stretch;box-shadow:var(--shadow-sm);overflow:hidden;}
+  .gradfeat>div:last-child{padding:32px 36px;}
+  .gradfeat .gph{width:100%;height:100%;min-height:320px;overflow:hidden;}
+  .gradfeat .gph img{width:100%;height:100%;object-fit:cover;object-position:50% 72%;display:block;}
+  .gradfeat .geye{font-size:12px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--green-bright);}
+  .gradfeat h3{font-size:clamp(20px,2.3vw,26px);font-weight:650;letter-spacing:-.02em;margin:9px 0 8px;color:var(--ink);line-height:1.3;}
+  .gradfeat h3 .serif-it{font-weight:300;color:var(--green);}
+  .gradfeat p{font-size:15px;color:var(--gray);line-height:1.6;margin-bottom:12px;}
+  .gmeta{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;}
+  .ginvite{display:flex;align-items:center;justify-content:space-between;gap:16px 28px;flex-wrap:wrap;margin-top:14px;}
+  .gq{font-family:var(--serif);font-style:italic;font-weight:300;font-size:24px;color:var(--green);margin:0;flex:1;}
+  .gbtn{flex:none;background:var(--green-bright);color:#fff;border:none;border-radius:5px;padding:15px 22px 11px;font-family:var(--sans);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;display:inline-flex;align-items:center;gap:9px;}
+  .gbtn:hover{background:var(--green);}
+  .gradrow{margin-top:22px;}
+
+  .invitees{background:#fff;border:1px solid var(--line);border-radius:16px;padding:30px 34px;box-shadow:var(--shadow-sm);}
+  .invitees .inv-eye{font-size:12px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--green-bright);}
+  .invitees h3{font-size:22px;font-weight:650;letter-spacing:-.01em;margin:8px 0 4px;color:var(--ink);}
+  .invitees h3 .serif-it{font-weight:300;color:var(--green);}
+  .invitees .inv-sub{font-size:14px;color:var(--gray);margin-bottom:16px;}
+  .inv-list{border-top:1px solid var(--line);}
+  .inv-row{display:flex;align-items:center;gap:16px;padding:14px 2px;border-bottom:1px solid var(--line);}
+  .inv-name{flex:none;min-width:170px;font-size:15px;font-weight:600;color:var(--ink);}
+  .inv-link{flex:1;font-size:13px;color:var(--gray);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .inv-copy{flex:none;position:relative;display:inline-flex;align-items:center;gap:7px;background:none;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:12px;font-weight:600;color:var(--green);cursor:pointer;transition:border-color .15s,background .15s;}
+  .inv-copy:hover{border-color:var(--green-bright);background:rgba(45,174,14,.06);}
+  .inv-copy svg{width:14px;height:14px;}
+  .inv-copy .tip{position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%);background:var(--teal);color:#fff;font-size:11px;font-weight:600;padding:5px 10px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s;}
+  .inv-copy:hover .tip{opacity:1;}
+  .inv-copy.copied{border-color:var(--green-bright);color:var(--green-bright);}
+  .inv-more{display:inline-flex;align-items:center;gap:8px;margin-top:18px;border:1.5px solid var(--green);border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;color:var(--green);cursor:pointer;text-decoration:none;transition:background .15s,border-color .15s;}
+  .inv-more:hover{background:rgba(45,174,14,.07);}
+  .inv-more svg{width:14px;height:14px;}
+  .inv-pager{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line);}
+  .inv-pager-count{font-size:12.5px;color:var(--gray);}
+
+  /* =========================================================
+     RESPONSIVE
+     Desktop / mobile only — no tablet tier by design decision.
+     ========================================================= */
+  @media (max-width:900px){
+    .pgrid{grid-template-columns:repeat(2,1fr);}
+  }
+  @media (max-width:640px){
+    .wrap{padding:0 22px;}
+    .nav-links{display:none;}
+    /* The account avatar is the only top-right affordance on mobile, kept
+       identical across every phase — the nav CTA slot (e.g. During-event's
+       "Join Your Forum" pill) used to visually collide with it here; the
+       hero's own Join button already duplicates that CTA below the fold. */
+    .nav-cta-slot{display:none;}
+    .fab-account{top:14px;right:16px;}
+    footer.foot .wrap{flex-direction:column;text-align:center;}
+    .pgrid{grid-template-columns:1fr;}
+    .hero-inner{grid-template-columns:1fr;gap:34px;padding-top:52px;padding-bottom:60px;}
+    .pcards{grid-template-columns:1fr;}
+    .flips{grid-template-columns:1fr;}
+    .g-note .np{display:none;}
+    .rules{grid-template-columns:1fr;gap:26px;padding:34px;}
+    .faq{grid-template-columns:1fr;gap:24px;}
+    .faq .huge{position:static;}
+    .contact-grid{grid-template-columns:1fr;gap:30px;}
+    section.block{padding:52px 0;}
+    .actions{grid-template-columns:1fr;}
+    .gradfeat{grid-template-columns:1fr;} .gradfeat .gph{height:240px;min-height:0;}
+    /* Logo stacked above the button (DOM order is already logo-then-
+       button) instead of squeezing them side by side, which wrapped
+       "Join Your Forum" onto 3 lines at narrow widths. */
+    .pc-cta{flex-direction:column;align-items:stretch;gap:14px;}
+    .pc-logo{margin:0;top:0;}
+    .btn-join{width:100%;justify-content:center;}
+  }
+</style>
+</head>
+<body>
+
+  <!-- =========================================================
+       NAV — logo + phase-populated links + phase-populated CTA
+       slot (e.g. During-event's pulsing "Join Your Forum"
+       button) + the floating logout control. No burger, no
+       drawer, no scrim: those are fully removed, not hidden.
+       ========================================================= -->
+  <nav class="topnav"><div class="wrap row">
+    <img class="nav-logo" src="Assets/lm-mp-nav-logo.png" alt="Landmark Worldwide">
+    <div class="nav-links" id="navLinks"><!-- populated per phase --></div>
+    <div class="nav-cta-slot" id="navCtaSlot"><!-- populated per phase, e.g. During-event's Join Your Forum button --></div>
+  </div></nav>
+
+  <div class="fab-account" id="fabAccount">
+    <button class="fab-account__trigger" id="fabAccountTrigger" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
+      <!-- Swapped for an <img> by Portal.account.setAvatar() when the
+           Contact record's Profile Image URL is set; this SVG is the
+           fallback when it isn't. -->
+      <span id="fabAccountIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+    </button>
+    <div class="fab-account__menu" id="fabAccountMenu" role="menu">
+      <button class="fab-account__logout" id="logoutBtn" role="menuitem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        Log Out
+      </button>
+    </div>
+  </div>
+
+  <div class="progtabs" id="progTabs" style="display:none;"><div class="wrap row">
+    <!-- populated per phase where relevant (During-event's Upcoming/Prior Programs toggle) -->
+  </div></div>
+
+  <!-- =========================================================
+       PHASE CONTENT ROOTS — filled by Portal.render.pre() /
+       .during() / .post() in later stages. Empty by design.
+       ========================================================= -->
+  <main id="portal-root"></main>
+  <div id="program-grid-root"></div>
+
+  <footer class="foot"><div class="wrap"><div>&copy; 2026 Landmark Worldwide. All rights reserved.</div><div style="display:flex;gap:22px;"><a href="#">Terms</a><a href="#">Privacy</a><a href="#contact">Support</a></div></div></footer>
+
+  <!-- =========================================================
+       MODALS — authored once, shared by every phase.
+       ========================================================= -->
+
+  <!-- HEALTH RESOURCES -->
+  <div class="modal-scrim" id="hrScrim"></div>
+  <div class="modal" id="hrModal" role="dialog" aria-modal="true">
+    <div class="mhead"><div><div class="eyebrow">Support</div><h3>Taking care of yourself</h3></div><button class="mclose" id="hrClose" aria-label="Close">&times;</button></div>
+    <div class="mbody">
+      <p class="lead">This weekend can be full and rich, and sometimes big feelings show up along the way — that's a natural part of looking honestly at your life. Whatever comes up for you is welcome here.</p>
+      <h4>Simple ways to take care</h4>
+      <p>A few things make a real difference: make sure you're getting good sleep, eating and drinking well, and regularly standing up to move your body. Take a deep breath and look around the room when you need to. Take care of yourself along the way, and reach out whenever you need to.</p>
+      <h4>You don't have to do it alone</h4>
+      <p>If something feels like a lot, please reach out — to a friend, to someone you trust, or to a member of our team. We're here and always glad to support you. Just contact us anytime.</p>
+      <div class="crisis">
+        <div class="eyebrow crisis-h">If you'd like to talk to someone right now</div>
+        <p>Landmark is a personal and professional development company, not therapy or medical care. If you're in distress or simply want immediate, confidential support, these free resources are available any time, day or night:</p>
+        <ul>
+          <li><div class="rn">988 — Suicide &amp; Crisis Lifeline</div><div class="rd">Call or text 988 &middot; 24/7 &middot; free &amp; confidential</div></li>
+          <li><div class="rn">Crisis Text Line</div><div class="rd">Text HOME to 741741 &middot; 24/7 &middot; free</div></li>
+          <li><div class="rn">SAMHSA National Helpline</div><div class="rd">Call 1-800-662-4357 &middot; 24/7 &middot; treatment referral &amp; information</div></li>
+          <li><div class="rn">Find a Helpline</div><div class="rd">findahelpline.com &middot; free, confidential support in your country</div></li>
+        </ul>
+        <div class="emg">In any life-threatening emergency, call 911 or go to your nearest emergency room.</div>
+      </div>
+      <p class="mclosepar">Thank you for bringing yourself to this experience. Take good care.</p>
+    </div>
+  </div>
+
+  <!-- FEEDBACK -->
+  <div class="modal-scrim" id="fbScrim"></div>
+  <div class="modal" id="fbModal" role="dialog" aria-modal="true">
+    <div class="mhead"><div><div class="eyebrow">We Want To Hear From You</div><h3>How's it going so far?</h3></div><button class="mclose" id="fbClose" aria-label="Close">&times;</button></div>
+    <div class="mbody">
+      <p class="lead">We're always looking for ways to improve. We'd love to hear about your experience — what's working, and what could be working better. You can tell us anything, at any point along the way.</p>
+      <div class="fbform" style="margin-top:18px;">
+        <textarea placeholder="Share anything on your mind…"></textarea>
+        <button type="button" id="fbSubmit">Share feedback</button>
+      </div>
+      <p class="mclosepar">Thank you for helping the Landmark team keep improving and delivering the best experience possible.</p>
+    </div>
+  </div>
+
+  <!-- PROGRAM DETAIL — shell only; Portal.pdata (Stage 2) fills this in -->
+  <div class="modal-scrim" id="pgScrim"></div>
+  <div class="modal" id="pgModal" role="dialog" aria-modal="true">
+    <div class="mhead"><div><div class="eyebrow" id="pgEyebrow">Program</div><h3 id="pgTitle"></h3></div><button class="mclose" id="pgClose" aria-label="Close">&times;</button></div>
+    <div class="mbody">
+      <div class="pgstatus" id="pgStatus"></div>
+      <div id="pgDesc"></div>
+      <div class="pgnext" id="pgNext"></div>
+      <button class="pbtn2" id="pgCta"></button>
+    </div>
+  </div>
+
+  <!-- MY ACCOUNT -->
+  <div class="modal-scrim" id="acctScrim"></div>
+  <div class="modal" id="acctModal" role="dialog" aria-modal="true">
+    <div class="mhead"><div><div class="eyebrow">Your Account</div><h3>My Account</h3></div><button class="mclose" id="acctClose" aria-label="Close">&times;</button></div>
+    <div class="mbody">
+      <div class="acct-sec">
+        <div class="sec-t">Profile</div>
+        <div class="acct-grid">
+          <div><label class="acct-lab" for="acctFirst">First name</label><input class="acct-in" id="acctFirst" value=""></div>
+          <div><label class="acct-lab" for="acctLast">Last name</label><input class="acct-in" id="acctLast" value=""></div>
+          <div class="full"><label class="acct-lab" for="acctEmail">Email</label><input class="acct-in" id="acctEmail" type="email" value=""></div>
+          <div><label class="acct-lab" for="acctPhone">Mobile phone</label><input class="acct-in" id="acctPhone" type="tel" value=""></div>
+          <div><label class="acct-lab" for="acctTz">Time zone</label><input class="acct-in" id="acctTz" value=""></div>
+        </div>
+      </div>
+      <div class="acct-sec">
+        <div class="sec-t">Sign-In &amp; Password</div>
+        <div class="acct-grid">
+          <div><label class="acct-lab" for="acctPw1">New password</label><input class="acct-in" id="acctPw1" type="password" placeholder="••••••••"></div>
+          <div><label class="acct-lab" for="acctPw2">Confirm new password</label><input class="acct-in" id="acctPw2" type="password" placeholder="••••••••"></div>
+        </div>
+      </div>
+      <div class="acct-sec">
+        <div class="sec-t">Billing</div>
+        <div class="acct-card"><div class="cc" id="acctBillingSummary">No card on file</div><span class="acct-link" id="acctPayBtn">Update payment method</span></div>
+      </div>
+      <div class="acct-sec">
+        <div class="sec-t">Communication Preferences</div>
+        <label class="acct-check"><input type="checkbox" checked> Email me program updates and reminders</label>
+        <label class="acct-check"><input type="checkbox" checked> Text me day-of reminders and my Zoom link</label>
+        <label class="acct-check"><input type="checkbox"> Share occasional news about upcoming Landmark programs</label>
+      </div>
+      <button class="acct-save" id="acctSave">Save Changes</button>
+      <div class="acct-fine">Need help with your account? Reply to any email from us, or call <a href="tel:+13124403464">+1 (312) 440-3464</a> — we're happy to help.</div>
+    </div>
+  </div>
+
+  <!-- CERTIFICATE — shell only; participant name/program/dates are
+       phase-render inputs, not hardcoded ("Kate" bug fixed at the
+       source: no name is baked in here). -->
+  <div class="modal-scrim" id="certScrim"></div>
+  <div class="modal" id="certModal" role="dialog" aria-modal="true" style="width:min(640px,94vw);">
+    <div class="mhead"><div><div class="eyebrow">The Landmark Forum</div><h3>Certificate of Completion</h3></div><button class="mclose" id="certClose" aria-label="Close">&times;</button></div>
+    <div class="mbody certwrap">
+      <div class="certcard" data-print="target">
+        <img class="clogo" src="Assets/lm-mp-nav-logo.png" alt="Landmark Worldwide">
+        <div class="ceye">Certificate of Completion</div>
+        <div class="cname" id="certName"></div>
+        <div class="chas">has completed</div>
+        <div class="cprog" id="certProgram"></div>
+        <div class="cdates" id="certDates"></div>
+        <div class="csum">Awarded in recognition of three full days of inquiry, courage, and possibility &mdash; and of a future now open to be invented.</div>
+        <div class="crule"></div>
+        <div class="csig">Mick Leavitt</div>
+        <div class="ctitle">President &middot; Landmark Worldwide</div>
+      </div>
+      <button class="cert-print-btn" id="certPrintBtn" type="button" style="display:block;margin-left:auto;margin-right:auto;">Print Certificate</button>
+    </div>
+  </div>
+
+  <!-- SUPPORT (contact form) -->
+  <div class="modal-scrim" id="supportScrim"></div>
+  <div class="modal" id="supportModal" role="dialog" aria-modal="true">
+    <div class="mhead"><div><div class="eyebrow">We're Here For You</div><h3>How can we help?</h3></div><button class="mclose" id="supportClose" aria-label="Close">&times;</button></div>
+    <div class="mbody">
+      <p class="lead">Reach out any time &mdash; give us a call, or send a note below and we'll get right back to you.</p>
+      <div class="mform">
+        <div class="callus"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#217a00" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.7 2z"/></svg> Call us at <a href="tel:+13124403464">+1 (312) 440-3464</a></div>
+        <label for="supName">Your name</label>
+        <input id="supName" type="text" placeholder="First and last name">
+        <label for="supEmail">Email</label>
+        <input id="supEmail" type="email" placeholder="you@email.com">
+        <label for="supPhone">Phone number</label>
+        <input id="supPhone" type="tel" placeholder="(000) 000-0000">
+        <label for="supMsg">How can we help?</label>
+        <textarea id="supMsg" placeholder="Tell us what you need…"></textarea>
+        <label style="margin-bottom:2px;">How should we reach you?</label>
+        <div class="checkrow"><label><input type="checkbox" id="supEmailChk" checked> Email me</label><label><input type="checkbox" id="supCallChk"> Call me</label></div>
+        <button type="button" id="supportSend" style="display:block;margin:18px auto 0;">Send Message</button>
+        <div class="fine" style="text-align:center;">We'll get back to you as soon as we can.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORUM RESOURCES (Course Materials) — shell only; the day
+       sections below are populated per the materials.{always,prep,
+       day1,day2,day3,graduation} contract (Stage 4+). During-event,
+       a section with nothing released yet shows res-empty copy
+       instead of being omitted. Post-event, everything shows. -->
+  <div class="modal-scrim" id="resScrim"></div>
+  <div class="modal" id="resModal" role="dialog" aria-modal="true">
+    <div class="mhead"><div><div class="eyebrow">The Landmark Forum</div><h3>Your Forum Resources</h3></div><button class="mclose" id="resClose" aria-label="Close">&times;</button></div>
+    <div class="mbody" id="resBody">
+      <!-- example day-section shape, replaced by real data in Stage 4+:
+      <div class="res-group">
+        <div class="rg-t">Day One</div>
+        <a href="..." target="_blank" rel="noopener">Genesis Timeline <svg .../></a>
+      </div>
+      <div class="res-group">
+        <div class="rg-t">Day Two</div>
+        <div class="res-empty">Course materials will be made available during the event.</div>
+      </div>
+      -->
+    </div>
+    <div class="res-note" style="margin:0 30px 26px;">Anything we send you will be added here too — so everything from your weekend stays in one place.</div>
+  </div>
+
+  <!-- TECH CHECK — opened from the Pre-event Prepare card's #techOpen
+       trigger (Portal.render.pre). Deliberately not added to the
+       wire() list below: Portal.techCheck (portal-engine.js) owns
+       close/scrim/Escape itself so it can stop the camera/mic stream
+       on every close path, not just the X button. -->
+  <div class="modal-scrim" id="techScrim"></div>
+  <div class="modal" id="techModal" role="dialog" aria-modal="true">
+    <div class="mhead"><div><div class="eyebrow">Tech Check</div><h3 id="techTitle">Test your camera &amp; microphone</h3></div><button class="mclose" id="techClose" aria-label="Close">&times;</button></div>
+    <div class="mbody">
+      <div class="tc-dots"><span class="tc-dot" data-dot="1"></span><span class="tc-dot" data-dot="2"></span><span class="tc-dot" data-dot="3"></span></div>
+
+      <div class="tc-step active" data-step="1">
+        <p>First, allow your browser to use your camera and microphone. Then make sure you can see yourself, the microphone bar moves when you speak, and you can hear the test sound.</p>
+        <button type="button" class="pbtn2 tc-inline" id="techStart" style="margin-bottom:14px;">Start camera &amp; mic test</button>
+        <div class="tc-preview"><video id="techVideo" autoplay muted playsinline></video><div id="techCamNote" class="tc-note">Your camera preview will appear here.</div></div>
+        <div id="techStatus" class="tc-status"></div>
+        <div class="tc-io">
+          <div class="tc-io-lab"><span>Microphone &middot; input</span><span>speak to see it move</span></div>
+          <div class="tc-meter"><div id="techLevel" class="tc-level"></div></div>
+        </div>
+        <div class="tc-io">
+          <div class="tc-io-lab"><span>Speakers &middot; output</span></div>
+          <button type="button" class="pbtn2 ghost tc-inline" id="techSound">Play a test sound</button>
+        </div>
+        <label class="tc-check"><input type="checkbox" id="chk1"><span>I can see myself, the microphone bar moves when I speak, and I heard the test sound.</span></label>
+      </div>
+
+      <div class="tc-step" data-step="2">
+        <p>Next, a quick connection check. Live video streams smoothly at about <b>5 Mbps</b> download or more. Run a free speed test in a new tab &mdash; it only takes a few seconds.</p>
+        <a class="pbtn2 tc-inline" href="https://fast.com" target="_blank" rel="noopener" style="margin-bottom:14px;">Test your internet speed &rarr;</a>
+        <label class="tc-check"><input type="checkbox" id="chk2"><span>My download speed is at least 5 Mbps.</span></label>
+      </div>
+
+      <div class="tc-step" data-step="3">
+        <p>Last step &mdash; join Zoom's free test meeting. It opens Zoom exactly the way you'll use it on the day, so you can confirm your camera, microphone, and speakers all work inside the app.</p>
+        <a class="pbtn2 tc-inline" href="https://zoom.us/test" target="_blank" rel="noopener" style="margin-bottom:14px;">Open Zoom's test meeting &rarr;</a>
+        <label class="tc-check"><input type="checkbox" id="chk3"><span>I joined the Zoom test and my camera, microphone, and audio all worked.</span></label>
+      </div>
+
+      <div class="tc-step" data-step="4">
+        <div class="tc-congrats">
+          <div class="tc-ring"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M20 6L9 17l-5-5"/></svg></div>
+          <h4>You&rsquo;re good to go.</h4>
+          <p>Your camera, microphone, connection, and Zoom are all set. There&rsquo;s nothing more to do &mdash; we&rsquo;ll email your join link before the event. We can&rsquo;t wait to see you.</p>
+        </div>
+      </div>
+
+      <div class="tc-nav">
+        <button type="button" class="tc-back" id="techBack" hidden>&larr; Back</button>
+        <button type="button" class="pbtn2 tc-inline" id="techNext" disabled>Next &rarr;</button>
+      </div>
+      <div class="tc-trouble">Having any issues? <a id="techContact">Contact us</a> &mdash; we&rsquo;ll help you get set.</div>
+    </div>
+  </div>
+
+  <script>
+  // =========================================================
+  // Modal open/close/submit plumbing — shared chrome only.
+  // Phase/session logic (Portal.phase, Portal.session, PDATA,
+  // renderers) is the portal-engine.js work of later stages;
+  // this stub stays deliberately thin so it isn't thrown away
+  // when that engine lands.
+  // =========================================================
+  window.Portal = window.Portal || {};
+  (function(){
+    // Portal.modal.open/shut(modalId, scrimId) — the generic escape hatch
+    // portal-engine.js uses for modals it doesn't own a fixed trigger for
+    // (Program Detail is opened from dynamically-built grid cards, so it
+    // can't be wired to a static ID list the way the rest are below).
+    Portal.modal = {
+      open: function(modalId, scrimId){
+        document.getElementById(modalId).classList.add('open');
+        document.getElementById(scrimId).classList.add('open');
+      },
+      shut: function(modalId, scrimId){
+        document.getElementById(modalId).classList.remove('open');
+        document.getElementById(scrimId).classList.remove('open');
+      }
+    };
+
+    function wire(modalId, scrimId, openTriggers, closeId){
+      function op(){ Portal.modal.open(modalId, scrimId); }
+      function sh(){ Portal.modal.shut(modalId, scrimId); }
+      (openTriggers||[]).forEach(function(id){
+        var el=document.getElementById(id);
+        if(el) el.addEventListener('click', function(e){ e.preventDefault(); op(); });
+      });
+      var closeBtn=document.getElementById(closeId);
+      if(closeBtn) closeBtn.addEventListener('click', sh);
+      document.getElementById(scrimId).addEventListener('click', sh);
+      document.addEventListener('keydown', function(e){ if(e.key==='Escape') sh(); });
+      return { open:op, shut:sh };
+    }
+
+    // Every modal here opens from phase-rendered content (nav links,
+    // contact-section buttons, program-grid cards) that doesn't exist in
+    // the DOM yet at this point — Portal.init()/the phase renderers haven't
+    // run. A trigger-ID list passed to wire() here would silently find
+    // nothing and no-op, the same bug already caught and fixed for
+    // Program Detail and Certificate in Stage 2. So wire() only ever
+    // owns close/scrim-click/Escape (all static shell elements); every
+    // phase renderer calls Portal.modal.open(modalId, scrimId) directly
+    // on the trigger it just created, same pattern as Portal.programGrid.
+    wire('hrModal','hrScrim',[],'hrClose');
+    wire('fbModal','fbScrim',[],'fbClose');
+    wire('acctModal','acctScrim',[],'acctClose');
+    wire('resModal','resScrim',[],'resClose');
+    wire('supportModal','supportScrim',[],'supportClose');
+    wire('pgModal','pgScrim',[],'pgClose');
+    wire('certModal','certScrim',[],'certClose');
+
+    document.getElementById('fbSubmit').addEventListener('click', function(){
+      this.textContent='Thank you — we hear you.'; this.disabled=true;
+    });
+
+    document.getElementById('acctSave').addEventListener('click', function(){
+      var b=this; b.textContent='Saved ✓'; b.disabled=true;
+      setTimeout(function(){ b.textContent='Save Changes'; b.disabled=false; }, 2200);
+    });
+    var payBtn=document.getElementById('acctPayBtn');
+    if(payBtn) payBtn.addEventListener('click', function(){ payBtn.textContent='Our team will reach out to update it securely.'; });
+
+    document.getElementById('supportSend').addEventListener('click', function(){
+      var name=(document.getElementById('supName').value||'').trim();
+      var email=(document.getElementById('supEmail').value||'').trim();
+      var phone=(document.getElementById('supPhone').value||'').trim();
+      var msg=(document.getElementById('supMsg').value||'').trim();
+      var pref=[]; if(document.getElementById('supEmailChk').checked) pref.push('Email'); if(document.getElementById('supCallChk').checked) pref.push('Phone call');
+      var body="Support request from the Member Portal.\n\nName: "+name+"\nEmail: "+email+"\nPhone: "+phone+"\nPreferred contact: "+(pref.join(', ')||'—')+"\n\nMessage: "+msg;
+      // Sends to tjarrett@landmarkworldwide.com; anything user-facing still displays info@landmarkworldwide.com.
+      location.href='mailto:tjarrett@landmarkworldwide.com?subject='+encodeURIComponent('Support Request — '+(name||'Landmark Forum'))+'&body='+encodeURIComponent(body);
+      this.textContent='Thank you — we’ll be in touch.'; this.disabled=true;
+    });
+
+    // Floating account/logout control
+    var fab=document.getElementById('fabAccount');
+    var fabTrigger=document.getElementById('fabAccountTrigger');
+    fabTrigger.addEventListener('click', function(e){
+      e.stopPropagation();
+      var isOpen=fab.classList.toggle('open');
+      fabTrigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    document.addEventListener('click', function(e){
+      if(!fab.contains(e.target)) fab.classList.remove('open');
+    });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') fab.classList.remove('open'); });
+    document.getElementById('logoutBtn').addEventListener('click', function(){
+      // Wired to Ontraport's native membership logout in Stage 8 hand-off.
+    });
+
+    // Print-only certificate. Ported from the live post-event template —
+    // see the PRINT — CERTIFICATE ONLY CSS above for how [data-print]
+    // tagging isolates the card at any modal-nesting depth.
+    function printCleanup(){
+      document.documentElement.classList.remove('is-printing');
+      document.querySelectorAll('[data-print="keep"]').forEach(function(el){
+        el.removeAttribute('data-print');
+      });
+    }
+    function printCertificate(){
+      var card = document.querySelector('[data-print="target"]');
+      if(!card) return;
+      var node = card.parentElement;
+      while(node && node !== document.documentElement && node !== document.body){
+        node.setAttribute('data-print', 'keep');
+        node = node.parentElement;
+      }
+      if(document.body) document.body.setAttribute('data-print', 'keep');
+      document.documentElement.classList.add('is-printing');
+      window.setTimeout(function(){
+        window.print();
+        window.setTimeout(printCleanup, 600);
+      }, 60);
+    }
+    window.addEventListener('afterprint', printCleanup);
+    var certPrintBtn = document.getElementById('certPrintBtn');
+    if(certPrintBtn) certPrintBtn.addEventListener('click', printCertificate);
+  })();
+  </script>
+
+  <!-- =========================================================
+     window.PORTAL_DATA / portal-engine.js attach point. Real
+     participant data arrives via the Portal Context Resolver in
+     a later stage — empty here on purpose. portal-engine.js is
+     now a real file (Stage 2: Portal.pdata + Portal.programGrid),
+     hosted alongside this shell for local review; swap for the
+     Ontraport-hosted URL at hand-off (Stage 8).
+     ========================================================= -->
+  <script>window.PORTAL_DATA = {};</script>
+  <script src="portal-engine.js"></script>
+
+  <!-- =========================================================
+     STAGE 4 REVIEW PREVIEW ONLY — not shipped code, swapped stage
+     by stage (was Pre-event through Stage 3). Renders the During-
+     event page with a sample fixture — CS override mid-week, Day
+     One fully released, Day Two partially released, Day Three not
+     yet begun (dimmed), 7 guests (so pagination is visible across
+     2 pages), and a seminar the participant is registered to plus
+     a recommended-but-not-registered Advanced Course — so every
+     2026-08-07 review-round fix is visually checkable at once.
+     Delete this block once Portal.init() (Stage 6) exists to
+     dispatch real resolver data.
+     ========================================================= -->
+  <script>
+  (function(){
+    Portal.render.during({
+      firstName: 'Jordan',
+      courseType: 'Forum',
+      format: 'Online',
+      eventStartUTC: '2026-08-14T16:00:00Z',
+      eventEnd: '2026-08-16T23:00:00Z',
+      tz: 'US Pacific · PST/PDT · GMT-8/-7 (America/Los_Angeles)',
+      graduation: { date: '2026-08-18', time: '6:00 PM' },
+      sessionDates: ['2026-08-14', '2026-08-15', '2026-08-16'],
+      currentReleasedSession: '2',
+      zoomJoin: 'https://zoom.us/w/92728047587?tk=nQcZpiYGJ7VHsG_PhPLSGw_LqVw3fkrUdHBbba-gRLs.DQkAAAAVlwW34xYwYWpEVnJTQVNKYW1DSHRhdkd4UUVRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&pwd=YmjgWJakPN79a0qaREJ0nZVS07CA36.1',
+      materials: {
+        sessions: [
+          { index: 1, label: 'Day One', items: [
+            { name: 'Day 1 Assignments', kind: 'Assignment', url: '#', released: true },
+            { name: 'Day 1 Agreements', kind: 'Agreement', url: '#', released: true },
+            { name: 'Day 1 Letter', kind: 'Letter', url: '#', released: true }
+          ]},
+          { index: 2, label: 'Day Two', items: [
+            { name: 'Day 2 Assignments', kind: 'Assignment', url: '#', released: true },
+            { name: 'Day 2 Letter', kind: 'Letter', url: '#', released: false }
+          ]},
+          { index: 3, label: 'Day Three', items: [] }
+        ],
+        graduation: []
+      },
+      graduationGuests: [
+        { name: 'Alex Rivera', link: 'https://zoom.us/w/92728047581?tk=aBcZpiYGJ7VHsG_guest1TOKEN&pwd=guest1pwd.1' },
+        { name: 'Priya Shah', link: 'https://zoom.us/w/92728047582?tk=aBcZpiYGJ7VHsG_guest2TOKEN&pwd=guest2pwd.1' },
+        { name: 'Daniel Ortiz', link: 'https://zoom.us/w/92728047583?tk=aBcZpiYGJ7VHsG_guest3TOKEN&pwd=guest3pwd.1' },
+        { name: 'Michael Reynolds', link: 'https://zoom.us/w/92728047584?tk=aBcZpiYGJ7VHsG_guest4TOKEN&pwd=guest4pwd.1' },
+        { name: 'Sara Kim', link: 'https://zoom.us/w/92728047585?tk=aBcZpiYGJ7VHsG_guest5TOKEN&pwd=guest5pwd.1' },
+        { name: 'Wen Zhao', link: 'https://zoom.us/w/92728047586?tk=aBcZpiYGJ7VHsG_guest6TOKEN&pwd=guest6pwd.1' },
+        { name: 'Layla Haddad', link: 'https://zoom.us/w/92728047589?tk=aBcZpiYGJ7VHsG_guest7TOKEN&pwd=guest7pwd.1' }
+      ],
+      post: { hasSeminarReg: true, hasACReg: false },
+      seminarNext: { title: 'Integrity: The Bottom Line', beginsLabel: 'Thu, Aug 20, 2026', scheduleLabel: 'Thursdays · 7:00 PM Pacific' },
+      acNext: { formatLabel: '3-day weekend + Tuesday evening' }
+    });
+  })();
+  </script>
+
+</body>
+</html>

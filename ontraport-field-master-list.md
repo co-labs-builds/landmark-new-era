@@ -1,0 +1,1167 @@
+﻿# Ontraport Master Field List — All Objects
+
+Format per line: **Field Label** — Field ID: `field_key` — Merge Field: `[Field Label]`
+
+> **Merge field syntax:**
+> - If the field belongs to the object your template/dynamic content block is **based on**, no object prefix is needed — just `[Field Label]`.
+> - To pull a field from a **different (related) object**, prefix it: `[ObjectName//Field Label]` — e.g. from a Registration-based template, a Contact's first name is `[Contacts//First Name]`.
+> - The "Merge Field" value shown below for each field is the **un-prefixed** form (`[Field Label]`) — use it as-is when your template is based on that field's own object, or prepend `ObjectName//` (the object name in that section's heading) when pulling it in from elsewhere.
+> - The underlying Field ID (`field_key`) is what's used in API conditions/filters and is the authoritative identifier — it's unrelated to the merge tag.
+
+---
+
+## Contacts (objectID: 0) — Cross-object prefix: `Contacts//`
+- Leadership Access — ID: `f2770` — Merge Field: `[Leadership Access]`
+- First Name — ID: `firstname` — Merge Field: `[First Name]`
+- Name Likes — ID: `f2792` — Merge Field: `[Name Likes]`
+- Email — ID: `email` — Merge Field: `[Email]`
+- Bulk Email Status — ID: `bulk_mail` — Merge Field: `[Bulk Email Status]`
+- Profile Image — ID: `profile_image` — Merge Field: `[Profile Image]`
+- SMS Consent: transactional — ID: `f2752` — Merge Field: `[SMS Consent: transactional]`
+- SMS Check: Consent: Transactional — ID: `f3022` — Merge Field: `[SMS Check: Consent: Transactional]`
+- SMS: Check: Promotions — ID: `f3041` — Merge Field: `[SMS: Check: Promotions]`
+- Company — ID: `company` — Merge Field: `[Company]`
+- Title — ID: `title` — Merge Field: `[Title]`
+- Office Phone — ID: `office_phone` — Merge Field: `[Office Phone]`
+- SMS Number — ID: `sms_number` — Merge Field: `[SMS Number]`
+- Bulk SMS Status — ID: `bulk_sms` — Merge Field: `[Bulk SMS Status]`
+- Website — ID: `website` — Merge Field: `[Website]`
+- Spouse* — ID: `f2361` — Merge Field: `[Spouse*]`
+- Is this guest under 18 years old? — ID: `f3081` — Merge Field: `[Is this guest under 18 years old?]`
+- Address — ID: `address` — Merge Field: `[Address]`
+- Address 2 — ID: `address2` — Merge Field: `[Address 2]`
+- City — ID: `city` — Merge Field: `[City]`
+- State — ID: `state` — Merge Field: `[State]`
+- Zip Code — ID: `zip` — Merge Field: `[Zip Code]`
+- Country — ID: `country` — Merge Field: `[Country]`
+- Fax — ID: `fax` — Merge Field: `[Fax]`
+- Birthday — ID: `birthday` — Merge Field: `[Birthday]`
+- Chosen Event ID — ID: `f2478` — Merge Field: `[Chosen Event ID]`
+- Chosen Course — ID: `f2479` — Merge Field: `[Chosen Course]`
+- Chosen Format — ID: `f2480` — Merge Field: `[Chosen Format]`
+- Chosen Event Start Date — ID: `f3013` — Merge Field: `[Chosen Event Start Date]`
+- Chosen Event End Date — ID: `f2696` — Merge Field: `[Chosen Event End Date]`
+- Chosen Event Time Zone — ID: `f2482` — Merge Field: `[Chosen Event Time Zone]`
+- Chosen Event Language — ID: `f2483` — Merge Field: `[Chosen Event Language]`
+- Chosen Event Location — ID: `f2484` — Merge Field: `[Chosen Event Location]`
+- Forum Start Date — ID: `f2454` — Merge Field: `[Forum Start Date]`
+- LF Guest Discount End — ID: `f2663` — Merge Field: `[LF Guest Discount End]`
+- LF Guest Discount End (ms) — ID: `f2664` — Merge Field: `[LF Guest Discount End (ms)]`
+- LF Guest Discount End Extended (ms) — ID: `f2697` — Merge Field: `[LF Guest Discount End Extended (ms)]`
+- Attended Tuesday Evening — ID: `f2666` — Merge Field: `[Attended Tuesday Evening]`
+- NPS Survey Trigger Date — ID: `f2695` — Merge Field: `[NPS Survey Trigger Date]`
+- Priority — ID: `priority` — Merge Field: `[Priority]`
+- 2nd Payment Retry Count — ID: `f3097` — Merge Field: `[2nd Payment Retry Count]`
+- Time Since Last Activity — ID: `time_since_dla` — Merge Field: `[Time Since Last Activity]`
+- Sales Stage — ID: `status` — Merge Field: `[Sales Stage]`
+- Owner — ID: `owner` — Merge Field: `[Owner]`
+- Twitter — ID: `twitter_link` — Merge Field: `[Twitter]`
+- Facebook — ID: `facebook_link` — Merge Field: `[Facebook]`
+- Linkedin — ID: `linkedin_link` — Merge Field: `[Linkedin]`
+- Instagram — ID: `instagram_link` — Merge Field: `[Instagram]`
+- Staff Access — ID: `f2771` — Merge Field: `[Staff Access]`
+- Contact Total Spend — ID: `f2825` — Merge Field: `[Contact Total Spend]`
+- Contact Total Booked Spend — ID: `f2831` — Merge Field: `[Contact Total Booked Spend]`
+- Contact Total Refunds — ID: `f2837` — Merge Field: `[Contact Total Refunds]`
+- Paid Registration Count — ID: `f2842` — Merge Field: `[Paid Registration Count]`
+- Last Purchase Date — ID: `f2850` — Merge Field: `[Last Purchase Date]`
+- Last Revenue Rollup — ID: `f2856` — Merge Field: `[Last Revenue Rollup]`
+- LISA Participant ID — ID: `f2879` — Merge Field: `[LISA Participant ID]`
+- Preferred Name — ID: `f2880` — Merge Field: `[Preferred Name]`
+- Landmark Forum Graduate Status — ID: `f2881` — Merge Field: `[Landmark Forum Graduate Status]`
+- Referring Page — ID: `referral_page` — Merge Field: `[Referring Page]`
+- First Campaign — ID: `n_campaign` — Merge Field: `[First Campaign]`
+- First Lead Source — ID: `n_lead_source` — Merge Field: `[First Lead Source]`
+- First Medium — ID: `n_medium` — Merge Field: `[First Medium]`
+- First Content — ID: `n_content` — Merge Field: `[First Content]`
+- First Term — ID: `n_term` — Merge Field: `[First Term]`
+- Last Campaign — ID: `l_campaign` — Merge Field: `[Last Campaign]`
+- Last Lead Source — ID: `l_lead_source` — Merge Field: `[Last Lead Source]`
+- Last Medium — ID: `l_medium` — Merge Field: `[Last Medium]`
+- Last Content — ID: `l_content` — Merge Field: `[Last Content]`
+- Last Term — ID: `l_term` — Merge Field: `[Last Term]`
+- 2nd Payment Transaction ID — ID: `f3098` — Merge Field: `[2nd Payment Transaction ID]`
+- Automations — ID: `updateCampaign` — Merge Field: `[Automations]`
+- Contact Tags — ID: `contact_cat` — Merge Field: `[Contact Tags]`
+- Pipeline: Wisdom Unlimited Vacation Course — ID: `f2588` — Merge Field: `[Pipeline: Wisdom Unlimited Vacation Course]`
+- First Purchase Date — ID: `f2110` — Merge Field: `[First Purchase Date]`
+- 2nd Payment Status — ID: `f3096` — Merge Field: `[2nd Payment Status]`
+- Forum Discount Start Date — ID: `f2473` — Merge Field: `[Forum Discount Start Date]`
+- Date of Forum Purchase — ID: `f2474` — Merge Field: `[Date of Forum Purchase]`
+- Remove Access — ID: `f2634` — Merge Field: `[Remove Access]`
+- LF: I have read and agree to Landmark Terms of Use and Privacy Policy — ID: `f2335` — Merge Field: `[LF: I have read and agree to Landmark Terms of Use and Privacy Policy]`
+- LF: I am at least 18 years old — ID: `f2723` — Merge Field: `[LF: I am at least 18 years old]`
+- LF: I have clicked this link to read and agree to Landmark Registration Policies and Notices — ID: `f2724` — Merge Field: `[LF: I have clicked this link to read and agree to Landmark Registration Policies and Notices]`
+- Leader Email Signature — ID: `f2400` — Merge Field: `[Leader Email Signature]`
+- IP Address — ID: `ip_addy_display` — Merge Field: `[IP Address]`
+- Timezone — ID: `timezone` — Merge Field: `[Timezone]`
+- Payment Plan Type — ID: `f2455` — Merge Field: `[Payment Plan Type]`
+- 2nd Payment Date — ID: `f2456` — Merge Field: `[2nd Payment Date]`
+- Checkout Count — ID: `f2457` — Merge Field: `[Checkout Count]`
+- User Agent — ID: `user_agent` — Merge Field: `[User Agent]`
+- Temp Invitation ID — ID: `f2285` — Merge Field: `[Temp Invitation ID]`
+- NPS Score — ID: `f2603` — Merge Field: `[NPS Score]`
+- NPS Category — ID: `f2485` — Merge Field: `[NPS Category]`
+- NPS Submitted Date — ID: `f2693` — Merge Field: `[NPS Submitted Date]`
+- What could we have improved — ID: `f2618` — Merge Field: `[What could we have improved]`
+- Before: What had you feeling stuck — ID: `f2604` — Merge Field: `[Before: What had you feeling stuck]`
+- Before: What had you choose The Forum — ID: `f2605` — Merge Field: `[Before: What had you choose The Forum]`
+- After: Impact the Forum made — ID: `f2608` — Merge Field: `[After: Impact the Forum made]`
+- After: Breakthroughs or shifts — ID: `f2609` — Merge Field: `[After: Breakthroughs or shifts]`
+- After: Most inspired or excited about — ID: `f2610` — Merge Field: `[After: Most inspired or excited about]`
+- During: What made the biggest difference — ID: `f2611` — Merge Field: `[During: What made the biggest difference]`
+- During: What did you most appreciate — ID: `f2612` — Merge Field: `[During: What did you most appreciate]`
+- AI Review Synthesis — ID: `f2619` — Merge Field: `[AI Review Synthesis]`
+- Friend's name — ID: `f2607` — Merge Field: `[Friend's name]`
+- How did you hear about us — ID: `f2606` — Merge Field: `[How did you hear about us]`
+- What could we do to complete your experience — ID: `f2615` — Merge Field: `[What could we do to complete your experience]`
+- Please contact me — ID: `f2617` — Merge Field: `[Please contact me]`
+- Is a Leader? — ID: `f2406` — Merge Field: `[Is a Leader?]`
+- Display Name — ID: `f2620` — Merge Field: `[Display Name]`
+- My Profile app | My Profile URL — ID: `page_109_url` — Merge Field: `[My Profile app | My Profile URL]`
+- My Profile app | My Profile template — ID: `page_109_template_id` — Merge Field: `[My Profile app | My Profile template]`
+- My Profile app | My Profile published — ID: `page_109_published` — Merge Field: `[My Profile app | My Profile published]`
+- My Profile app | Security and Privacy URL — ID: `page_110_url` — Merge Field: `[My Profile app | Security and Privacy URL]`
+- My Profile app | Security and Privacy template — ID: `page_110_template_id` — Merge Field: `[My Profile app | Security and Privacy template]`
+- My Profile app | Security and Privacy published — ID: `page_110_published` — Merge Field: `[My Profile app | Security and Privacy published]`
+- My Account app | My account page URL — ID: `page_111_url` — Merge Field: `[My Account app | My account page URL]`
+- My Account app | My account page template — ID: `page_111_template_id` — Merge Field: `[My Account app | My account page template]`
+- My Account app | My account page published — ID: `page_111_published` — Merge Field: `[My Account app | My account page published]`
+- Last Canceled Subscription — ID: `f2631` — Merge Field: `[Last Canceled Subscription]`
+- Cancellation Confirmed — ID: `f2632` — Merge Field: `[Cancellation Confirmed]`
+- Last Canceled Subscription ID — ID: `f2633` — Merge Field: `[Last Canceled Subscription ID]`
+- If a friend were considering The Forum — ID: `f2613` — Merge Field: `[If a friend were considering The Forum]`
+- What didn't work or felt incomplete — ID: `f2614` — Merge Field: `[What didn't work or felt incomplete]`
+- Last Name — ID: `lastname` — Merge Field: `[Last Name]`
+- Chosen Event Dates — ID: `f2481` — Merge Field: `[Chosen Event Dates]`
+- Name (merge field) — ID: `fn` — Merge Field: `[Name]`
+- Score — ID: `grade` — Merge Field: `[Score]`
+- Last Inbound SMS — ID: `last_inbound_sms` — Merge Field: `[Last Inbound SMS]`
+- Last Invoice # — ID: `mriInvoiceNum` — Merge Field: `[Last Invoice #]`
+- Total Amount of Unpaid Invoices — ID: `mrcUnpaid` — Merge Field: `[Total Amount of Unpaid Invoices]`
+- Last Total Invoice Amount — ID: `mriInvoiceTotal` — Merge Field: `[Last Total Invoice Amount]`
+- Last Charge Amount — ID: `mrcAmount` — Merge Field: `[Last Charge Amount]`
+- Last Card Type — ID: `ccType` — Merge Field: `[Last Card Type]`
+- Last Card Number (Last 4) — ID: `ccNumber` — Merge Field: `[Last Card Number (Last 4)]`
+- Last Card Expiration Month — ID: `ccExpirationMonth` — Merge Field: `[Last Card Expiration Month]`
+- Last CC Status — ID: `mrcResult` — Merge Field: `[Last CC Status]`
+- Last Card Expiration Year — ID: `ccExpirationYear` — Merge Field: `[Last Card Expiration Year]`
+- Last Card Expiration Date — ID: `ccExpirationDate` — Merge Field: `[Last Card Expiration Date]`
+- Date Added — ID: `date` — Merge Field: `[Date Added]`
+- Spent — ID: `spent` — Merge Field: `[Spent]`
+- Contact ID — ID: `id` — Merge Field: `[Contact ID]`
+- Unique ID — ID: `unique_id` — Merge Field: `[Unique ID]`
+- Date Modified — ID: `dlm` — Merge Field: `[Date Modified]`
+- Last Activity — ID: `dla` — Merge Field: `[Last Activity]`
+- Last Note — ID: `last_note` — Merge Field: `[Last Note]`
+- Last Email Received — ID: `date_last_email_received` — Merge Field: `[Last Email Received]`
+- Last Email Sent — ID: `date_last_email_sent` — Merge Field: `[Last Email Sent]`
+- Last SMS Received — ID: `date_last_sms_received` — Merge Field: `[Last SMS Received]`
+- Last SMS Sent — ID: `date_last_sms_sent` — Merge Field: `[Last SMS Sent]`
+- Last Call Logged — ID: `date_last_call_logged` — Merge Field: `[Last Call Logged]`
+- My Profile app | My Profile visits — ID: `page_109_visits` — Merge Field: `[My Profile app | My Profile visits]`
+- My Profile app | My Profile unique visits — ID: `page_109_uvisits` — Merge Field: `[My Profile app | My Profile unique visits]`
+- My Profile app | Security and Privacy visits — ID: `page_110_visits` — Merge Field: `[My Profile app | Security and Privacy visits]`
+- My Profile app | Security and Privacy unique visits — ID: `page_110_uvisits` — Merge Field: `[My Profile app | Security and Privacy unique visits]`
+- My Account app | My account page visits — ID: `page_111_visits` — Merge Field: `[My Account app | My account page visits]`
+- My Account app | My account page unique visits — ID: `page_111_uvisits` — Merge Field: `[My Account app | My account page unique visits]`
+- Number of Active Subscriptions — ID: `f2635` — Merge Field: `[Number of Active Subscriptions]`
+- Number of Active Payment Plans — ID: `f2636` — Merge Field: `[Number of Active Payment Plans]`
+
+## Tags (objectID: 14) — Cross-object prefix: `Tags//`
+- Name — ID: `tag_name` — Merge Field: `[Name]`
+- Object (set on create only) — ID: `object_type_id` — Merge Field: `[Object (set on create only)]`
+- Id — ID: `tag_id` — Merge Field: `[Id]`
+
+## Rules (objectID: 6) — Cross-object prefix: `Rules//`
+- Status — ID: `pause` — Merge Field: `[Status]`
+- Rule Tags — ID: `tags` — Merge Field: `[Rule Tags]`
+- Name — ID: `name` — Merge Field: `[Name]`
+- Last Run — ID: `last_action` — Merge Field: `[Last Run]`
+- Events — ID: `events` — Merge Field: `[Events]`
+- Conditions — ID: `conditions` — Merge Field: `[Conditions]`
+- Actions — ID: `actions` — Merge Field: `[Actions]`
+- Date Created — ID: `date` — Merge Field: `[Date Created]`
+- Date Modified — ID: `dlm` — Merge Field: `[Date Modified]`
+- Object — ID: `object_type_id` — Merge Field: `[Object]`
+
+## Sequences (objectID: 5) — Cross-object prefix: `Sequences//`
+- Status — ID: `pause` — Merge Field: `[Status]`
+- Name — ID: `name` — Merge Field: `[Name]`
+- Emails Not Clicked — ID: `emails_notclicked` — Merge Field: `[Emails Not Clicked]`
+- Emails Not Opened — ID: `emails_notopened` — Merge Field: `[Emails Not Opened]`
+- Type — ID: `drip_type` — Merge Field: `[Type]`
+- Subscribers — ID: `subscriber_count` — Merge Field: `[Subscribers]`
+- Emails Sent — ID: `emails_sent` — Merge Field: `[Emails Sent]`
+- Emails Opened — ID: `emails_opened` — Merge Field: `[Emails Opened]`
+- Emails Clicked — ID: `emails_clicked` — Merge Field: `[Emails Clicked]`
+- Unsubscribed — ID: `unsubscribed` — Merge Field: `[Unsubscribed]`
+- Complaints — ID: `abuse` — Merge Field: `[Complaints]`
+- Date Created — ID: `date` — Merge Field: `[Date Created]`
+- Date Modified — ID: `dlm` — Merge Field: `[Date Modified]`
+- Object — ID: `object_type_id` — Merge Field: `[Object]`
+- Id — ID: `drip_id` — Merge Field: `[Id]`
+
+## Automations (objectID: 140) — Cross-object prefix: `Automations//`
+- Name — ID: `name` — Merge Field: `[Name]`
+- Date Created — ID: `date` — Merge Field: `[Date Created]`
+- Date Modified — ID: `dlm` — Merge Field: `[Date Modified]`
+- Object — ID: `object_type_id` — Merge Field: `[Object]`
+
+## Groups (objectID: 3) — Cross-object prefix: `Groups//`
+- Group Name — ID: `name` — Merge Field: `[Group Name]`
+- Date Created — ID: `date` — Merge Field: `[Date Created]`
+- Group Owner — ID: `owner` — Merge Field: `[Group Owner]`
+- Date Modified — ID: `dlm` — Merge Field: `[Date Modified]`
+- Last Viewed Date — ID: `last_viewed` — Merge Field: `[Last Viewed Date]`
+- Last Editor — ID: `last_editor` — Merge Field: `[Last Editor]`
+- Object — ID: `object_type_name` — Merge Field: `[Object]`
+- Favorites — ID: `is_favorite` — Merge Field: `[Favorites]`
+- Permissions Type — ID: `public_view` — Merge Field: `[Permissions Type]`
+- Object — ID: `object_type_id` — Merge Field: `[Object]`
+- Condition Operators — ID: `condition_operators` — Merge Field: `[Condition Operators]`
+
+## Products (objectID: 16) — Cross-object prefix: `Products//`
+- Public Name — ID: `name` — Merge Field: `[Public Name]`
+- Internal Name — ID: `internal_name` — Merge Field: `[Internal Name]`
+- SKU — ID: `sku` — Merge Field: `[SKU]`
+- Price — ID: `price` — Merge Field: `[Price]`
+- Product Id — ID: `id` — Merge Field: `[Product Id]`
+- Quantity Purchased — ID: `total_purchases` — Merge Field: `[Quantity Purchased]`
+- Revenue — ID: `total_income` — Merge Field: `[Revenue]`
+- Date Created — ID: `date` — Merge Field: `[Date Created]`
+- Date Modified — ID: `dlm` — Merge Field: `[Date Modified]`
+
+## Custom Object Relationships (objectID: 102) — Cross-object prefix: `Custom Object Relationships//`
+- Related Object — ID: `related_object` — Merge Field: `[Related Object]`
+- Type — ID: `type` — Merge Field: `[Type]`
+- This Object Is — ID: `this_object` — Merge Field: `[This Object Is]`
+- ID — ID: `id` — Merge Field: `[ID]`
+- Name — ID: `relationship_name` — Merge Field: `[Name]`
+- Description — ID: `manual_description` — Merge Field: `[Description]`
+- This Object Field — ID: `this_object_field` — Merge Field: `[This Object Field]`
+- Related Object Field — ID: `related_object_field` — Merge Field: `[Related Object Field]`
+- Relationship Object — ID: `relationship_object` — Merge Field: `[Relationship Object]`
+
+## Partners (objectID: 36) — Cross-object prefix: `Partners//`
+- Partner Program — ID: `program_id` — Merge Field: `[Partner Program]`
+- Signup Date — ID: `date` — Merge Field: `[Signup Date]`
+- Total Refunds — ID: `refundtotal` — Merge Field: `[Total Refunds]`
+- Total Sales — ID: `sales` — Merge Field: `[Total Sales]`
+- Owed — ID: `owed` — Merge Field: `[Owed]`
+- Partner — ID: `contact_id` — Merge Field: `[Partner]`
+- Visits — ID: `visits` — Merge Field: `[Visits]`
+- Leads — ID: `optins` — Merge Field: `[Leads]`
+- # Sales — ID: `sale` — Merge Field: `[# Sales]`
+- # Refunds — ID: `refund` — Merge Field: `[# Refunds]`
+- Contact Label — ID: `contact_label` — Merge Field: `[Contact Label]`
+- Total Commission Paid — ID: `commish` — Merge Field: `[Total Commission Paid]`
+
+## Partner Programs (objectID: 35) — Cross-object prefix: `Partner Programs//`
+- Name — ID: `name` — Merge Field: `[Name]`
+- Partners — ID: `affiliates` — Merge Field: `[Partners]`
+- Total — ID: `sales_total` — Merge Field: `[Total]`
+- Program Type — ID: `program_type` — Merge Field: `[Program Type]`
+- Show partners information on declined charges — ID: `show_decline` — Merge Field: `[Show partners information on declined charges]`
+- Show partners complete purchase history for each referred client — ID: `show_complete_history` — Merge Field: `[Show partners complete purchase history for each referred client]`
+- Notify partner when they have earned a commission with an email — ID: `notify_affiliates` — Merge Field: `[Notify partner when they have earned a commission with an email]`
+- Select an email to send — ID: `message` — Merge Field: `[Select an email to send]`
+- Select how much information on referrals to share with partners — ID: `aff_program_display` — Merge Field: `[Select how much information on referrals to share with partners]`
+- Visits — ID: `visits` — Merge Field: `[Visits]`
+- Leads — ID: `leads` — Merge Field: `[Leads]`
+- Sales — ID: `sales` — Merge Field: `[Sales]`
+- Buyers — ID: `buyers` — Merge Field: `[Buyers]`
+- # Customers — ID: `customer_count` — Merge Field: `[# Customers]`
+- Commission Amount — ID: `sales_commission` — Merge Field: `[Commission Amount]`
+- Date Created — ID: `date` — Merge Field: `[Date Created]`
+- Date Modified — ID: `dlm` — Merge Field: `[Date Modified]`
+
+## Commissions (objectID: 38) — Cross-object prefix: `Commissions//`
+- Date Processed — ID: `date_processed` — Merge Field: `[Date Processed]`
+- Sale Amount — ID: `total` — Merge Field: `[Sale Amount]`
+- Commission — ID: `commission` — Merge Field: `[Commission]`
+- Date Paid — ID: `date_paid` — Merge Field: `[Date Paid]`
+- Status — ID: `status` — Merge Field: `[Status]`
+- Contact — ID: `contact_id` — Merge Field: `[Contact]`
+- Product — ID: `product_id` — Merge Field: `[Product]`
+- Partner — ID: `affiliate_id` — Merge Field: `[Partner]`
+- Transaction Date — ID: `date` — Merge Field: `[Transaction Date]`
+
+## Purchases (objectID: 17) — Cross-object prefix: `Purchases//`
+- Description — ID: `description` — Merge Field: `[Description]`
+- Purchase Tags — ID: `contact_cat` — Merge Field: `[Purchase Tags]`
+- Automations — ID: `updateCampaign` — Merge Field: `[Automations]`
+- Related Registration — ID: `f2969` — Merge Field: `[Related Registration]`
+- Quantity — ID: `quantity` — Merge Field: `[Quantity]`
+- Order Number — ID: `id` — Merge Field: `[Order Number]`
+- Price — ID: `price` — Merge Field: `[Price]`
+- Total Purchase — ID: `total_price` — Merge Field: `[Total Purchase]`
+- Discount — ID: `discount` — Merge Field: `[Discount]`
+- Status — ID: `status` — Merge Field: `[Status]`
+- Name — ID: `name` — Merge Field: `[Name]`
+- Partner — ID: `affiliate` — Merge Field: `[Partner]`
+- Coupon Code — ID: `coupon_code` — Merge Field: `[Coupon Code]`
+- Coupon Name — ID: `coupon_name` — Merge Field: `[Coupon Name]`
+- Date — ID: `date` — Merge Field: `[Date]`
+- Date Modified — ID: `dlm` — Merge Field: `[Date Modified]`
+- Owner — ID: `owner` — Merge Field: `[Owner]`
+- Contact — ID: `contact_id` — Merge Field: `[Contact]`
+- Product — ID: `product_id` — Merge Field: `[Product]`
+- Invoice — ID: `invoice_id` — Merge Field: `[Invoice]`
+- Last Activity — ID: `dla` — Merge Field: `[Last Activity]`
+
+## Invoices (objectID: 46) — Cross-object prefix: `Invoices//`
+- Credit Card — ID: `cc_id` — Merge Field: `[Credit Card]`
+- Balance — ID: `balance` — Merge Field: `[Balance]`
+- Invoice Date — ID: `invoice_date` — Merge Field: `[Invoice Date]`
+- Total Paid — ID: `total_paid` — Merge Field: `[Total Paid]`
+- Due Date — ID: `due_date` — Merge Field: `[Due Date]`
+- Invoice Closed Date — ID: `closed_date` — Merge Field: `[Invoice Closed Date]`
+- Last Recharge Date — ID: `last_recharge_date` — Merge Field: `[Last Recharge Date]`
+- Number of recharge attempts — ID: `recharge_attempts` — Merge Field: `[Number of recharge attempts]`
+- Type — ID: `type` — Merge Field: `[Type]`
+- Gateway — ID: `gateway_id` — Merge Field: `[Gateway]`
+- Total — ID: `total` — Merge Field: `[Total]`
+- Total Tax — ID: `tax` — Merge Field: `[Total Tax]`
+- Subtotal — ID: `subtotal` — Merge Field: `[Subtotal]`
+- Shipping — ID: `shipping` — Merge Field: `[Shipping]`
+- Tax City Amount — ID: `tax_city` — Merge Field: `[Tax City Amount]`
+- Tax State Amount — ID: `tax_state` — Merge Field: `[Tax State Amount]`
+- Tax County Amount — ID: `tax_county` — Merge Field: `[Tax County Amount]`
+- Original Transaction Amount — ID: `orig_trans_amount` — Merge Field: `[Original Transaction Amount]`
+- Tax Zip — ID: `zip` — Merge Field: `[Tax Zip]`
+- Tax City — ID: `city` — Merge Field: `[Tax City]`
+- Tax State — ID: `state` — Merge Field: `[Tax State]`
+- Tax County — ID: `county` — Merge Field: `[Tax County]`
+- Date Created — ID: `date` — Merge Field: `[Date Created]`
+- Date Modified — ID: `dlm` — Merge Field: `[Date Modified]`
+- Contact — ID: `contact_id` — Merge Field: `[Contact]`
+- Status — ID: `status` — Merge Field: `[Status]`
+- Invoice Number — ID: `id` — Merge Field: `[Invoice Number]`
+
+## Payments (objectID: 227) — Cross-object prefix: `Payments//`
+- Attempted Amount — ID: `total` — Merge Field: `[Attempted Amount]`
+- Total Paid — ID: `total_paid` — Merge Field: `[Total Paid]`
+- Payment method — ID: `payment_method` — Merge Field: `[Payment method]`
+- Status — ID: `status` — Merge Field: `[Status]`
+- Credit Card — ID: `cc_id` — Merge Field: `[Credit Card]`
+- Date created — ID: `date` — Merge Field: `[Date created]`
+- Contact — ID: `contact_id` — Merge Field: `[Contact]`
+- Type — ID: `type` — Merge Field: `[Type]`
+- Gateway — ID: `gateway_id` — Merge Field: `[Gateway]`
+- ID — ID: `id` — Merge Field: `[ID]`
+
+## Open Orders (objectID: 44) — Cross-object prefix: `Open Orders//`
+- Next Payment Date — ID: `payment_next_date` — Merge Field: `[Next Payment Date]`
+- Type — ID: `type` — Merge Field: `[Type]`
+- Payments Total — ID: `payment_total` — Merge Field: `[Payments Total]`
+- Payments Made — ID: `payment_made` — Merge Field: `[Payments Made]`
+- Payments Remaining — ID: `payment_remaning` — Merge Field: `[Payments Remaining]`
+- Length of Subscription (days) — ID: `length_of_sub` — Merge Field: `[Length of Subscription (days)]`
+- Billing Status — ID: `billing_status` — Merge Field: `[Billing Status]`
+- Contact — ID: `contact_id` — Merge Field: `[Contact]`
+- Product — ID: `product_id` — Merge Field: `[Product]`
+- Gateway — ID: `gateway_id` — Merge Field: `[Gateway]`
+- Payment Amount — ID: `payment_amount` — Merge Field: `[Payment Amount]`
+- Overdue Payment Amount — ID: `payment_due_amount` — Merge Field: `[Overdue Payment Amount]`
+- Next Payment Amount — ID: `total_price` — Merge Field: `[Next Payment Amount]`
+- Product Name — ID: `name` — Merge Field: `[Product Name]`
+- Signup Date — ID: `date` — Merge Field: `[Signup Date]`
+
+## Orders (objectID: 52) — Cross-object prefix: `Orders//`
+- Name — ID: `name` — Merge Field: `[Name]`
+- Status — ID: `status` — Merge Field: `[Status]`
+- Shipping Address — ID: `shipping_address` — Merge Field: `[Shipping Address]`
+- Shipping City — ID: `shipping_city` — Merge Field: `[Shipping City]`
+- Shipping State — ID: `shipping_state` — Merge Field: `[Shipping State]`
+- Shipping Zip / Postal Code — ID: `shipping_zip` — Merge Field: `[Shipping Zip / Postal Code]`
+- Next Charge Date — ID: `payment_next_date` — Merge Field: `[Next Charge Date]`
+- Transactions — ID: `transactions` — Merge Field: `[Transactions]`
+- Next Subtotal $ — ID: `next_sub` — Merge Field: `[Next Subtotal $]`
+- Next Tax $ — ID: `tax` — Merge Field: `[Next Tax $]`
+- Next Shipping $ — ID: `shipping` — Merge Field: `[Next Shipping $]`
+- Partner — ID: `affiliate` — Merge Field: `[Partner]`
+- Credit Card — ID: `cc_id` — Merge Field: `[Credit Card]`
+- Contact — ID: `contact_id` — Merge Field: `[Contact]`
+- Next Charge Amount — ID: `next_charge` — Merge Field: `[Next Charge Amount]`
+- Date Last Modified — ID: `dlm` — Merge Field: `[Date Last Modified]`
+- Signup date — ID: `date` — Merge Field: `[Signup date]`
+- Total Charged — ID: `charged` — Merge Field: `[Total Charged]`
+- ID — ID: `id` — Merge Field: `[ID]`
+- Transactions Remaining — ID: `transactions_remaining` — Merge Field: `[Transactions Remaining]`
+
+## Purchase History Logs (objectID: 30) — Cross-object prefix: `Purchase History Logs//`
+- Who — ID: `author` — Merge Field: `[Who]`
+- Details — ID: `details` — Merge Field: `[Details]`
+- Time — ID: `date` — Merge Field: `[Time]`
+
+## Taxes (objectID: 63) — Cross-object prefix: `Taxes//`
+- Name — ID: `name` — Merge Field: `[Name]`
+- Rate — ID: `rate` — Merge Field: `[Rate]`
+
+## Shipping Types (objectID: 64) — Cross-object prefix: `Shipping Types//`
+- Name — ID: `name` — Merge Field: `[Name]`
+- Price — ID: `price` — Merge Field: `[Price]`
+
+## Gateways (objectID: 70) — Cross-object prefix: `Gateways//`
+- Name — ID: `name` — Merge Field: `[Name]`
+- Date Created — ID: `date` — Merge Field: `[Date Created]`
+- Type — ID: `type` — Merge Field: `[Type]`
+- Status — ID: `status` — Merge Field: `[Status]`
+- Is Default — ID: `is_default` — Merge Field: `[Is Default]`
+
+## Tracked Links (objectID: 80) — Cross-object prefix: `Tracked Links//`
+- # Visits — ID: `n_visits` — Merge Field: `[# Visits]`
+- Name — ID: `name` — Merge Field: `[Name]`
+- Destination URL — ID: `url` — Merge Field: `[Destination URL]`
+- Date Created — ID: `date` — Merge Field: `[Date Created]`
+- Tracking URL Code — ID: `turl_code` — Merge Field: `[Tracking URL Code]`
+- Date Modified — ID: `dlm` — Merge Field: `[Date Modified]`
+
+## Referrals (objectID: 37) — Cross-object prefix: `Referrals//`
+- Purchased — ID: `purchase` — Merge Field: `[Purchased]`
+- Products Purchased — ID: `productnumb` — Merge Field: `[Products Purchased]`
+- Contact — ID: `contact_id` — Merge Field: `[Contact]`
+- Affiliate — ID: `affiliate_id` — Merge Field: `[Affiliate]`
+- Customer Since — ID: `date` — Merge Field: `[Customer Since]`
+
+## Credit Cards (objectID: 45) — Cross-object prefix: `Credit Cards//`
+- Billing City — ID: `city` — Merge Field: `[Billing City]`
+- Billing State — ID: `state` — Merge Field: `[Billing State]`
+- Card Number (last 4) — ID: `last4` — Merge Field: `[Card Number (last 4)]`
+- Card Expiration Month — ID: `exp_month` — Merge Field: `[Card Expiration Month]`
+- Card Expiration Year — ID: `exp_year` — Merge Field: `[Card Expiration Year]`
+- Billing Address — ID: `address` — Merge Field: `[Billing Address]`
+- Billing Address 2 — ID: `address2` — Merge Field: `[Billing Address 2]`
+- Billing Zip — ID: `zip` — Merge Field: `[Billing Zip]`
+- Billing Country — ID: `country` — Merge Field: `[Billing Country]`
+- Billing First Name — ID: `firstname` — Merge Field: `[Billing First Name]`
+- Billing Last Name — ID: `lastname` — Merge Field: `[Billing Last Name]`
+- Contact — ID: `contact_id` — Merge Field: `[Contact]`
+- Card Type — ID: `type` — Merge Field: `[Card Type]`
+- Card Status — ID: `status` — Merge Field: `[Card Status]`
+- Invoice — ID: `invoice_id` — Merge Field: `[Invoice]`
+
+## Log Items (objectID: 4) — Cross-object prefix: `Log Items//`
+- Sequence — ID: `drip_id` — Merge Field: `[Sequence]`
+- Message — ID: `item_id` — Merge Field: `[Message]`
+- Details — ID: `resource` — Merge Field: `[Details]`
+- Subject — ID: `topic` — Merge Field: `[Subject]`
+- Automation — ID: `campaign_id` — Merge Field: `[Automation]`
+- Status — ID: `status` — Merge Field: `[Status]`
+- Type — ID: `type` — Merge Field: `[Type]`
+- Time — ID: `date` — Merge Field: `[Time]`
+- Object — ID: `object_type_id` — Merge Field: `[Object]`
+- Parent Record ID — ID: `contact_id` — Merge Field: `[Parent Record ID]`
+
+## Automation Log Items (objectID: 100) — Cross-object prefix: `Automation Log Items//`
+- Contact — ID: `contact_id` — Merge Field: `[Contact]`
+- Description — ID: `description` — Merge Field: `[Description]`
+- Time — ID: `date` — Merge Field: `[Time]`
+- Type — ID: `what` — Merge Field: `[Type]`
+- Object — ID: `object_type_id` — Merge Field: `[Object]`
+
+## Tag Subscribers (objectID: 138) — Cross-object prefix: `Tag Subscribers//`
+- Tag — ID: `tag_id` — Merge Field: `[Tag]`
+- Parent Record ID — ID: `object_id` — Merge Field: `[Parent Record ID]`
+
+## Sequence Subscribers (objectID: 8) — Cross-object prefix: `Sequence Subscribers//`
+- Contact — ID: `contact_id` — Merge Field: `[Contact]`
+- Current Step — ID: `last_so` — Merge Field: `[Current Step]`
+- Subscribe Date — ID: `start_date` — Merge Field: `[Subscribe Date]`
+- Last Activity — ID: `last_date` — Merge Field: `[Last Activity]`
+- Emails Sent — ID: `emails_sent` — Merge Field: `[Emails Sent]`
+- Emails Opened — ID: `emails_opened` — Merge Field: `[Emails Opened]`
+- Emails Clicked — ID: `emails_clicked` — Merge Field: `[Emails Clicked]`
+- Status — ID: `pause` — Merge Field: `[Status]`
+- Emails Not Clicked — ID: `emails_notclicked` — Merge Field: `[Emails Not Clicked]`
+- Emails Not Opened — ID: `emails_notopened` — Merge Field: `[Emails Not Opened]`
+- Sequence — ID: `drip_id` — Merge Field: `[Sequence]`
+
+## Pages (objectID: 20) — Cross-object prefix: `Pages//`
+- Name — ID: `name` — Merge Field: `[Name]`
+- Domain — ID: `domain` — Merge Field: `[Domain]`
+- Visits — ID: `lpsent` — Merge Field: `[Visits]`
+- Conversions — ID: `lpconvert` — Merge Field: `[Conversions]`
+- Type — ID: `design_type` — Merge Field: `[Type]`
+- Unique Visits — ID: `unique_lpsent` — Merge Field: `[Unique Visits]`
+- Conversion Rate — ID: `unique_lpconvert` — Merge Field: `[Conversion Rate]`
+- Site — ID: `site_id` — Merge Field: `[Site]`
+- Date Modified — ID: `dlm` — Merge Field: `[Date Modified]`
+- Date Created — ID: `date` — Merge Field: `[Date Created]`
+
+## Sites (objectID: 157) — Cross-object prefix: `Sites//`
+- Visits — ID: `visits` — Merge Field: `[Visits]`
+- Unique Visits — ID: `unique_visits` — Merge Field: `[Unique Visits]`
+- Conversions — ID: `conversions` — Merge Field: `[Conversions]`
+- Unique Conversions — ID: `unique_conversions` — Merge Field: `[Unique Conversions]`
+- Name — ID: `name` — Merge Field: `[Name]`
+- Total Members — ID: `total_members` — Merge Field: `[Total Members]`
+- Domain — ID: `domain` — Merge Field: `[Domain]`
+- Active — ID: `active` — Merge Field: `[Active]`
+- Suspended — ID: `suspended` — Merge Field: `[Suspended]`
+- Disabled — ID: `disabled` — Merge Field: `[Disabled]`
+- Total Logins — ID: `total_logins` — Merge Field: `[Total Logins]`
+- Description — ID: `description` — Merge Field: `[Description]`
+- Date Created — ID: `date` — Merge Field: `[Date Created]`
+- Date Modified — ID: `dlm` — Merge Field: `[Date Modified]`
+
+## Messages (objectID: 7) — Cross-object prefix: `Messages//`
+- Subject — ID: `subject` — Merge Field: `[Subject]`
+- Spam Score — ID: `spam_score` — Merge Field: `[Spam Score]`
+- Name (editable) — ID: `alias` — Merge Field: `[Name]`
+- Type — ID: `type` — Merge Field: `[Type]`
+- Name (merge field) — ID: `name` — Merge Field: `[Name]`
+- Sent — ID: `mcsent` — Merge Field: `[Sent]`
+- Opened — ID: `mcopened` — Merge Field: `[Opened]`
+- Clicked — ID: `mcclicked` — Merge Field: `[Clicked]`
+- Complaints — ID: `mcabuse` — Merge Field: `[Complaints]`
+- Opt Outs — ID: `mcunsub` — Merge Field: `[Opt Outs]`
+- Date Created — ID: `date` — Merge Field: `[Date Created]`
+- Date Last Published — ID: `date_last_published` — Merge Field: `[Date Last Published]`
+- Not Opened — ID: `mcnotopened` — Merge Field: `[Not Opened]`
+- Not Clicked — ID: `mcnotclicked` — Merge Field: `[Not Clicked]`
+- Date Modified — ID: `dlm` — Merge Field: `[Date Modified]`
+- Published — ID: `is_published` — Merge Field: `[Published]`
+- Object — ID: `object_type_id` — Merge Field: `[Object]`
+
+## Notes (objectID: 12) — Cross-object prefix: `Notes//`
+- Note — ID: `data` — Merge Field: `[Note]`
+- Parent Record ID — ID: `contact_id` — Merge Field: `[Parent Record ID]`
+- Parent Object Type ID — ID: `object_type_id` — Merge Field: `[Parent Object Type ID]`
+- Date Created — ID: `time` — Merge Field: `[Date Created]`
+- Author — ID: `author` — Merge Field: `[Author]`
+- Date Modified — ID: `dlm` — Merge Field: `[Date Modified]`
+- Type — ID: `type` — Merge Field: `[Type]`
+
+## Tasks (objectID: 1) — Cross-object prefix: `Tasks//`
+- Date Due — ID: `date_due` — Merge Field: `[Date Due]`
+- Status — ID: `status` — Merge Field: `[Status]`
+- Assignee — ID: `owner` — Merge Field: `[Assignee]`
+- Sequence — ID: `drip_id` — Merge Field: `[Sequence]`
+- Type — ID: `type` — Merge Field: `[Type]`
+- Task — ID: `item_id` — Merge Field: `[Task]`
+- Contact — ID: `contact_id` — Merge Field: `[Contact]`
+- Outcome — ID: `call_outcome_id` — Merge Field: `[Outcome]`
+- Subject — ID: `subject` — Merge Field: `[Subject]`
+- Details — ID: `details` — Merge Field: `[Details]`
+- Date Complete — ID: `date_complete` — Merge Field: `[Date Complete]`
+- Object — ID: `object_type_id` — Merge Field: `[Object]`
+- Related Object — ID: `object_name` — Merge Field: `[Related Object]`
+
+## Task Outcomes (objectID: 66) — Cross-object prefix: `Task Outcomes//`
+- Name — ID: `name` — Merge Field: `[Name]`
+
+## Scheduled Broadcasts (objectID: 23) — Cross-object prefix: `Scheduled Broadcasts//`
+- Subject — ID: `topic` — Merge Field: `[Subject]`
+- Scheduled Delivery — ID: `schedule` — Merge Field: `[Scheduled Delivery]`
+- Processing — ID: `status` — Merge Field: `[Processing]`
+- Name — ID: `message_alias` — Merge Field: `[Name]`
+- Type — ID: `type` — Merge Field: `[Type]`
+- Recipients — ID: `contact_count` — Merge Field: `[Recipients]`
+- Object — ID: `object_type_id` — Merge Field: `[Object]`
+
+## Events (objectID: 10000) — Cross-object prefix: `Events//`
+- Communication Course Interest URL — ID: `f3049` — Merge Field: `[Communication Course Interest URL]`
+- Event Title — ID: `f3040` — Merge Field: `[Event Title]`
+- Course Supervisor Phone — ID: `f3090` — Merge Field: `[Course Supervisor Phone]`
+- Event Start Date — ID: `f2233` — Merge Field: `[Event Start Date]`
+- Format (in person, online, Hybrid) — ID: `f2234` — Merge Field: `[Format (in person, online, Hybrid)]`
+- Course — ID: `f2235` — Merge Field: `[Course]`
+- Translation — ID: `f2451` — Merge Field: `[Translation]`
+- Graduation Date — ID: `f2986` — Merge Field: `[Graduation Date]`
+- Graduation Day and Date — ID: `f2987` — Merge Field: `[Graduation Day and Date]`
+- Graduation End Time — ID: `f3019` — Merge Field: `[Graduation End Time]`
+- Event Start DayandDate — ID: `f2988` — Merge Field: `[Event Start DayandDate]`
+- Event End DayandDate — ID: `f2989` — Merge Field: `[Event End DayandDate]`
+- Event Time Zone — ID: `f2318` — Merge Field: `[Event Time Zone]`
+- Event Tuition — ID: `f2319` — Merge Field: `[Event Tuition]`
+- Event Location — ID: `f2320` — Merge Field: `[Event Location]`
+- Event Language — ID: `f2321` — Merge Field: `[Event Language]`
+- Calendar Time Zone (IANA) — ID: `f2757` — Merge Field: `[Calendar Time Zone (IANA)]`
+- Session Start Time — ID: `f2754` — Merge Field: `[Session Start Time]`
+- Session End Time — ID: `f2755` — Merge Field: `[Session End Time]`
+- Session Dates — ID: `f2753` — Merge Field: `[Session Dates]`
+- Event Meeting Pattern — ID: `f2756` — Merge Field: `[Event Meeting Pattern]`
+- Next Course Recommended Display — ID: `f2760` — Merge Field: `[Next Course Recommended Display]`
+- Todays Session (Day) — ID: `f3025` — Merge Field: `[Todays Session (Day)]`
+- Course Supervisor Name — ID: `f3089` — Merge Field: `[Course Supervisor Name]`
+- Capacity (Total Spots Avail) — ID: `f2405` — Merge Field: `[Capacity (Total Spots Avail)]`
+- Seats Remaining — ID: `f3020` — Merge Field: `[Seats Remaining]`
+- Event Leader — ID: `f2397` — Merge Field: `[Event Leader]`
+- Event Zoom Link: Participants — ID: `f2469` — Merge Field: `[Event Zoom Link: Participants]`
+- Event Zoom Link: Guests — ID: `f2470` — Merge Field: `[Event Zoom Link: Guests]`
+- Cal Start (UTC) — ID: `f2720` — Merge Field: `[Cal Start (UTC)]`
+- Cal End (UTC) — ID: `f2721` — Merge Field: `[Cal End (UTC)]`
+- Availability — ID: `f3012` — Merge Field: `[Availability]`
+- Event Leader Name — ID: `f3023` — Merge Field: `[Event Leader Name]`
+- Meeting Status — ID: `f3042` — Merge Field: `[Meeting Status]`
+- Non-Graduate Guests Per 100 — ID: `f2306` — Merge Field: `[Non-Graduate Guests Per 100]`
+- Graduate Guests per 100 — ID: `f2307` — Merge Field: `[Graduate Guests per 100]`
+- Event End Date — ID: `f2395` — Merge Field: `[Event End Date]`
+- Graduation Start Time — ID: `f2990` — Merge Field: `[Graduation Start Time]`
+- Workbook URL — ID: `f2708` — Merge Field: `[Workbook URL]`
+- Materials Video URL — ID: `f2709` — Merge Field: `[Materials Video URL]`
+- Day 1 Materials URL — ID: `f2710` — Merge Field: `[Day 1 Materials URL]`
+- Day 2 Materials URL — ID: `f2711` — Merge Field: `[Day 2 Materials URL]`
+- Day 1 Letter URL — ID: `f2712` — Merge Field: `[Day 1 Letter URL]`
+- Day 3 Materials URL — ID: `f2713` — Merge Field: `[Day 3 Materials URL]`
+- AC Materials URL — ID: `f2714` — Merge Field: `[AC Materials URL]`
+- Day 1 Agreements — ID: `f3026` — Merge Field: `[Day 1 Agreements]`
+- LM-Day 1 Assignments — ID: `f3027` — Merge Field: `[LM-Day 1 Assignments]`
+- LM-Day 1 Letter — ID: `f3028` — Merge Field: `[LM-Day 1 Letter]`
+- LM-Day 2 Assignment — ID: `f3029` — Merge Field: `[LM-Day 2 Assignment]`
+- LM-Day 2 Letter — ID: `f3030` — Merge Field: `[LM-Day 2 Letter]`
+- LM-Day 3 Follow Through — ID: `f3031` — Merge Field: `[LM-Day 3 Follow Through]`
+- Registration Contact Person 1 — ID: `f2751` — Merge Field: `[Registration Contact Person 1]`
+- Registration Contact Person 2 — ID: `f2762` — Merge Field: `[Registration Contact Person 2]`
+- Registration Support Phone — ID: `f2750` — Merge Field: `[Registration Support Phone]`
+- Subscriber Tuition — ID: `f2991` — Merge Field: `[Subscriber Tuition]`
+- Create Meeting — ID: `f3033` — Merge Field: `[Create Meeting]`
+- Zoom Meeting ID — ID: `f3034` — Merge Field: `[Zoom Meeting ID]`
+- Participant Unique Join Links Created? — ID: `f3043` — Merge Field: `[Participant Unique Join Links Created?]`
+- Zoom Day 1 Occurrence ID — ID: `f3035` — Merge Field: `[Zoom Day 1 Occurrence ID]`
+- Zoom Day 2 Occurrence ID — ID: `f3036` — Merge Field: `[Zoom Day 2 Occurrence ID]`
+- Zoom Day 3 Occurrence ID — ID: `f3037` — Merge Field: `[Zoom Day 3 Occurrence ID]`
+- Graduation Zoom Meeting ID — ID: `f3038` — Merge Field: `[Graduation Zoom Meeting ID]`
+- Vanto Info URL — ID: `f3047` — Merge Field: `[Vanto Info URL]`
+- Designated AC Start Date — ID: `f3071` — Merge Field: `[Designated AC Start Date]`
+- Upcoming Forum Dates PDF URL — ID: `f3077` — Merge Field: `[Upcoming Forum Dates PDF URL]`
+- Vanto Announcement URL — ID: `f3048` — Merge Field: `[Vanto Announcement URL]`
+- Couples Sharing Device — ID: `f3072` — Merge Field: `[Couples Sharing Device]`
+- Designated Seminar — ID: `f3078` — Merge Field: `[Designated Seminar]`
+- Double Devices — ID: `f3073` — Merge Field: `[Double Devices]`
+- Designated Advanced Course — ID: `f3079` — Merge Field: `[Designated Advanced Course]`
+- Automations — ID: `updateCampaign` — Merge Field: `[Automations]`
+- Event Tags — ID: `contact_cat` — Merge Field: `[Event Tags]`
+- Owner — ID: `owner` — Merge Field: `[Owner]`
+- Event Overview URL — ID: `page_102_url` — Merge Field: `[Event Overview URL]`
+- Event Overview template — ID: `page_102_template_id` — Merge Field: `[Event Overview template]`
+- Event Overview published — ID: `page_102_published` — Merge Field: `[Event Overview published]`
+- Forum Confirmation URL — ID: `page_108_url` — Merge Field: `[Forum Confirmation URL]`
+- Forum Confirmation template — ID: `page_108_template_id` — Merge Field: `[Forum Confirmation template]`
+- Forum Confirmation published — ID: `page_108_published` — Merge Field: `[Forum Confirmation published]`
+- Grad Adv. Course Registrations — ID: `f2341` — Merge Field: `[Grad Adv. Course Registrations]`
+- Grad Registrations — ID: `f2340` — Merge Field: `[Grad Registrations]`
+- # Grad Seminar Registrations — ID: `f2342` — Merge Field: `[# Grad Seminar Registrations]`
+- Grad-guests — ID: `f2339` — Merge Field: `[Grad-guests]`
+- # Guest Registrations into Forum — ID: `f2301` — Merge Field: `[# Guest Registrations into Forum]`
+- # Registrants — ID: `f2236` — Merge Field: `[# Registrants]`
+- # Invitations — ID: `f2266` — Merge Field: `[# Invitations]`
+- # Left Course — ID: `f2294` — Merge Field: `[# Left Course]`
+- # Graduate Seminar Registrations — ID: `f2305` — Merge Field: `[# Graduate Seminar Registrations]`
+- # of Invitations That Registered — ID: `f2467` — Merge Field: `[# of Invitations That Registered]`
+- # of Invitations Registered Non-Grad — ID: `f2468` — Merge Field: `[# of Invitations Registered Non-Grad]`
+- # Invitations (LF Tues Grad) — ID: `f2703` — Merge Field: `[# Invitations (LF Tues Grad)]`
+- # Non-grad guests* — ID: `f2369` — Merge Field: `[# Non-grad guests*]`
+- Participants Day One — ID: `f2689` — Merge Field: `[Participants Day One]`
+- Well Being Out — ID: `f2690` — Merge Field: `[Well Being Out]`
+- AC Potentials — ID: `f2691` — Merge Field: `[AC Potentials]`
+- AC Registrations — ID: `f2692` — Merge Field: `[AC Registrations]`
+- ID — ID: `id` — Merge Field: `[ID]`
+- Date Added — ID: `date` — Merge Field: `[Date Added]`
+- Last Activity — ID: `dla` — Merge Field: `[Last Activity]`
+- Last Email Received — ID: `date_last_email_received` — Merge Field: `[Last Email Received]`
+- Last SMS Sent — ID: `date_last_sms_sent` — Merge Field: `[Last SMS Sent]`
+- Profile Image — ID: `profile_image` — Merge Field: `[Profile Image]`
+- Unique ID — ID: `unique_id` — Merge Field: `[Unique ID]`
+- Last Note — ID: `last_note` — Merge Field: `[Last Note]`
+- Last Email Sent — ID: `date_last_email_sent` — Merge Field: `[Last Email Sent]`
+- Last Call Logged — ID: `date_last_call_logged` — Merge Field: `[Last Call Logged]`
+- Date Modified — ID: `dlm` — Merge Field: `[Date Modified]`
+- IP Address — ID: `ip_addy` — Merge Field: `[IP Address]`
+- Last SMS Received — ID: `date_last_sms_received` — Merge Field: `[Last SMS Received]`
+- Event Overview visits — ID: `page_102_visits` — Merge Field: `[Event Overview visits]`
+- Forum Confirmation visits — ID: `page_108_visits` — Merge Field: `[Forum Confirmation visits]`
+- Forum Confirmation unique visits — ID: `page_108_uvisits` — Merge Field: `[Forum Confirmation unique visits]`
+- Event Overview unique visits — ID: `page_102_uvisits` — Merge Field: `[Event Overview unique visits]`
+
+## Registrations (objectID: 10001) — Cross-object prefix: `Registrations//`
+- Registered for Advanced Course — ID: `f2302` — Merge Field: `[Registered for Advanced Course]`
+- Registered for Seminar — ID: `f2303` — Merge Field: `[Registered for Seminar]`
+- Registration Status — ID: `f2424` — Merge Field: `[Registration Status]`
+- Well Being Out — ID: `f2688` — Merge Field: `[Well Being Out]`
+- Automations — ID: `updateCampaign` — Merge Field: `[Automations]`
+- Registration Tags — ID: `contact_cat` — Merge Field: `[Registration Tags]`
+- Emergency Contact Name — ID: `f2574` — Merge Field: `[Emergency Contact Name]`
+- Emergency Contact Phone — ID: `f2575` — Merge Field: `[Emergency Contact Phone]`
+- Emergency Contact Relationship — ID: `f2576` — Merge Field: `[Emergency Contact Relationship]`
+- Coaching Call Availability — ID: `f2578` — Merge Field: `[Coaching Call Availability]`
+- Agreed to Registration Policies — ID: `f2585` — Merge Field: `[Agreed to Registration Policies]`
+- Interested In: TCP — ID: `f3075` — Merge Field: `[Interested In: TCP]`
+- Agreed to Privacy Policy — ID: `f2584` — Merge Field: `[Agreed to Privacy Policy]`
+- Agreed to Terms of Use — ID: `f2586` — Merge Field: `[Agreed to Terms of Use]`
+- Information Form Completed — ID: `f2579` — Merge Field: `[Information Form Completed]`
+- Is There Anything You'd Like Us to Know? — ID: `f2676` — Merge Field: `[Is There Anything You'd Like Us to Know?]`
+- Dietary Restrictions / Special Needs — ID: `f2580` — Merge Field: `[Dietary Restrictions / Special Needs]`
+- Forum Participants You Know — ID: `f2582` — Merge Field: `[Forum Participants You Know]`
+- What I Want to Accomplish — ID: `f2583` — Merge Field: `[What I Want to Accomplish]`
+- Zoom Registrant ID — ID: `f2794` — Merge Field: `[Zoom Registrant ID]`
+- Zoom Join URL — ID: `f2795` — Merge Field: `[Zoom Join URL]`
+- Zoom Provision Status — ID: `f2796` — Merge Field: `[Zoom Provision Status]`
+- Zoom Provision Error — ID: `f2797` — Merge Field: `[Zoom Provision Error]`
+- Zoom Registered At — ID: `f2800` — Merge Field: `[Zoom Registered At]`
+- Left Time — ID: `f3060` — Merge Field: `[Left Time]`
+- Grad Zoom Registrant ID — ID: `f2798` — Merge Field: `[Grad Zoom Registrant ID]`
+- Grad Zoom Join URL — ID: `f2799` — Merge Field: `[Grad Zoom Join URL]`
+- Attended Day 1 — ID: `f2801` — Merge Field: `[Attended Day 1]`
+- Attended Day 2 — ID: `f2802` — Merge Field: `[Attended Day 2]`
+- Attended Day 3 — ID: `f2803` — Merge Field: `[Attended Day 3]`
+- Attended Graduation — ID: `f2804` — Merge Field: `[Attended Graduation]`
+- Attendance Minutes Day 1 — ID: `f2805` — Merge Field: `[Attendance Minutes Day 1]`
+- Attendance Minutes Day 2 — ID: `f2806` — Merge Field: `[Attendance Minutes Day 2]`
+- Attendance Minutes Day 3 — ID: `f2807` — Merge Field: `[Attendance Minutes Day 3]`
+- Attendance Match Method — ID: `f2808` — Merge Field: `[Attendance Match Method]`
+- Forum Completed — ID: `f2809` — Merge Field: `[Forum Completed]`
+- Zoom Meeting ID — ID: `f2811` — Merge Field: `[Zoom Meeting ID]`
+- Zoom Participant ID — ID: `f2814` — Merge Field: `[Zoom Participant ID]`
+- Zoom Participant UUID — ID: `f2817` — Merge Field: `[Zoom Participant UUID]`
+- Zoom Display Name — ID: `f2827` — Merge Field: `[Zoom Display Name]`
+- Attendance Match Status — ID: `f2832` — Merge Field: `[Attendance Match Status]`
+- Attendance Match Notes — ID: `f2840` — Merge Field: `[Attendance Match Notes]`
+- Manual Attendance Match — ID: `f2845` — Merge Field: `[Manual Attendance Match]`
+- Attendance Review Required — ID: `f2849` — Merge Field: `[Attendance Review Required]`
+- Currently Present — ID: `f2853` — Merge Field: `[Currently Present]`
+- First Join Time — ID: `f2855` — Merge Field: `[First Join Time]`
+- Most Recent Join Time — ID: `f2859` — Merge Field: `[Most Recent Join Time]`
+- Most Recent Leave Time — ID: `f2862` — Merge Field: `[Most Recent Leave Time]`
+- Final Leave Time — ID: `f2865` — Merge Field: `[Final Leave Time]`
+- Total Attendance Minutes — ID: `f2867` — Merge Field: `[Total Attendance Minutes]`
+- Join Count — ID: `f2871` — Merge Field: `[Join Count]`
+- Active Zoom Connections — ID: `f2873` — Merge Field: `[Active Zoom Connections]`
+- Left The Course — ID: `f2293` — Merge Field: `[Left The Course]`
+- Registration External Key — ID: `f2820` — Merge Field: `[Registration External Key]`
+- Registration Financial Status — ID: `f2824` — Merge Field: `[Registration Financial Status]`
+- Course Type — ID: `f2830` — Merge Field: `[Course Type]`
+- Price Type — ID: `f2835` — Merge Field: `[Price Type]`
+- Product ID — ID: `f2841` — Merge Field: `[Product ID]`
+- Purchase ID — ID: `f2844` — Merge Field: `[Purchase ID]`
+- Invoice ID — ID: `f2848` — Merge Field: `[Invoice ID]`
+- Gross Price — ID: `f2854` — Merge Field: `[Gross Price]`
+- Discount Amount — ID: `f2857` — Merge Field: `[Discount Amount]`
+- Net Booked Amount — ID: `f2860` — Merge Field: `[Net Booked Amount]`
+- Cash Collected — ID: `f2863` — Merge Field: `[Cash Collected]`
+- Refund Amount — ID: `f2866` — Merge Field: `[Refund Amount]`
+- Net Revenue — ID: `f2869` — Merge Field: `[Net Revenue]`
+- Outstanding Balance — ID: `f2872` — Merge Field: `[Outstanding Balance]`
+- Purchase Date — ID: `f2874` — Merge Field: `[Purchase Date]`
+- Financial Sync Status — ID: `f2875` — Merge Field: `[Financial Sync Status]`
+- Last Financial Sync — ID: `f2876` — Merge Field: `[Last Financial Sync]`
+- Financial Sync Error — ID: `f2877` — Merge Field: `[Financial Sync Error]`
+- Test Registration — ID: `f2878` — Merge Field: `[Test Registration]`
+- Payment Record — ID: `f2970` — Merge Field: `[Payment Record]`
+- Seminar Potential Status — ID: `f2882` — Merge Field: `[Seminar Potential Status]`
+- Seminar Non-Potential Reason — ID: `f2883` — Merge Field: `[Seminar Non-Potential Reason]`
+- Seminar Confirmation Status — ID: `f2884` — Merge Field: `[Seminar Confirmation Status]`
+- Seminar Course Choice — ID: `f2885` — Merge Field: `[Seminar Course Choice]`
+- Seminar Notes — ID: `f2886` — Merge Field: `[Seminar Notes]`
+- AC Potential Status — ID: `f2887` — Merge Field: `[AC Potential Status]`
+- AC Non-Potential Reason — ID: `f2888` — Merge Field: `[AC Non-Potential Reason]`
+- AC Registration Status — ID: `f2889` — Merge Field: `[AC Registration Status]`
+- AC Course Choice — ID: `f2890` — Merge Field: `[AC Course Choice]`
+- AC Registration Notes — ID: `f2891` — Merge Field: `[AC Registration Notes]`
+- SUP: Name — ID: `f2995` — Merge Field: `[SUP: Name]`
+- SUP: Email — ID: `f2996` — Merge Field: `[SUP: Email]`
+- SUP: Phone — ID: `f2997` — Merge Field: `[SUP: Phone]`
+- SUP: How to reach - EMAIL — ID: `f2999` — Merge Field: `[SUP: How to reach - EMAIL]`
+- SUP: How to reach - CALL — ID: `f3000` — Merge Field: `[SUP: How to reach - CALL]`
+- SCHE: Name — ID: `f3001` — Merge Field: `[SCHE: Name]`
+- SCHE: Email — ID: `f3002` — Merge Field: `[SCHE: Email]`
+- SCHE: Phone — ID: `f3003` — Merge Field: `[SCHE: Phone]`
+- SCHE: Best Time — ID: `f3004` — Merge Field: `[SCHE: Best Time]`
+- SCHE: Anything Youd like us to know? — ID: `f3005` — Merge Field: `[SCHE: Anything Youd like us to know?]`
+- Reviewer — ID: `f3044` — Merge Field: `[Reviewer]`
+- SE Reason — ID: `f3053` — Merge Field: `[SE Reason]`
+- Left Type — ID: `f3056` — Merge Field: `[Left Type]`
+- Left Day — ID: `f3059` — Merge Field: `[Left Day]`
+- FS Late Arrival — ID: `f3062` — Merge Field: `[FS Late Arrival]`
+- AC Potential — ID: `f3065` — Merge Field: `[AC Potential]`
+- Classification Override Note — ID: `f3068` — Merge Field: `[Classification Override Note]`
+- Pricing Category — ID: `f3045` — Merge Field: `[Pricing Category]`
+- D3S3 Checkpoint — ID: `f3054` — Merge Field: `[D3S3 Checkpoint]`
+- Seminar Potential — ID: `f3057` — Merge Field: `[Seminar Potential]`
+- Interested In: Assisting — ID: `f3063` — Merge Field: `[Interested In: Assisting]`
+- Which AC — ID: `f3066` — Merge Field: `[Which AC]`
+- PSS Status Code — ID: `f3069` — Merge Field: `[PSS Status Code]`
+- Statistically Excluded — ID: `f3046` — Merge Field: `[Statistically Excluded]`
+- D3S4 Attended — ID: `f3055` — Merge Field: `[D3S4 Attended]`
+- Which Seminar — ID: `f3058` — Merge Field: `[Which Seminar]`
+- Post Event published — ID: `page_121_published` — Merge Field: `[Post Event published]`
+- Interested In: Family Division — ID: `f3074` — Merge Field: `[Interested In: Family Division]`
+- Leave Reason — ID: `f3061` — Merge Field: `[Leave Reason]`
+- Interested In: Vanto — ID: `f3064` — Merge Field: `[Interested In: Vanto]`
+- AC Reg Date — ID: `f3067` — Merge Field: `[AC Reg Date]`
+- PSS Eligible Return Date — ID: `f3070` — Merge Field: `[PSS Eligible Return Date]`
+- Classification Override Reason — ID: `f3076` — Merge Field: `[Classification Override Reason]`
+- Owner — ID: `owner` — Merge Field: `[Owner]`
+- Temp Page ID — ID: `f2283` — Merge Field: `[Temp Page ID]`
+- CS: Participant Status and Toggle URL — ID: `page_103_url` — Merge Field: `[CS: Participant Status and Toggle URL]`
+- Invite your friends URL — ID: `page_104_url` — Merge Field: `[Invite your friends URL]`
+- Invite your friends template — ID: `page_104_template_id` — Merge Field: `[Invite your friends template]`
+- Invite your friends published — ID: `page_104_published` — Merge Field: `[Invite your friends published]`
+- Source Invitation — ID: `f2465` — Merge Field: `[Source Invitation]`
+- Participant Advanced/Seminar Signup URL — ID: `page_107_url` — Merge Field: `[Participant Advanced/Seminar Signup URL]`
+- Participant Advanced/Seminar Signup template — ID: `page_107_template_id` — Merge Field: `[Participant Advanced/Seminar Signup template]`
+- Participant Advanced/Seminar Signup published — ID: `page_107_published` — Merge Field: `[Participant Advanced/Seminar Signup published]`
+- Registration Confirmation URL — ID: `page_112_url` — Merge Field: `[Registration Confirmation URL]`
+- Registration Confirmation template — ID: `page_112_template_id` — Merge Field: `[Registration Confirmation template]`
+- Registration Confirmation published — ID: `page_112_published` — Merge Field: `[Registration Confirmation published]`
+- REG : Registration Complete (Pilot) URL — ID: `page_113_url` — Merge Field: `[REG : Registration Complete (Pilot) URL]`
+- REG : Registration Complete (Pilot) template — ID: `page_113_template_id` — Merge Field: `[REG : Registration Complete (Pilot) template]`
+- REG : Registration Complete (Pilot) published — ID: `page_113_published` — Merge Field: `[REG : Registration Complete (Pilot) published]`
+- Student Portal URL — ID: `page_114_url` — Merge Field: `[Student Portal URL]`
+- Graduation Zoom Meeting ID — ID: `f3039` — Merge Field: `[Graduation Zoom Meeting ID]`
+- Student Portal template — ID: `page_114_template_id` — Merge Field: `[Student Portal template]`
+- Student Portal published — ID: `page_114_published` — Merge Field: `[Student Portal published]`
+- Bring A Buddy URL — ID: `page_115_url` — Merge Field: `[Bring A Buddy URL]`
+- Bring A Buddy template — ID: `page_115_template_id` — Merge Field: `[Bring A Buddy template]`
+- Bring A Buddy published — ID: `page_115_published` — Merge Field: `[Bring A Buddy published]`
+- Registration Complete URL — ID: `page_116_url` — Merge Field: `[Registration Complete URL]`
+- Registration Complete template — ID: `page_116_template_id` — Merge Field: `[Registration Complete template]`
+- Registration Complete published — ID: `page_116_published` — Merge Field: `[Registration Complete published]`
+- Registration Completed URL — ID: `page_117_url` — Merge Field: `[Registration Completed URL]`
+- Registration Completed template — ID: `page_117_template_id` — Merge Field: `[Registration Completed template]`
+- Registration Completed published — ID: `page_117_published` — Merge Field: `[Registration Completed published]`
+- REG : Registration Confirmation (Pilot) template — ID: `page_118_template_id` — Merge Field: `[REG : Registration Confirmation (Pilot) template]`
+- REG : Registration Confirmation (Pilot) published — ID: `page_118_published` — Merge Field: `[REG : Registration Confirmation (Pilot) published]`
+- Available Seminars URL — ID: `page_119_url` — Merge Field: `[Available Seminars URL]`
+- Available Seminars template — ID: `page_119_template_id` — Merge Field: `[Available Seminars template]`
+- Available Seminars published — ID: `page_119_published` — Merge Field: `[Available Seminars published]`
+- Pre-Event Page URL — ID: `page_120_url` — Merge Field: `[Pre-Event Page URL]`
+- Pre-Event Page template — ID: `page_120_template_id` — Merge Field: `[Pre-Event Page template]`
+- Pre-Event Page published — ID: `page_120_published` — Merge Field: `[Pre-Event Page published]`
+- Forum Journey URL — ID: `page_122_url` — Merge Field: `[Forum Journey URL]`
+- Forum Journey template — ID: `page_122_template_id` — Merge Field: `[Forum Journey template]`
+- Forum Journey published — ID: `page_122_published` — Merge Field: `[Forum Journey published]`
+- Advance Course - Choose Your Dates URL — ID: `page_123_url` — Merge Field: `[Advance Course - Choose Your Dates URL]`
+- Advance Course - Choose Your Dates template — ID: `page_123_template_id` — Merge Field: `[Advance Course - Choose Your Dates template]`
+- Advance Course - Choose Your Dates published — ID: `page_123_published` — Merge Field: `[Advance Course - Choose Your Dates published]`
+- Forum Dates URL — ID: `page_124_url` — Merge Field: `[Forum Dates URL]`
+- Forum Dates template — ID: `page_124_template_id` — Merge Field: `[Forum Dates template]`
+- Forum Dates published — ID: `page_124_published` — Merge Field: `[Forum Dates published]`
+- Post Event URL — ID: `page_121_url` — Merge Field: `[Post Event URL]`
+- Post Event template — ID: `page_121_template_id` — Merge Field: `[Post Event template]`
+- During Event URL — ID: `page_125_url` — Merge Field: `[During Event URL]`
+- During Event template — ID: `page_125_template_id` — Merge Field: `[During Event template]`
+- During Event published — ID: `page_125_published` — Merge Field: `[During Event published]`
+- Zoom Email — ID: `f2822` — Merge Field: `[Zoom Email]`
+- Email — ID: `f2674` — Merge Field: `[Email]`
+- SUP: How Can We Help? — ID: `f2998` — Merge Field: `[SUP: How Can We Help?]`
+- Event — ID: `f2214` — Merge Field: `[Event]`
+- Registration Date — ID: `f2237` — Merge Field: `[Registration Date]`
+- Registration Expiry Date — ID: `f2662` — Merge Field: `[Registration Expiry Date]`
+- Feedback Form — ID: `f2992` — Merge Field: `[Feedback Form]`
+- Course — ID: `f2458` — Merge Field: `[Course]`
+- Has Attended the Forum — ID: `f2464` — Merge Field: `[Has Attended the Forum]`
+- Can't Attend First Session? — ID: `f2761` — Merge Field: `[Can't Attend First Session?]`
+- Prefered Communication (Email/Call) — ID: `f2993` — Merge Field: `[Prefered Communication (Email]`
+- Support Request Form — ID: `f2994` — Merge Field: `[Support Request Form]`
+- Day 1 Attended — ID: `f2687` — Merge Field: `[Day 1 Attended]`
+- FDBK: Feedback — ID: `f3006` — Merge Field: `[FDBK: Feedback]`
+- Bulk Email Status — ID: `bulk_mail` — Merge Field: `[Bulk Email Status]`
+- REG : Registration Confirmation (Pilot) URL — ID: `page_118_url` — Merge Field: `[REG : Registration Confirmation (Pilot) URL]`
+- CS: Participant Status and Toggle template — ID: `page_103_template_id` — Merge Field: `[CS: Participant Status and Toggle template]`
+- CS: Participant Status and Toggle published — ID: `page_103_published` — Merge Field: `[CS: Participant Status and Toggle published]`
+- Contact — ID: `f2213` — Merge Field: `[Contact]`
+- Forum Check: Course from Event (readonly) — ID: `f3080` — Merge Field: `[Forum Check: Course from Event]`
+- Last SMS Received — ID: `date_last_sms_received` — Merge Field: `[Last SMS Received]`
+- Post Event unique visits — ID: `page_121_uvisits` — Merge Field: `[Post Event unique visits]`
+- Countdown Timer Starting Reference — ID: `f3086` — Merge Field: `[Countdown Timer Starting Reference]`
+- ID — ID: `id` — Merge Field: `[ID]`
+- Date Added — ID: `date` — Merge Field: `[Date Added]`
+- Last Activity — ID: `dla` — Merge Field: `[Last Activity]`
+- Last Email Received — ID: `date_last_email_received` — Merge Field: `[Last Email Received]`
+- Last SMS Sent — ID: `date_last_sms_sent` — Merge Field: `[Last SMS Sent]`
+- Profile Image — ID: `profile_image` — Merge Field: `[Profile Image]`
+- Unique ID — ID: `unique_id` — Merge Field: `[Unique ID]`
+- Last Note — ID: `last_note` — Merge Field: `[Last Note]`
+- Last Email Sent — ID: `date_last_email_sent` — Merge Field: `[Last Email Sent]`
+- Last Call Logged — ID: `date_last_call_logged` — Merge Field: `[Last Call Logged]`
+- Date Modified — ID: `dlm` — Merge Field: `[Date Modified]`
+- IP Address — ID: `ip_addy` — Merge Field: `[IP Address]`
+- Invite your friends visits — ID: `page_104_visits` — Merge Field: `[Invite your friends visits]`
+- Invite your friends unique visits — ID: `page_104_uvisits` — Merge Field: `[Invite your friends unique visits]`
+- Participant Advanced/Seminar Signup visits — ID: `page_107_visits` — Merge Field: `[Participant Advanced/Seminar Signup visits]`
+- Participant Advanced/Seminar Signup unique visits — ID: `page_107_uvisits` — Merge Field: `[Participant Advanced/Seminar Signup unique visits]`
+- Registration Confirmation visits — ID: `page_112_visits` — Merge Field: `[Registration Confirmation visits]`
+- Registration Confirmation unique visits — ID: `page_112_uvisits` — Merge Field: `[Registration Confirmation unique visits]`
+- REG : Registration Complete (Pilot) visits — ID: `page_113_visits` — Merge Field: `[REG : Registration Complete (Pilot) visits]`
+- REG : Registration Complete (Pilot) unique visits — ID: `page_113_uvisits` — Merge Field: `[REG : Registration Complete (Pilot) unique visits]`
+- Student Portal visits — ID: `page_114_visits` — Merge Field: `[Student Portal visits]`
+- Student Portal unique visits — ID: `page_114_uvisits` — Merge Field: `[Student Portal unique visits]`
+- Bring A Buddy visits — ID: `page_115_visits` — Merge Field: `[Bring A Buddy visits]`
+- Bring A Buddy unique visits — ID: `page_115_uvisits` — Merge Field: `[Bring A Buddy unique visits]`
+- Registration Complete visits — ID: `page_116_visits` — Merge Field: `[Registration Complete visits]`
+- Registration Complete unique visits — ID: `page_116_uvisits` — Merge Field: `[Registration Complete unique visits]`
+- Registration Completed visits — ID: `page_117_visits` — Merge Field: `[Registration Completed visits]`
+- Registration Completed unique visits — ID: `page_117_uvisits` — Merge Field: `[Registration Completed unique visits]`
+- REG : Registration Confirmation (Pilot) visits — ID: `page_118_visits` — Merge Field: `[REG : Registration Confirmation (Pilot) visits]`
+- REG : Registration Confirmation (Pilot) unique visits — ID: `page_118_uvisits` — Merge Field: `[REG : Registration Confirmation (Pilot) unique visits]`
+- Available Seminars visits — ID: `page_119_visits` — Merge Field: `[Available Seminars visits]`
+- Available Seminars unique visits — ID: `page_119_uvisits` — Merge Field: `[Available Seminars unique visits]`
+- Pre-Event Page visits — ID: `page_120_visits` — Merge Field: `[Pre-Event Page visits]`
+- Pre-Event Page unique visits — ID: `page_120_uvisits` — Merge Field: `[Pre-Event Page unique visits]`
+- Advance Course - Choose Your Dates visits — ID: `page_123_visits` — Merge Field: `[Advance Course - Choose Your Dates visits]`
+- Advance Course - Choose Your Dates unique visits — ID: `page_123_uvisits` — Merge Field: `[Advance Course - Choose Your Dates unique visits]`
+- Forum Dates visits — ID: `page_124_visits` — Merge Field: `[Forum Dates visits]`
+- Forum Dates unique visits — ID: `page_124_uvisits` — Merge Field: `[Forum Dates unique visits]`
+- Post Event visits — ID: `page_121_visits` — Merge Field: `[Post Event visits]`
+- During Event visits — ID: `page_125_visits` — Merge Field: `[During Event visits]`
+- During Event unique visits — ID: `page_125_uvisits` — Merge Field: `[During Event unique visits]`
+- # Invitations — ID: `f2272` — Merge Field: `[# Invitations]`
+- Event Start Date — ID: `f2394` — Merge Field: `[Event Start Date]`
+- CS: Participant Status and Toggle visits — ID: `page_103_visits` — Merge Field: `[CS: Participant Status and Toggle visits]`
+- CS: Participant Status and Toggle unique visits — ID: `page_103_uvisits` — Merge Field: `[CS: Participant Status and Toggle unique visits]`
+- Forum Journey visits — ID: `page_122_visits` — Merge Field: `[Forum Journey visits]`
+- Forum Journey unique visits — ID: `page_122_uvisits` — Merge Field: `[Forum Journey unique visits]`
+
+## Courses (objectID: 10002) — Cross-object prefix: `Courses//`
+- Owner — ID: `owner` — Merge Field: `[Owner]`
+- Course Overview URL — ID: `page_101_url` — Merge Field: `[Course Overview URL]`
+- Course Logo — ID: `f2363` — Merge Field: `[Course Logo]`
+- Testimonial 2 Name — ID: `f2439` — Merge Field: `[Testimonial 2 Name]`
+- Automations — ID: `updateCampaign` — Merge Field: `[Automations]`
+- Course Tags — ID: `contact_cat` — Merge Field: `[Course Tags]`
+- Course Tuition text type field — ID: `f2749` — Merge Field: `[Course Tuition text type field]`
+- Course Name — ID: `f2231` — Merge Field: `[Course Name]`
+- Course Tagline — ID: `f2362` — Merge Field: `[Course Tagline]`
+- Course's Completion / Guest Event Start Time — ID: `f2398` — Merge Field: `[Course's Completion / Guest Event Start Time]`
+- Tuition Label — ID: `f2746` — Merge Field: `[Tuition Label]`
+- Course Tuition — ID: `f2367` — Merge Field: `[Course Tuition]`
+- Program — ID: `f2388` — Merge Field: `[Program]`
+- Prerequisite(s) — ID: `f2393` — Merge Field: `[Prerequisite(s)]`
+- Course Description* — ID: `f2396` — Merge Field: `[Course Description*]`
+- Learn More Button Label — ID: `f2744` — Merge Field: `[Learn More Button Label]`
+- Course Prereq Field Label — ID: `f2745` — Merge Field: `[Course Prereq Field Label]`
+- Course Overview Page Footer — ID: `f2747` — Merge Field: `[Course Overview Page Footer]`
+- URL of Privacy & Terms — ID: `f2748` — Merge Field: `[URL of Privacy & Terms]`
+- Day 1 Course Summary — ID: `f2412` — Merge Field: `[Day 1 Course Summary]`
+- Day 2 Course Summary — ID: `f2413` — Merge Field: `[Day 2 Course Summary]`
+- Day 3 Course Summary — ID: `f2414` — Merge Field: `[Day 3 Course Summary]`
+- Day 5 Course Summary — ID: `f2416` — Merge Field: `[Day 5 Course Summary]`
+- Day 6 Course Summary — ID: `f2417` — Merge Field: `[Day 6 Course Summary]`
+- Day 1 Homework — ID: `f2418` — Merge Field: `[Day 1 Homework]`
+- Day 2 Homework — ID: `f2419` — Merge Field: `[Day 2 Homework]`
+- Day 3 Homework — ID: `f2420` — Merge Field: `[Day 3 Homework]`
+- Day 4 Homework — ID: `f2421` — Merge Field: `[Day 4 Homework]`
+- Day 5 Homework — ID: `f2422` — Merge Field: `[Day 5 Homework]`
+- Day 6 Homework — ID: `f2423` — Merge Field: `[Day 6 Homework]`
+- Checkout - Headline — ID: `f2425` — Merge Field: `[Checkout - Headline]`
+- Checkout - Subheadline — ID: `f2426` — Merge Field: `[Checkout - Subheadline]`
+- Checkout - Tagline — ID: `f2427` — Merge Field: `[Checkout - Tagline]`
+- Checkout - Highlights 1 — ID: `f2441` — Merge Field: `[Checkout - Highlights 1]`
+- Checkout - Highlights 2 — ID: `f2442` — Merge Field: `[Checkout - Highlights 2]`
+- Checkout - Highlights 3 — ID: `f2443` — Merge Field: `[Checkout - Highlights 3]`
+- Checkout - Includes Title — ID: `f2429` — Merge Field: `[Checkout - Includes Title]`
+- Checkout - Includes Content — ID: `f2430` — Merge Field: `[Checkout - Includes Content]`
+- Checkout - Post Button Note — ID: `f2431` — Merge Field: `[Checkout - Post Button Note]`
+- Checkout - Next Event Start Date — ID: `f2447` — Merge Field: `[Checkout - Next Event Start Date]`
+- Testimonial 1 Quote — ID: `f2433` — Merge Field: `[Testimonial 1 Quote]`
+- Testimonial 1 Name — ID: `f2434` — Merge Field: `[Testimonial 1 Name]`
+- Testimonial 1 Title — ID: `f2435` — Merge Field: `[Testimonial 1 Title]`
+- Testimonial 2 Quote — ID: `f2438` — Merge Field: `[Testimonial 2 Quote]`
+- Testimonial 2 Title — ID: `f2440` — Merge Field: `[Testimonial 2 Title]`
+- Day 4 Course Summary — ID: `f2415` — Merge Field: `[Day 4 Course Summary]`
+- Testimonial 1 Image — ID: `f2444` — Merge Field: `[Testimonial 1 Image]`
+- Testimonial 2 Image — ID: `f2445` — Merge Field: `[Testimonial 2 Image]`
+- Course Image — ID: `f2364` — Merge Field: `[Course Image]`
+- Course Overview template — ID: `page_101_template_id` — Merge Field: `[Course Overview template]`
+- Course Overview published — ID: `page_101_published` — Merge Field: `[Course Overview published]`
+- Date Added — ID: `date` — Merge Field: `[Date Added]`
+- Last Activity — ID: `dla` — Merge Field: `[Last Activity]`
+- Last SMS Received — ID: `date_last_sms_received` — Merge Field: `[Last SMS Received]`
+- Last Call Logged — ID: `date_last_call_logged` — Merge Field: `[Last Call Logged]`
+- Date Modified — ID: `dlm` — Merge Field: `[Date Modified]`
+- ID — ID: `id` — Merge Field: `[ID]`
+- Last Email Received — ID: `date_last_email_received` — Merge Field: `[Last Email Received]`
+- Last SMS Sent — ID: `date_last_sms_sent` — Merge Field: `[Last SMS Sent]`
+- Last Email Sent — ID: `date_last_email_sent` — Merge Field: `[Last Email Sent]`
+- # Upcoming Events — ID: `f2238` — Merge Field: `[# Upcoming Events]`
+- # Events (All Time) — ID: `f2239` — Merge Field: `[# Events (All Time)]`
+- Last Note — ID: `last_note` — Merge Field: `[Last Note]`
+- IP Address — ID: `ip_addy` — Merge Field: `[IP Address]`
+- Profile Image — ID: `profile_image` — Merge Field: `[Profile Image]`
+- Unique ID — ID: `unique_id` — Merge Field: `[Unique ID]`
+- Course Overview visits — ID: `page_101_visits` — Merge Field: `[Course Overview visits]`
+- Course Overview unique visits — ID: `page_101_uvisits` — Merge Field: `[Course Overview unique visits]`
+
+## Invitations (objectID: 10003) — Cross-object prefix: `Invitations//`
+- Participant — ID: `f2257` — Merge Field: `[Participant]`
+- Event — ID: `f2258` — Merge Field: `[Event]`
+- Guest — ID: `f2259` — Merge Field: `[Guest]`
+- Participant's Registration — ID: `f2260` — Merge Field: `[Participant's Registration]`
+- Guest is a graduate — ID: `f2292` — Merge Field: `[Guest is a graduate]`
+- Non-Potential Reason — ID: `f3050` — Merge Field: `[Non-Potential Reason]`
+- SE Exception — ID: `f3051` — Merge Field: `[SE Exception]`
+- SE Exception Reason — ID: `f3052` — Merge Field: `[SE Exception Reason]`
+- Buddy Offer End — ID: `f3082` — Merge Field: `[Buddy Offer End]`
+- Buddy Offer End (ms) — ID: `f3083` — Merge Field: `[Buddy Offer End (ms)]`
+- Buddy Coupon Code — ID: `f3084` — Merge Field: `[Buddy Coupon Code]`
+- LF Checkout Pg Link — ID: `f2472` — Merge Field: `[LF Checkout Pg Link]`
+- Personal Message to Guest — ID: `f2581` — Merge Field: `[Personal Message to Guest]`
+- Registered for Forum — ID: `f2299` — Merge Field: `[Registered for Forum]`
+- Registered for Advanced Course — ID: `f2298` — Merge Field: `[Registered for Advanced Course]`
+- Registered for Seminar — ID: `f2300` — Merge Field: `[Registered for Seminar]`
+- Automations — ID: `updateCampaign` — Merge Field: `[Automations]`
+- Invitation Tags — ID: `contact_cat` — Merge Field: `[Invitation Tags]`
+- Invitation Type — ID: `f2694` — Merge Field: `[Invitation Type]`
+- Attended Final Session — ID: `f2964` — Merge Field: `[Attended Final Session]`
+- Is guest a grad of The Landmark Forum? — ID: `f2337` — Merge Field: `[Is guest a grad of The Landmark Forum?]`
+- Resulting Registration — ID: `f2466` — Merge Field: `[Resulting Registration]`
+- Owner — ID: `owner` — Merge Field: `[Owner]`
+- Temp Page ID — ID: `f2284` — Merge Field: `[Temp Page ID]`
+- Guest Signup Form URL — ID: `page_105_url` — Merge Field: `[Guest Signup Form URL]`
+- Guest Signup Form template — ID: `page_105_template_id` — Merge Field: `[Guest Signup Form template]`
+- Guest Signup Form published — ID: `page_105_published` — Merge Field: `[Guest Signup Form published]`
+- Event ID — ID: `f2954` — Merge Field: `[Event ID]`
+- Inviting Registration ID — ID: `f2955` — Merge Field: `[Inviting Registration ID]`
+- Inviter Contact ID — ID: `f2956` — Merge Field: `[Inviter Contact ID]`
+- Guest Contact ID — ID: `f2957` — Merge Field: `[Guest Contact ID]`
+- Resulting Registration ID — ID: `f2958` — Merge Field: `[Resulting Registration ID]`
+- Guest First Name — ID: `f2959` — Merge Field: `[Guest First Name]`
+- Guest Last Name — ID: `f2960` — Merge Field: `[Guest Last Name]`
+- Guest Email — ID: `f2961` — Merge Field: `[Guest Email]`
+- Invitation Sent — ID: `f2962` — Merge Field: `[Invitation Sent]`
+- Invitation Sent Date — ID: `f2963` — Merge Field: `[Invitation Sent Date]`
+- Guest Attendance Time — ID: `f2965` — Merge Field: `[Guest Attendance Time]`
+- Attended After Cutoff — ID: `f2966` — Merge Field: `[Attended After Cutoff]`
+- Guest Verification Status — ID: `f2967` — Merge Field: `[Guest Verification Status]`
+- Guest Graduate Status — ID: `f2968` — Merge Field: `[Guest Graduate Status]`
+- Status — ID: `f2291` — Merge Field: `[Status]`
+- Date Invited — ID: `f2256` — Merge Field: `[Date Invited]`
+- LF Sales Page Link — ID: `f2471` — Merge Field: `[LF Sales Page Link]`
+- Guest Sales Pitch URL — ID: `page_106_url` — Merge Field: `[Guest Sales Pitch URL]`
+- Guest Sales Pitch template — ID: `page_106_template_id` — Merge Field: `[Guest Sales Pitch template]`
+- Guest Sales Pitch published — ID: `page_106_published` — Merge Field: `[Guest Sales Pitch published]`
+- ID — ID: `id` — Merge Field: `[ID]`
+- Date Added — ID: `date` — Merge Field: `[Date Added]`
+- Last Activity — ID: `dla` — Merge Field: `[Last Activity]`
+- Last Email Received — ID: `date_last_email_received` — Merge Field: `[Last Email Received]`
+- Last SMS Sent — ID: `date_last_sms_sent` — Merge Field: `[Last SMS Sent]`
+- Profile Image — ID: `profile_image` — Merge Field: `[Profile Image]`
+- Unique ID — ID: `unique_id` — Merge Field: `[Unique ID]`
+- Last Note — ID: `last_note` — Merge Field: `[Last Note]`
+- Last Email Sent — ID: `date_last_email_sent` — Merge Field: `[Last Email Sent]`
+- Last Call Logged — ID: `date_last_call_logged` — Merge Field: `[Last Call Logged]`
+- Date Modified — ID: `dlm` — Merge Field: `[Date Modified]`
+- IP Address — ID: `ip_addy` — Merge Field: `[IP Address]`
+- Last SMS Received — ID: `date_last_sms_received` — Merge Field: `[Last SMS Received]`
+- Guest Signup Form visits — ID: `page_105_visits` — Merge Field: `[Guest Signup Form visits]`
+- Guest Signup Form unique visits — ID: `page_105_uvisits` — Merge Field: `[Guest Signup Form unique visits]`
+- Guest Sales Pitch visits — ID: `page_106_visits` — Merge Field: `[Guest Sales Pitch visits]`
+- Guest Sales Pitch unique visits — ID: `page_106_uvisits` — Merge Field: `[Guest Sales Pitch unique visits]`
+
+## Programs (objectID: 10005) — Cross-object prefix: `Programs//`
+- Automations — ID: `updateCampaign` — Merge Field: `[Automations]`
+- Program Tags — ID: `contact_cat` — Merge Field: `[Program Tags]`
+- Owner — ID: `owner` — Merge Field: `[Owner]`
+- Level — ID: `f2386` — Merge Field: `[Level]`
+- Program Name — ID: `f2387` — Merge Field: `[Program Name]`
+- Unique ID — ID: `unique_id` — Merge Field: `[Unique ID]`
+- Last Note — ID: `last_note` — Merge Field: `[Last Note]`
+- Date Modified — ID: `dlm` — Merge Field: `[Date Modified]`
+- ID — ID: `id` — Merge Field: `[ID]`
+- Last Activity — ID: `dla` — Merge Field: `[Last Activity]`
+- Last SMS Sent — ID: `date_last_sms_sent` — Merge Field: `[Last SMS Sent]`
+- Last Email Sent — ID: `date_last_email_sent` — Merge Field: `[Last Email Sent]`
+- Date Added — ID: `date` — Merge Field: `[Date Added]`
+- Profile Image — ID: `profile_image` — Merge Field: `[Profile Image]`
+- IP Address — ID: `ip_addy` — Merge Field: `[IP Address]`
+- Last Email Received — ID: `date_last_email_received` — Merge Field: `[Last Email Received]`
+- Last Call Logged — ID: `date_last_call_logged` — Merge Field: `[Last Call Logged]`
+- Last SMS Received — ID: `date_last_sms_received` — Merge Field: `[Last SMS Received]`
+
+## Event Team (objectID: 10007) — Cross-object prefix: `Event Team//`
+- Zoom Meeting ID — ID: `f2812` — Merge Field: `[Zoom Meeting ID]`
+- Day 1 Start Time — ID: `f2816` — Merge Field: `[Day 1 Start Time]`
+- Day 1 First Break Time — ID: `f2819` — Merge Field: `[Day 1 First Break Time]`
+- Day 2 Start Time — ID: `f2821` — Merge Field: `[Day 2 Start Time]`
+- Day 2 First Break Time — ID: `f2826` — Merge Field: `[Day 2 First Break Time]`
+- Final Session Start Time — ID: `f2836` — Merge Field: `[Final Session Start Time]`
+- Attendance Rejoin Grace Minutes — ID: `f2843` — Merge Field: `[Attendance Rejoin Grace Minutes]`
+- Unidentified Guest Weight — ID: `f2847` — Merge Field: `[Unidentified Guest Weight]`
+- Automations — ID: `updateCampaign` — Merge Field: `[Automations]`
+- Event Team Member Tags — ID: `contact_cat` — Merge Field: `[Event Team Member Tags]`
+- Owner — ID: `owner` — Merge Field: `[Owner]`
+- Contact — ID: `f2788` — Merge Field: `[Contact]`
+- Event — ID: `f2789` — Merge Field: `[Event]`
+- Role — ID: `f2790` — Merge Field: `[Role]`
+- Notes — ID: `f2791` — Merge Field: `[Notes]`
+- Day 3 Start Time — ID: `f2829` — Merge Field: `[Day 3 Start Time]`
+- Day 3 First Break Time — ID: `f2834` — Merge Field: `[Day 3 First Break Time]`
+- Attendance Start Grace Minutes — ID: `f2839` — Merge Field: `[Attendance Start Grace Minutes]`
+- Final Session In-Area Potential — ID: `f2926` — Merge Field: `[Final Session In-Area Potential]`
+- GPH Baseline — ID: `f2927` — Merge Field: `[GPH Baseline]`
+- Verified LF Guest Count — ID: `f2928` — Merge Field: `[Verified LF Guest Count]`
+- Unidentified Guest Count — ID: `f2929` — Merge Field: `[Unidentified Guest Count]`
+- Adjusted LF Guest Count — ID: `f2930` — Merge Field: `[Adjusted LF Guest Count]`
+- LF Registrations — ID: `f2931` — Merge Field: `[LF Registrations]`
+- LF Registration Effectiveness — ID: `f2932` — Merge Field: `[LF Registration Effectiveness]`
+- LF GPH — ID: `f2933` — Merge Field: `[LF GPH]`
+- LF RPH — ID: `f2934` — Merge Field: `[LF RPH]`
+- Guest Participant Starts — ID: `f2935` — Merge Field: `[Guest Participant Starts]`
+- Guest Participant Completed — ID: `f2936` — Merge Field: `[Guest Participant Completed]`
+- Guest Participants Attending Event Session — ID: `f2937` — Merge Field: `[Guest Participants Attending Event Session]`
+- Participants Who Brought Guests — ID: `f2938` — Merge Field: `[Participants Who Brought Guests]`
+- Total Final Session Guests — ID: `f2939` — Merge Field: `[Total Final Session Guests]`
+- Starts Who Brought Guests Percentage — ID: `f2940` — Merge Field: `[Starts Who Brought Guests Percentage]`
+- Attendees Who Brought Guests Percentage — ID: `f2941` — Merge Field: `[Attendees Who Brought Guests Percentage]`
+- Day 2 Starts — ID: `f2906` — Merge Field: `[Day 2 Starts]`
+- Day 2 Left — ID: `f2907` — Merge Field: `[Day 2 Left]`
+- Day 3 Starts — ID: `f2908` — Merge Field: `[Day 3 Starts]`
+- Day 3 Left — ID: `f2909` — Merge Field: `[Day 3 Left]`
+- Total Ever Registered — ID: `f2892` — Merge Field: `[Total Ever Registered]`
+- Total Standard Registrations — ID: `f2893` — Merge Field: `[Total Standard Registrations]`
+- Starting Classlist Scholarships — ID: `f2894` — Merge Field: `[Starting Classlist Scholarships]`
+- Starting Classlist Reviewers — ID: `f2895` — Merge Field: `[Starting Classlist Reviewers]`
+- Standards That Started — ID: `f2896` — Merge Field: `[Standards That Started]`
+- Total Starting Classlist — ID: `f2897` — Merge Field: `[Total Starting Classlist]`
+- Registration Effectiveness — ID: `f2898` — Merge Field: `[Registration Effectiveness]`
+- Current Reviewers — ID: `f2899` — Merge Field: `[Current Reviewers]`
+- Current Scholarships — ID: `f2900` — Merge Field: `[Current Scholarships]`
+- Current Standards — ID: `f2901` — Merge Field: `[Current Standards]`
+- Current Statistically Excluded — ID: `f2902` — Merge Field: `[Current Statistically Excluded]`
+- Current Total Participants — ID: `f2903` — Merge Field: `[Current Total Participants]`
+- Day 1 Starts — ID: `f2904` — Merge Field: `[Day 1 Starts]`
+- Day 1 Left — ID: `f2905` — Merge Field: `[Day 1 Left]`
+- Seminar Potentials — ID: `f2910` — Merge Field: `[Seminar Potentials]`
+- Seminar Confirmation Percentage — ID: `f2912` — Merge Field: `[Seminar Confirmation Percentage]`
+- AC Potential Reviewer Registrations — ID: `f2916` — Merge Field: `[AC Potential Reviewer Registrations]`
+- AC Registrations — ID: `f2917` — Merge Field: `[AC Registrations]`
+- LF Booked Revenue — ID: `f2942` — Merge Field: `[LF Booked Revenue]`
+- Seminar Confirmations — ID: `f2911` — Merge Field: `[Seminar Confirmations]`
+- Seminar Designated Count — ID: `f2913` — Merge Field: `[Seminar Designated Count]`
+- Seminar Alternate Count — ID: `f2914` — Merge Field: `[Seminar Alternate Count]`
+- AC Potentials — ID: `f2915` — Merge Field: `[AC Potentials]`
+- LF Cash Collected — ID: `f2943` — Merge Field: `[LF Cash Collected]`
+- LF Refunds — ID: `f2944` — Merge Field: `[LF Refunds]`
+- LF Net Revenue — ID: `f2945` — Merge Field: `[LF Net Revenue]`
+- AC Booked Revenue — ID: `f2946` — Merge Field: `[AC Booked Revenue]`
+- AC Cash Collected — ID: `f2947` — Merge Field: `[AC Cash Collected]`
+- AC Refunds — ID: `f2948` — Merge Field: `[AC Refunds]`
+- AC Net Revenue — ID: `f2949` — Merge Field: `[AC Net Revenue]`
+- Graduate Course Booked Revenue — ID: `f2950` — Merge Field: `[Graduate Course Booked Revenue]`
+- Graduate Course Cash Collected — ID: `f2951` — Merge Field: `[Graduate Course Cash Collected]`
+- Graduate Course Refunds — ID: `f2952` — Merge Field: `[Graduate Course Refunds]`
+- Graduate Course Net Revenue — ID: `f2953` — Merge Field: `[Graduate Course Net Revenue]`
+- AC Registration Percentage — ID: `f2918` — Merge Field: `[AC Registration Percentage]`
+- AC DA Percentage — ID: `f2919` — Merge Field: `[AC DA Percentage]`
+- AC Designated Percentage — ID: `f2920` — Merge Field: `[AC Designated Percentage]`
+- AC Alternate Percentage — ID: `f2921` — Merge Field: `[AC Alternate Percentage]`
+- Potential for Assisting — ID: `f2922` — Merge Field: `[Potential for Assisting]`
+- Interest in Assisting — ID: `f2923` — Merge Field: `[Interest in Assisting]`
+- Interest in Assisting Percentage — ID: `f2924` — Merge Field: `[Interest in Assisting Percentage]`
+- Participant Sharing Percentage — ID: `f2925` — Merge Field: `[Participant Sharing Percentage]`
+- ID — ID: `id` — Merge Field: `[ID]`
+- Date Added — ID: `date` — Merge Field: `[Date Added]`
+- Last Activity — ID: `dla` — Merge Field: `[Last Activity]`
+- Last Email Received — ID: `date_last_email_received` — Merge Field: `[Last Email Received]`
+- Last SMS Sent — ID: `date_last_sms_sent` — Merge Field: `[Last SMS Sent]`
+- Last Note — ID: `last_note` — Merge Field: `[Last Note]`
+- Last Email Sent — ID: `date_last_email_sent` — Merge Field: `[Last Email Sent]`
+- Last Call Logged — ID: `date_last_call_logged` — Merge Field: `[Last Call Logged]`
+- Profile Image — ID: `profile_image` — Merge Field: `[Profile Image]`
+- Unique ID — ID: `unique_id` — Merge Field: `[Unique ID]`
+- Date Modified — ID: `dlm` — Merge Field: `[Date Modified]`
+- IP Address — ID: `ip_addy` — Merge Field: `[IP Address]`
+- Last SMS Received — ID: `date_last_sms_received` — Merge Field: `[Last SMS Received]`
