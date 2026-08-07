@@ -78,7 +78,12 @@
   .nav-links{margin-left:auto;display:flex;align-items:center;gap:30px;}
   .nav-links a{color:var(--green-bright);font-size:14.5px;font-weight:400;}
   .nav-links a:hover{color:var(--ink);}
-  .nav-cta-slot{margin-left:auto;display:flex;align-items:center;gap:16px;}
+  /* margin-right reserves room for .fab-account, which floats fixed
+     over this corner independent of the nav row's own flex layout —
+     without it, the CTA slot's content (e.g. During-event's Join
+     button) runs flush to .wrap's edge and visually collides with
+     the avatar sitting on top of it. */
+  .nav-cta-slot{margin-left:auto;margin-right:60px;display:flex;align-items:center;gap:16px;}
   .nav-cta-slot:empty{margin-left:auto;}
 
   /* Floating logout control — fixed top-right, one item only. Right

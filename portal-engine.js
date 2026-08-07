@@ -1012,13 +1012,13 @@ Portal.render.during = function(data){
     '<span class="nav-join" aria-disabled="true"><span class="jt">Link available soon</span></span>';
 
   // ---- hero ----
-  var heroName = firstName ? escapeHtml(firstName) + ',<br>welcome to ' : 'Welcome to ';
+  var heroName = firstName ? escapeHtml(firstName) + ', welcome to' : 'Welcome to';
   var heroTarget = sessionLabel ? sessionLabel + '.' : 'your ' + courseType + '.';
   var heroHtml =
     '<header class="hero" id="today"><div class="wrap hero-inner">' +
       '<div class="hero-copy">' +
         '<div class="eyebrow">The Landmark ' + courseType + '</div>' +
-        '<h1>' + heroName + '<span class="serif-it">' + heroTarget + '</span></h1>' +
+        '<h1>' + heroName + '<br><span class="serif-it">' + heroTarget + '</span></h1>' +
         '<p class="lede">You’ve set this time aside for your life. Everything you need for the weekend lives on this page — your link to join, assignments, and what’s ahead. Bring your real life with you — that’s what this time is for.</p>' +
       '</div>' +
       '<aside class="progcard">' +
