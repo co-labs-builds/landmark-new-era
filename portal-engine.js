@@ -609,10 +609,13 @@ Portal.confetti = (function(){
    own static markup) when it isn't. Kept as the ONLY top-right
    affordance on every phase (mobile hides the nav CTA slot
    entirely, see member-portal.html's mobile media query) so the
-   avatar is a stable, familiar element across Pre/During/Post —
-   each phase renderer calls this if `data.profileImageUrl` is
-   present. Exact crop/fit is a later polish pass; this just
-   wires the capability to show *something* now.
+   avatar is a stable, familiar element across Pre/During/Post.
+   Called once from Portal.init() (Stage 6), not per-renderer —
+   it used to be called only from render.during, which silently
+   meant Pre/Post never showed a real photo; centralizing it in
+   init() fixed that gap for all three phases at once. Exact
+   crop/fit is a later polish pass; this just wires the
+   capability to show *something* now.
    ========================================================= */
 Portal.account = (function(){
   var DEFAULT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
@@ -1194,7 +1197,6 @@ Portal.render.during = function(data){
   function joinLabel(){ return 'Join Your ' + courseType; }
 
   // ---- nav ----
-  Portal.account.setAvatar(data.profileImageUrl);
   var navLinks = document.getElementById('navLinks');
   if(navLinks) navLinks.innerHTML =
     '<a href="#today">Today</a><a href="#programs">Programs</a><a href="#graduation">Graduation</a><a href="#contact">Contact</a>';
@@ -1821,4 +1823,70 @@ Portal.render.post = function(data){
       });
     });
   }
+};
+
+/* =========================================================
+   Portal.phase.compute(data, now) — Stage 6. Which of the three
+   renderers owns the page: Pre before the event's own start,
+   During from start through Graduation (not through the raw
+   3-day span alone — During's own Graduation section is a real
+   part of the event, per Stage 4, so the During/Post boundary
+   is the *later* of eventEnd and graduation when both are
+   given, not the plain 3-day end. A participant mid-Graduation-
+   evening should still see During, not a premature Post-event
+   "you're done" page), Post from Graduation on.
+
+   Reuses Portal.dateUtil.resolveStart the same way every
+   renderer already does, so this is automatically timezone-
+   correct for the same reason their own countdowns are — the
+   underlying wall-clock-in-a-zone -> UTC-instant math doesn't
+   change here, just what it's used to decide.
+
+   No resolvable start at all -> 'pre' (the same graceful-
+   unknown fallback every renderer already uses for a missing
+   date, e.g. Pre-event's own "your start time will appear here
+   as soon as it's confirmed").
+   ========================================================= */
+Portal.phase = (function(){
+  function compute(data, now){
+    data = data || {};
+    now = now == null ? Date.now() : now;
+    var tz = data.tz;
+
+    var startTs = Portal.dateUtil.resolveStart({
+      reference: data.eventStartUTC, date: data.eventStartDate, time: data.sessionStartTime, timeZone: tz
+    });
+    if(isNaN(startTs)) return 'pre';
+
+    var endTs = Portal.dateUtil.resolveStart({ reference: data.eventEnd, timeZone: tz });
+    if(isNaN(endTs)) endTs = startTs + 2 * 86400000; // same 3-day fallback every renderer already uses
+    var gradTs = data.graduation ? Portal.dateUtil.resolveStart({
+      reference: data.graduation.reference, date: data.graduation.date, time: data.graduation.time, timeZone: tz
+    }) : NaN;
+    var postBoundary = !isNaN(gradTs) ? Math.max(endTs, gradTs) : endTs;
+
+    if(now < startTs) return 'pre';
+    if(now >= postBoundary) return 'post';
+    return 'during';
+  }
+  return { compute: compute };
+})();
+
+/* =========================================================
+   Portal.init() — Stage 6. Reads window.PORTAL_DATA, computes
+   the phase, and dispatches to the one matching renderer. Modal
+   close/scrim/Escape wiring is already handled unconditionally
+   by member-portal.html's own inline script (it doesn't depend
+   on phase or data), so this only owns what's actually phase-
+   dependent: which render.* function runs, and the avatar (see
+   Portal.account above — centralized here so Pre/Post get a
+   real photo too, not just During).
+   ========================================================= */
+Portal.init = function(){
+  var data = window.PORTAL_DATA || {};
+  Portal.account.setAvatar(data.profileImageUrl);
+  var phase = Portal.phase.compute(data, Date.now());
+  if(phase === 'pre') Portal.render.pre(data);
+  else if(phase === 'during') Portal.render.during(data);
+  else Portal.render.post(data);
 };

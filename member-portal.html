@@ -1053,51 +1053,28 @@
      hosted alongside this shell for local review; swap for the
      Ontraport-hosted URL at hand-off (Stage 8).
      ========================================================= -->
-  <script>window.PORTAL_DATA = {};</script>
-  <script src="portal-engine.js"></script>
-
   <!-- =========================================================
-     STAGE 5 REVIEW PREVIEW ONLY — not shipped code, swapped stage
-     by stage (was During-event through Stage 4). Renders the
-     Post-event page. Set STATE below to switch which hero case is
-     showing: 'A' = not registered for anything upcoming, 'B' =
-     registered for Seminar only, 'C' = registered for AC only.
-     All three share the same firstName/lastName/completed-Forum
-     data so the Certificate modal (bottom of the All Programs
-     grid, forum card) is checkable from every state — including
-     the new confetti-on-open behavior.
-     Delete this block once Portal.init() (Stage 6) exists to
-     dispatch real resolver data.
+     window.PORTAL_DATA — placeholder fixture for the real Aug 14
+     pilot cohort until the Portal Context Resolver automation
+     (out of this plan's scope) exists to populate this for real.
+     Shaped exactly like every render.*'s own fixtures throughout
+     this build, so Portal.init() below has something real to
+     compute a phase from and dispatch on — this is the actual
+     integration point Stage 6 exists to wire, not a preview.
      ========================================================= -->
   <script>
-  (function(){
-    var STATE = 'A'; // 'A' | 'B' | 'C'
-
-    var base = {
-      firstName: 'Jordan', lastName: 'Reyes', courseType: 'Forum', format: 'Online',
-      tz: 'US Pacific · PST/PDT · GMT-8/-7 (America/Los_Angeles)',
-      eventStartUTC: '2026-08-14T17:00:00Z', eventEnd: '2026-08-16T23:00:00Z',
-      graduation: { reference: '2026-08-18T19:00:00Z' }
-    };
-
-    var FIXTURES = {
-      A: Object.assign({}, base, {
-        post: { hasSeminarReg: false, hasACReg: false }
-      }),
-      B: Object.assign({}, base, {
-        post: { hasSeminarReg: true, hasACReg: false },
-        seminarNext: { title: 'Seminar Series', startUTC: '2026-09-10T17:00:00Z', tz: base.tz, formatLabel: 'Weekly &middot; 10 sessions' }
-      }),
-      C: Object.assign({}, base, {
-        post: { hasSeminarReg: false, hasACReg: true },
-        acNext: { title: 'Advanced Course', startUTC: '2026-09-25T17:00:00Z', endUTC: '2026-09-28T04:00:00Z', gradUTC: '2026-09-30T01:00:00Z', tz: base.tz, formatLabel: '3-day weekend + graduation evening' }
-      })
-    };
-
-    Portal.render.post(FIXTURES[STATE]);
-    document.title = 'PREVIEW · Post-event State ' + STATE + ' · ' + document.title;
-  })();
+  window.PORTAL_DATA = {
+    firstName: 'Jordan', lastName: 'Reyes', courseType: 'Forum', format: 'Online',
+    tz: 'US Pacific · PST/PDT · GMT-8/-7 (America/Los_Angeles)',
+    eventStartUTC: '2026-08-14T17:00:00Z', eventEnd: '2026-08-16T23:00:00Z',
+    graduation: { reference: '2026-08-18T19:00:00Z' },
+    sessionDates: ['2026-08-14', '2026-08-15', '2026-08-16'],
+    currentReleasedSession: null,
+    post: { hasSeminarReg: false, hasACReg: false }
+  };
   </script>
+  <script src="portal-engine.js"></script>
+  <script>Portal.init();</script>
 
 </body>
 </html>
