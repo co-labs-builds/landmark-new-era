@@ -655,6 +655,146 @@ Portal.techCheck = (function(){
    rather than templated per field.
    ========================================================= */
 Portal.render = Portal.render || {};
+
+/* =========================================================
+   Portal.render._sec — shared section builders used by both
+   Pre-event's own hero-course and Post-event's "next course"
+   view (Stage 5). Confirmed by direct diff: Prepare, Set
+   Yourself Up, Agreements, Be Present, and FAQ are byte-
+   identical in content/structure across the preevent_7 and
+   postevent-registered mockups (postevent's own copy of the
+   FAQ's "When should I log in" answer even hardcoded literal
+   9:30/10:00 times where Pre-event already computed them —
+   same defect class as everything else in this project, fixed
+   for free by sharing this code instead of re-porting it).
+   Authored once so a correction to one phase's copy/behavior
+   can't drift from the other, per the locked "propagate to
+   every shared path" rule.
+   ========================================================= */
+Portal.render._sec = {
+  prepare: function(courseType, infoFormDone){
+    var infoCardHtml = infoFormDone ?
+      '<div class="pcard done"><div class="ph"><span class="pill pr pill-done">Completed</span><img src="Assets/lm-mp-prepare-form.jpg" alt="Complete your information form"></div><div class="pbody"><div class="ptag serif-it">a few minutes.</div><h3>Complete Your Information Form</h3><p>Thanks — we have everything we need from you.</p></div></div>' :
+      '<div class="pcard"><div class="ph"><img src="Assets/lm-mp-prepare-form.jpg" alt="Complete your information form"></div><div class="pbody"><div class="ptag serif-it">a few minutes.</div><h3>Complete Your Information Form</h3><p>We still need a few details from you before the weekend. It only takes a few minutes.</p><span class="go">Finish now &rarr;</span></div></div>';
+    return '<section class="block paper" id="prepare"><div class="wrap">' +
+      '<div class="sec-head"><div class="eyebrow">Get Ready</div><h2>Prepare for your ' + courseType + '</h2><p>A few simple things to take care of before your course begins. Each takes just a couple of minutes.</p></div>' +
+      '<div class="pcards">' +
+        '<div class="pcard"><div class="ph"><img src="Assets/lm-mp-prepare-calendar.jpg" alt="Add the ' + courseType + ' to your calendar"></div><div class="pbody"><div class="ptag serif-it">block the time.</div><h3>Add to Your Calendar</h3><p>Block Friday through Sunday, plus the Tuesday graduation evening, so nothing slips into your ' + courseType + ' time.</p><span class="go" id="prepAddCal">Add to calendar &rarr;</span></div></div>' +
+        '<div class="pcard"><div class="ph"><img src="Assets/lm-mp-prepare-techcheck.jpg" alt="Test your camera, microphone, and connection"></div><div class="pbody"><div class="ptag serif-it">join with ease.</div><h3>Tech Check</h3><p>Test your connection, camera, and sound so joining on Friday is completely effortless.</p><span class="go" id="techOpen">Check your setup &rarr;</span></div></div>' +
+        infoCardHtml +
+      '</div>' +
+    '</div></section>';
+  },
+  guide: function(courseType){
+    var FLIP_TIPS = [
+      { icon:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>', h:'Let people know', f:'Give your household a heads-up you’ll be in the ' + courseType + ', so you’re not interrupted.', b:'Protect the time. This weekend is yours.' },
+      { icon:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', h:'Join on time', f:'Log in a few minutes before each session begins.', b:'Start strong. Set yourself up to win.' },
+      { icon:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/><line x1="3" y1="3" x2="21" y2="21"/>', h:'Minimize distractions', f:'Silence your phone and close the other tabs.', b:'Give the weekend everything you’ve got.' },
+      { icon:'<rect x="2" y="6" width="14" height="12" rx="2"/><path d="M22 8l-6 4 6 4V8z"/>', h:'Turn on your camera', f:'Being seen keeps you connected to the room.', b:'Be seen. Be part of the room.' },
+      { icon:'<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>', h:'Prepare your space', f:'Find a quiet, comfortable spot where you won’t be interrupted.', b:'A calm space, a clear mind.' },
+      { icon:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>', h:'Have a notebook', f:'Keep one nearby for anything you want to hold onto.', b:'Catch the thoughts worth keeping.' },
+      { icon:'<path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4z"/><path d="M6 1v3M10 1v3M14 1v3"/>', h:'Eat well', f:'Have nourishing food and snacks ready for the weekend.', b:'Fuel yourself for a full day.' },
+      { icon:'<path d="M12 2s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>', h:'Drink water', f:'Keep a full glass or bottle within reach all weekend.', b:'Stay sharp. Keep the water close.' },
+      { icon:'<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>', h:'Rest well', f:'Get good sleep so you arrive fresh for each day.', b:'Show up rested and ready.' }
+    ];
+    var flipRefreshIcon = '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v5h-5"/>';
+    var flipsHtml = FLIP_TIPS.map(function(t){
+      return '<div class="flip" tabindex="0"><div class="flip-in">' +
+        '<div class="flip-face flip-front"><div class="flip-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + flipRefreshIcon + '</svg></div>' +
+        '<div class="fico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + t.icon + '</svg></div>' +
+        '<h4>' + t.h + '</h4><p>' + t.f + '</p></div>' +
+        '<div class="flip-face flip-back"><p>' + t.b + '</p></div>' +
+      '</div></div>';
+    }).join('');
+    return '<section class="block alt" id="guide"><div class="wrap">' +
+      '<div class="sec-head"><div class="eyebrow">Create the Best Experience</div><h2>Set yourself up.</h2><p>The ' + courseType + ' works best when you can be fully present. A little preparation goes a long way.</p></div>' +
+      '<div class="flips">' + flipsHtml + '</div>' +
+    '</div></section>';
+  },
+  rules: function(courseType){
+    var RULES = [
+      'Be present for the full day, start to finish',
+      'Arrive on time for each session and stay through the close',
+      'Give the room your full attention — set phones, devices, and other distractions aside',
+      'Keep what others share confidential and treat everyone with respect',
+      'Please don’t record, screen-capture, or share any part of the event'
+    ];
+    return '<section class="block paper"><div class="wrap">' +
+      '<div class="rules" id="rules">' +
+        '<div class="big">A few simple agreements that make the ' + courseType + ' work for everyone.</div>' +
+        '<ul>' + RULES.map(function(r){
+          return '<li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg> <span>' + r + '<b class="gd">.</b></span></li>';
+        }).join('') + '</ul>' +
+      '</div>' +
+    '</div></section>';
+  },
+  bepresent: function(){
+    return '<section class="block alt" style="padding-top:0;"><div class="wrap">' +
+      '<div class="g-note" id="bepresent">' +
+        '<div class="np"><img src="Assets/lm-mp-engage-photo.jpg" alt="A Forum participant fully engaged in the room"></div>' +
+        '<div class="gtxt"><h4>Above all — <span class="swipe">come ready to engage.</span></h4>' +
+        '<p>There’s nothing to study or prepare in advance — just come ready to engage fully. Between now and Friday, keep considering what you’d like to be different, and what you’d love to create. Bring your real life with you: the relationships, the situations, and the parts of your life that matter most.</p></div>' +
+      '</div>' +
+    '</div></section>';
+  },
+  faq: function(courseType, hasStart, roomOpenTs, startTs, ianaId){
+    var FAQS = [
+      ['What do I need to join?', 'A computer or tablet with a reliable internet connection, a working camera and microphone, and a quiet space. We’ll send a direct link, and you’ll enter the ' + courseType + ' right from this page.'],
+      ['When should I log in each day?', hasStart ? 'The room opens at ' + Portal.format.time(roomOpenTs, ianaId) + ' ' + Portal.format.zoneLabel(ianaId) + '. Plan to arrive at least 15 minutes before the ' + Portal.format.time(startTs, ianaId) + ' start so your technology is set and you’re settled when we begin.' : 'Your room-open time will appear here as soon as it’s confirmed.'],
+      ['What if something comes up during the weekend?', 'The ' + courseType + ' is designed to be experienced in full, so we ask that you arrange your schedule to be present for all sessions. If you have a concern, reach out to our team below and we’ll help.'],
+      ['Do I need to take notes or prepare anything?', 'There’s nothing to study or prepare in advance. You’re welcome to keep a notebook nearby, but you don’t need to capture everything — you’ll receive materials, and the value is in being present.'],
+      ['What should I have ready in my space?', 'Water, nourishing food and snacks, anything you need to be comfortable, and a way to minimize interruptions. Treat it as time set aside just for you.'],
+      ['Who do I contact if I need help?', 'Our support team is here throughout. You’ll find our email and phone in the Contact section just below.']
+    ];
+    return '<section class="block paper" id="faq"><div class="wrap">' +
+      '<div class="faq"><div class="huge">Good to<br>know<span>.</span></div><div class="acc">' +
+        FAQS.map(function(qa, i){
+          return '<details' + (i === 0 ? ' open' : '') + '><summary>' + qa[0] + ' <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></summary><div class="body">' + qa[1] + '</div></details>';
+        }).join('') +
+      '</div></div>' +
+    '</div></section>';
+  },
+  // Seminar/AC program-grid card construction — identical business rule
+  // needed by both During-event's "All Programs" tab and Post-event's
+  // grid (registered -> show the specific one they're in; not
+  // registered but a designated recommendation exists via
+  // data.seminarNext/acNext -> recommend it; neither -> dim). Extracted
+  // here (Stage 5) so the two phases can't drift; behavior unchanged
+  // from the During-event version this was ported from.
+  seminarAcCards: function(data){
+    var hasSeminarReg = !!(data.post && data.post.hasSeminarReg);
+    var hasACReg = !!(data.post && data.post.hasACReg);
+    var seminar = {
+      key: 'seminar',
+      state: hasSeminarReg ? 'reg' : (data.seminarNext ? 'plain' : 'dim'),
+      pill: hasSeminarReg ? { label: 'Upcoming', variant: 'upcoming' }
+        : data.seminarNext ? { label: 'Recommended Next', variant: 'next' } : undefined,
+      pillSide: hasSeminarReg ? undefined : 'right',
+      title: data.seminarNext && data.seminarNext.title,
+      detailRows: data.seminarNext ? [
+        { label: 'Begins', value: data.seminarNext.beginsLabel || 'Details available soon' },
+        { label: 'Schedule', value: data.seminarNext.scheduleLabel || '' }
+      ].filter(function(r){ return r.value; }) : [],
+      cta: (hasSeminarReg || data.seminarNext)
+        ? { label: hasSeminarReg ? 'View Details' : 'Learn More', variant: 'solid' }
+        : { label: 'Learn More', variant: 'ghost' }
+    };
+    var ac = {
+      key: 'ac',
+      state: hasACReg ? 'reg' : (data.acNext ? 'plain' : 'dim'),
+      pill: hasACReg ? { label: 'Upcoming', variant: 'upcoming' }
+        : data.acNext ? { label: 'Recommended Next', variant: 'next' } : undefined,
+      pillSide: hasACReg ? undefined : 'right',
+      title: data.acNext && data.acNext.title,
+      detailRows: data.acNext ? [{ label: 'Format', value: data.acNext.formatLabel || '3-day weekend + graduation evening' }] : [],
+      cta: (hasACReg || data.acNext)
+        ? { label: hasACReg ? 'View Details' : 'View Advanced Course Dates', variant: 'solid' }
+        : { label: 'Learn More', variant: 'ghost' }
+    };
+    return { seminar: seminar, ac: ac };
+  }
+};
+
 Portal.render.pre = function(data){
   data = data || {};
   var firstName = data.firstName || '';
@@ -711,99 +851,14 @@ Portal.render.pre = function(data){
       '</aside>' +
     '</div></header>';
 
-  // ---- prepare ----
-  // The Information Form card has a third, data-driven state on top of
-  // the mockup's single hardcoded "action needed" copy: once
-  // registrations.f2579 "Information Form Completed" is checked, the
-  // card shows a "Completed" pill (reusing the program grid's existing
-  // .pill/.pill-done component, not a new one) and its eyebrow/title
-  // strike through, per the 2026-08-07 design reference.
-  var infoCardHtml = infoFormDone ?
-    '<div class="pcard done"><div class="ph"><span class="pill pr pill-done">Completed</span><img src="Assets/lm-mp-prepare-form.jpg" alt="Complete your information form"></div><div class="pbody"><div class="ptag serif-it">a few minutes.</div><h3>Complete Your Information Form</h3><p>Thanks — we have everything we need from you.</p></div></div>' :
-    '<div class="pcard"><div class="ph"><img src="Assets/lm-mp-prepare-form.jpg" alt="Complete your information form"></div><div class="pbody"><div class="ptag serif-it">a few minutes.</div><h3>Complete Your Information Form</h3><p>We still need a few details from you before the weekend. It only takes a few minutes.</p><span class="go">Finish now &rarr;</span></div></div>';
-
-  var prepareHtml =
-    '<section class="block paper" id="prepare"><div class="wrap">' +
-      '<div class="sec-head"><div class="eyebrow">Get Ready</div><h2>Prepare for your ' + courseType + '</h2><p>A few simple things to take care of before your course begins. Each takes just a couple of minutes.</p></div>' +
-      '<div class="pcards">' +
-        '<div class="pcard"><div class="ph"><img src="Assets/lm-mp-prepare-calendar.jpg" alt="Add the ' + courseType + ' to your calendar"></div><div class="pbody"><div class="ptag serif-it">block the time.</div><h3>Add to Your Calendar</h3><p>Block Friday through Sunday, plus the Tuesday graduation evening, so nothing slips into your ' + courseType + ' time.</p><span class="go" id="prepAddCal">Add to calendar &rarr;</span></div></div>' +
-        '<div class="pcard"><div class="ph"><img src="Assets/lm-mp-prepare-techcheck.jpg" alt="Test your camera, microphone, and connection"></div><div class="pbody"><div class="ptag serif-it">join with ease.</div><h3>Tech Check</h3><p>Test your connection, camera, and sound so joining on Friday is completely effortless.</p><span class="go" id="techOpen">Check your setup &rarr;</span></div></div>' +
-        infoCardHtml +
-      '</div>' +
-    '</div></section>';
-
-  // ---- set yourself up (flip cards — generic, no per-user data) ----
-  var FLIP_TIPS = [
-    { icon:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>', h:'Let people know', f:'Give your household a heads-up you’ll be in the ' + courseType + ', so you’re not interrupted.', b:'Protect the time. This weekend is yours.' },
-    { icon:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', h:'Join on time', f:'Log in a few minutes before each session begins.', b:'Start strong. Set yourself up to win.' },
-    { icon:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/><line x1="3" y1="3" x2="21" y2="21"/>', h:'Minimize distractions', f:'Silence your phone and close the other tabs.', b:'Give the weekend everything you’ve got.' },
-    { icon:'<rect x="2" y="6" width="14" height="12" rx="2"/><path d="M22 8l-6 4 6 4V8z"/>', h:'Turn on your camera', f:'Being seen keeps you connected to the room.', b:'Be seen. Be part of the room.' },
-    { icon:'<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>', h:'Prepare your space', f:'Find a quiet, comfortable spot where you won’t be interrupted.', b:'A calm space, a clear mind.' },
-    { icon:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>', h:'Have a notebook', f:'Keep one nearby for anything you want to hold onto.', b:'Catch the thoughts worth keeping.' },
-    { icon:'<path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4z"/><path d="M6 1v3M10 1v3M14 1v3"/>', h:'Eat well', f:'Have nourishing food and snacks ready for the weekend.', b:'Fuel yourself for a full day.' },
-    { icon:'<path d="M12 2s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>', h:'Drink water', f:'Keep a full glass or bottle within reach all weekend.', b:'Stay sharp. Keep the water close.' },
-    { icon:'<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>', h:'Rest well', f:'Get good sleep so you arrive fresh for each day.', b:'Show up rested and ready.' }
-  ];
-  var flipRefreshIcon = '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v5h-5"/>';
-  var flipsHtml = FLIP_TIPS.map(function(t){
-    return '<div class="flip" tabindex="0"><div class="flip-in">' +
-      '<div class="flip-face flip-front"><div class="flip-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + flipRefreshIcon + '</svg></div>' +
-      '<div class="fico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + t.icon + '</svg></div>' +
-      '<h4>' + t.h + '</h4><p>' + t.f + '</p></div>' +
-      '<div class="flip-face flip-back"><p>' + t.b + '</p></div>' +
-    '</div></div>';
-  }).join('');
-  var guideHtml =
-    '<section class="block alt" id="guide"><div class="wrap">' +
-      '<div class="sec-head"><div class="eyebrow">Create the Best Experience</div><h2>Set yourself up.</h2><p>The ' + courseType + ' works best when you can be fully present. A little preparation goes a long way.</p></div>' +
-      '<div class="flips">' + flipsHtml + '</div>' +
-    '</div></section>';
-
-  // ---- agreements ----
-  var RULES = [
-    'Be present for the full day, start to finish',
-    'Arrive on time for each session and stay through the close',
-    'Give the room your full attention — set phones, devices, and other distractions aside',
-    'Keep what others share confidential and treat everyone with respect',
-    'Please don’t record, screen-capture, or share any part of the event'
-  ];
-  var rulesHtml =
-    '<section class="block paper"><div class="wrap">' +
-      '<div class="rules" id="rules">' +
-        '<div class="big">A few simple agreements that make the ' + courseType + ' work for everyone.</div>' +
-        '<ul>' + RULES.map(function(r){
-          return '<li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg> <span>' + r + '<b class="gd">.</b></span></li>';
-        }).join('') + '</ul>' +
-      '</div>' +
-    '</div></section>';
-
-  // ---- be present ----
-  var bepresentHtml =
-    '<section class="block alt" style="padding-top:0;"><div class="wrap">' +
-      '<div class="g-note" id="bepresent">' +
-        '<div class="np"><img src="Assets/lm-mp-engage-photo.jpg" alt="A Forum participant fully engaged in the room"></div>' +
-        '<div class="gtxt"><h4>Above all — <span class="swipe">come ready to engage.</span></h4>' +
-        '<p>There’s nothing to study or prepare in advance — just come ready to engage fully. Between now and Friday, keep considering what you’d like to be different, and what you’d love to create. Bring your real life with you: the relationships, the situations, and the parts of your life that matter most.</p></div>' +
-      '</div>' +
-    '</div></section>';
-
-  // ---- faq ----
-  var FAQS = [
-    ['What do I need to join?', 'A computer or tablet with a reliable internet connection, a working camera and microphone, and a quiet space. We’ll send a direct link, and you’ll enter the ' + courseType + ' right from this page.'],
-    ['When should I log in each day?', hasStart ? 'The room opens at ' + Portal.format.time(roomOpenTs, ianaId) + ' ' + Portal.format.zoneLabel(ianaId) + '. Plan to arrive at least 15 minutes before the ' + Portal.format.time(startTs, ianaId) + ' start so your technology is set and you’re settled when we begin.' : 'Your room-open time will appear here as soon as it’s confirmed.'],
-    ['What if something comes up during the weekend?', 'The ' + courseType + ' is designed to be experienced in full, so we ask that you arrange your schedule to be present for all sessions. If you have a concern, reach out to our team below and we’ll help.'],
-    ['Do I need to take notes or prepare anything?', 'There’s nothing to study or prepare in advance. You’re welcome to keep a notebook nearby, but you don’t need to capture everything — you’ll receive materials, and the value is in being present.'],
-    ['What should I have ready in my space?', 'Water, nourishing food and snacks, anything you need to be comfortable, and a way to minimize interruptions. Treat it as time set aside just for you.'],
-    ['Who do I contact if I need help?', 'Our support team is here throughout. You’ll find our email and phone in the Contact section just below.']
-  ];
-  var faqHtml =
-    '<section class="block paper" id="faq"><div class="wrap">' +
-      '<div class="faq"><div class="huge">Good to<br>know<span>.</span></div><div class="acc">' +
-        FAQS.map(function(qa, i){
-          return '<details' + (i === 0 ? ' open' : '') + '><summary>' + qa[0] + ' <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></summary><div class="body">' + qa[1] + '</div></details>';
-        }).join('') +
-      '</div></div>' +
-    '</div></section>';
+  // ---- prepare / guide / agreements / be-present / faq ----
+  // Ported to Portal.render._sec above (Stage 5) since Post-event's
+  // "next course" view needs the identical content, re-parameterized.
+  var prepareHtml = Portal.render._sec.prepare(courseType, infoFormDone);
+  var guideHtml = Portal.render._sec.guide(courseType);
+  var rulesHtml = Portal.render._sec.rules(courseType);
+  var bepresentHtml = Portal.render._sec.bepresent();
+  var faqHtml = Portal.render._sec.faq(courseType, hasStart, roomOpenTs, startTs, ianaId);
 
   var lmfBandHtml = '<div class="lmf-band"><img src="Assets/lm-mp-lmf-logo.png" alt="The Landmark Forum"></div>';
 
@@ -1282,33 +1337,9 @@ Portal.render.during = function(data){
   // in this file. events.f2760 = "Secondary" gets no distinct
   // treatment for now; it collapses into the same dim fallback as
   // Hidden/unset — a deliberate scope call, not an oversight.
-  var seminarCard = {
-    key: 'seminar',
-    state: hasSeminarReg ? 'reg' : (data.seminarNext ? 'plain' : 'dim'),
-    pill: hasSeminarReg ? { label: 'Upcoming', variant: 'upcoming' }
-      : data.seminarNext ? { label: 'Recommended Next', variant: 'next' } : undefined,
-    pillSide: hasSeminarReg ? undefined : 'right',
-    title: data.seminarNext && data.seminarNext.title,
-    detailRows: data.seminarNext ? [
-      { label: 'Begins', value: data.seminarNext.beginsLabel || 'Details available soon' },
-      { label: 'Schedule', value: data.seminarNext.scheduleLabel || '' }
-    ].filter(function(r){ return r.value; }) : [],
-    cta: (hasSeminarReg || data.seminarNext)
-      ? { label: hasSeminarReg ? 'View Details' : 'Learn More', variant: 'solid' }
-      : { label: 'Learn More', variant: 'ghost' }
-  };
-  var acCard = {
-    key: 'ac',
-    state: hasACReg ? 'reg' : (data.acNext ? 'plain' : 'dim'),
-    pill: hasACReg ? { label: 'Upcoming', variant: 'upcoming' }
-      : data.acNext ? { label: 'Recommended Next', variant: 'next' } : undefined,
-    pillSide: hasACReg ? undefined : 'right',
-    title: data.acNext && data.acNext.title,
-    detailRows: data.acNext ? [{ label: 'Format', value: data.acNext.formatLabel || '3-day weekend + graduation evening' }] : [],
-    cta: (hasACReg || data.acNext)
-      ? { label: hasACReg ? 'View Details' : 'View Advanced Course Dates', variant: 'solid' }
-      : { label: 'Learn More', variant: 'ghost' }
-  };
+  var _saCards = Portal.render._sec.seminarAcCards(data);
+  var seminarCard = _saCards.seminar;
+  var acCard = _saCards.ac;
 
   Portal.programGrid.render(gridRoot, [
     { key: 'forum', state: 'reg', pill: { label: 'Current', variant: 'current' },
@@ -1365,4 +1396,291 @@ Portal.render.during = function(data){
   }
   wireGuestCopyButtons();
   wireGuestPager();
+};
+
+/* =========================================================
+   Portal.post.resolveHeroProgram(data, now) — Stage 5. Which
+   upcoming registered program (if any) drives the Post-event
+   hero. Corrected 2026-08-07 per direct confirmation: the
+   plan's original "State A/B/C" framing oversold how distinct
+   B and C are — they are the same dynamic template (the exact
+   copy pattern Portal.render.pre already uses for its own
+   hero), re-scoped to whichever registered program starts
+   soonest. Registering for both Seminar and AC doesn't create
+   a fourth state; it's still this one template, pointed at
+   whichever of the two has the nearer *future* start date
+   (already-started/past dates are excluded, same as a
+   registration for a program with no resolvable date yet —
+   both fall through to the "nothing upcoming" case, same as
+   not being registered at all).
+   ========================================================= */
+Portal.post = (function(){
+  function resolveHeroProgram(data, now){
+    data = data || {};
+    var post = data.post || {};
+    var candidates = [];
+    function tryAdd(key, next, registered){
+      if(!registered || !next || next.startUTC == null) return;
+      var ts = Portal.dateUtil.resolveStart({ reference: next.startUTC, timeZone: next.tz });
+      if(!isNaN(ts) && ts > now) candidates.push({ key: key, next: next, startTs: ts });
+    }
+    tryAdd('ac', data.acNext, post.hasACReg);
+    tryAdd('seminar', data.seminarNext, post.hasSeminarReg);
+    if(!candidates.length) return null;
+    candidates.sort(function(a, b){ return a.startTs - b.startTs; });
+    return candidates[0];
+  }
+  return { resolveHeroProgram: resolveHeroProgram };
+})();
+
+/* =========================================================
+   Portal.render.post — the Post-event page (Stage 5). Ported
+   from member-portal-postevent-registered.html (hero when a
+   next course is upcoming; Prepare/Guide/Agreements/Be-Present/
+   FAQ reused verbatim from Portal.render._sec, confirmed
+   byte-identical content to Pre-event's own) and
+   member-portal-postevent-NOT-REGISTERED.html (hero + FAQ when
+   nothing is upcoming). Defects fixed at the source: the
+   registered mock's hero countdown target and "9:30/10:00 AM"
+   FAQ answer were hardcoded literals (same class of bug as
+   "Kate" everywhere else) — both now derive from
+   Portal.dateUtil like every other phase.
+   ========================================================= */
+Portal.render.post = function(data){
+  data = data || {};
+  var firstName = data.firstName || '';
+  var lastName = data.lastName || '';
+  var courseType = data.courseType || 'Forum'; // the just-completed course
+  var format = data.format || 'Online';
+  var infoFormDone = !!data.infoFormCompleted;
+  var tz = data.tz || 'US Pacific · PST/PDT · GMT-8/-7 (America/Los_Angeles)';
+  var ianaId = Portal.dateUtil.ianaOf(tz) || 'America/Los_Angeles';
+
+  var startTs = Portal.dateUtil.resolveStart({
+    reference: data.eventStartUTC, date: data.eventStartDate, time: data.sessionStartTime, timeZone: tz
+  });
+  var endTs = Portal.dateUtil.resolveStart({ reference: data.eventEnd, timeZone: tz }) ||
+    (isNaN(startTs) ? NaN : startTs + 2 * 86400000);
+  var gradTs = data.graduation ? Portal.dateUtil.resolveStart({
+    reference: data.graduation.reference, date: data.graduation.date, time: data.graduation.time, timeZone: tz
+  }) : NaN;
+
+  // ---- nav links (no Prepare/Guidance/FAQ anchors unless the hero
+  // actually renders those sections — wired again below when it does) ----
+  var navLinks = document.getElementById('navLinks');
+  if(navLinks) navLinks.innerHTML = '<a href="https://www.landmarkworldwide.com/schedules" target="_blank" rel="noopener">Explore Courses</a>';
+
+  var now = Date.now();
+  var winner = Portal.post.resolveHeroProgram(data, now);
+
+  var heroHtml, midSectionsHtml = '', hasNextStart = !!winner, tabFirstLabel;
+
+  if(winner){
+    tabFirstLabel = 'Upcoming Program';
+    var pdataNext = Portal.pdata[winner.key];
+    var nextCourseType = winner.next.title || pdataNext.title;
+    var nextTz = winner.next.tz || tz;
+    var nextIana = Portal.dateUtil.ianaOf(nextTz) || ianaId;
+    var nextEndTs = winner.next.endUTC != null ? Portal.dateUtil.resolveStart({ reference: winner.next.endUTC, timeZone: nextTz }) : NaN;
+    var nextGradTs = winner.next.gradUTC != null ? Portal.dateUtil.resolveStart({ reference: winner.next.gradUTC, timeZone: nextTz }) : NaN;
+    var nextFormat = winner.next.format || 'Online';
+    var nextStartTs = winner.startTs;
+    var roomOpenTs = nextStartTs - 30 * 60000;
+
+    heroHtml =
+      '<header class="hero"><div class="wrap hero-inner">' +
+        '<div class="hero-copy">' +
+          '<div class="eyebrow">The ' + nextCourseType + '</div>' +
+          '<h1>Welcome to <span class="serif-it">your</span> ' + nextCourseType + (firstName ? ', ' + firstName : '') + '.</h1>' +
+          '<p class="lede">You’re registered and ready to go. Everything you need to prepare, join the ' + nextCourseType + ', and make the most of your experience lives right here — before and throughout the weekend.</p>' +
+        '</div>' +
+        '<aside class="anchor">' +
+          '<div class="k">Your ' + nextCourseType + '</div>' +
+          '<div class="dates">' + Portal.format.dateRange(nextStartTs, isNaN(nextEndTs) ? nextStartTs : nextEndTs, nextIana) + '</div>' +
+          (!isNaN(nextGradTs) ? '<div class="grad"><span>Final Session</span> &middot; ' + Portal.format.weekdayShort(nextGradTs, nextIana) + ' ' + Portal.format.dayPeriodLabel(nextGradTs, nextIana) + ', ' + Portal.format.weekdayMonthDay(nextGradTs, nextIana).split(', ')[1] + '</div>' : '') +
+          '<div class="fine">' + nextFormat + ' &middot; ' + (winner.next.formatLabel || 'Details available soon') + '</div>' +
+          '<div class="cd-cap">Until we begin</div>' +
+          '<div class="countdown"><div class="cd-cell"><div class="cd-num" id="cd-d">–</div><div class="cd-lab">Days</div></div><div class="cd-cell"><div class="cd-num" id="cd-h">–</div><div class="cd-lab">Hours</div></div><div class="cd-cell"><div class="cd-num" id="cd-m">–</div><div class="cd-lab">Min</div></div></div>' +
+          '<p class="note">Please arrive at least 15 minutes before the ' + Portal.format.time(nextStartTs, nextIana) + ' start time. The room opens at <b>' + Portal.format.time(roomOpenTs, nextIana) + '</b> — we’ll see you there.</p>' +
+          '<button class="btn btn-lg" id="heroAddCal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg> Add to Calendar</button>' +
+        '</aside>' +
+      '</div></header>';
+
+    midSectionsHtml = Portal.render._sec.prepare(nextCourseType, infoFormDone) +
+      Portal.render._sec.guide(nextCourseType) +
+      Portal.render._sec.rules(nextCourseType) +
+      Portal.render._sec.bepresent() +
+      Portal.render._sec.faq(nextCourseType, true, roomOpenTs, nextStartTs, nextIana);
+  } else {
+    tabFirstLabel = 'Up Next';
+    var recKey = (data.post && data.post.recommendedNext === 'seminar') ? 'seminar' : 'ac';
+    var recPdata = Portal.pdata[recKey];
+    var recNext = recKey === 'seminar' ? data.seminarNext : data.acNext;
+
+    heroHtml =
+      '<header class="hero"><div class="wrap hero-inner">' +
+        '<div class="hero-copy">' +
+          '<div class="eyebrow">Landmark ' + courseType + ' Graduate</div>' +
+          '<h1>Up next for you' + (firstName ? ', <span class="serif-it">' + firstName + '.</span>' : '.') + '</h1>' +
+          '<p class="lede">Congratulations on completing The Landmark ' + courseType + '. There’s nothing you need to do — your certificate and programs live right here. And when you’re ready for what’s next, this is the natural next step.</p>' +
+        '</div>' +
+        '<aside class="pcard" data-p="' + recKey + '" id="heroNext" style="cursor:pointer;">' +
+          '<div class="pav"><span class="pill pill-next">Recommended Next</span><img src="' + recPdata.photo + '" alt="' + recPdata.title + '"></div>' +
+          '<div class="pbody">' +
+            '<h3>' + recPdata.title + '</h3>' +
+            '<p>' + recPdata.blurb + '</p>' +
+            (recNext && (recNext.beginsLabel || recNext.scheduleLabel) ?
+              '<div class="pdet">' +
+                (recNext.beginsLabel ? '<div><span>Begins</span>' + recNext.beginsLabel + '</div>' : '') +
+                (recNext.scheduleLabel ? '<div><span>Schedule</span>' + recNext.scheduleLabel + '</div>' : '') +
+              '</div>' :
+              '<div class="pdet"><div><span>Offered</span>Year-round &middot; online</div></div>') +
+            '<button class="pbtn2" type="button">View ' + recPdata.title + ' Dates</button>' +
+          '</div>' +
+        '</aside>' +
+      '</div></header>';
+
+    // Recommended-program FAQ — genuinely different content from the
+    // registered-course FAQ above (this one explains the program being
+    // recommended, not how to join a course you're already in), so it's
+    // authored here rather than forced into Portal.render._sec.faq.
+    var RECOMMEND_FAQS = [
+      ['What is the ' + recPdata.title + '?', recPdata.detail.desc.replace(/<\/p><p>/g, ' ').replace(/<\/?p>/g, '')],
+      ['When should I take it?', 'Whenever you’re ready. Many graduates find the momentum from their ' + courseType + ' is a powerful thing to build on and register within a few months — but it’s offered year-round, online.'],
+      ['Where do I find my certificate and materials?', 'On the All Programs tab above — The Landmark ' + courseType + ' now shows as completed, with your certificate available to download any time.'],
+      ['How do I register?', 'Click View ' + recPdata.title + ' Dates above to see upcoming dates and reserve your spot. If you’d like help choosing a date, our team is glad to talk it through with you. See our contact information below.'],
+      ['What if I need to transfer my course?', 'No problem — plans change. Contact us at info@landmarkworldwide.com or +1 (312) 440-3464, and for a small $35 administrative fee we’ll transfer you to another course date that works for you.'],
+      ['Who do I contact if I have questions?', 'Our support team is here for you. You’ll find our email and phone in the Contact section just below.']
+    ];
+    midSectionsHtml =
+      '<section class="block paper" id="faq"><div class="wrap">' +
+        '<div class="faq"><div class="huge">Good to<br>know<span>.</span></div><div class="acc">' +
+          RECOMMEND_FAQS.map(function(qa, i){
+            return '<details' + (i === 0 ? ' open' : '') + '><summary>' + qa[0] + ' <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 6l6 6-6 6"/></svg></summary><div class="body">' + qa[1] + '</div></details>';
+          }).join('') +
+        '</div></div>' +
+      '</div></section>';
+  }
+
+  var lmfBandHtml = '<div class="lmf-band"><img src="Assets/lm-mp-lmf-logo.png" alt="The Landmark Forum"></div>';
+
+  var contactHtml =
+    '<section class="contact" id="contact"><div class="wrap">' +
+      '<div class="contact-grid">' +
+        '<div><div class="eyebrow" style="color:var(--green-bright);">We’re Here For You</div><h2 style="margin-top:12px;">Questions? <span class="serif-it">We’ve got you.</span></h2><p>Anything at all — our team is happy to help.</p><div class="health"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--green-bright)" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.5 1-1a5.5 5.5 0 0 0 0-7.9z"/></svg> Looking for extra support? <a id="hrLink">Explore Health Resources &rarr;</a></div></div>' +
+        '<div class="ways">' +
+          '<a class="cway" href="mailto:tjarrett@landmarkworldwide.com"><div class="gi"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg></div><div><div class="lab">Email</div><div class="val">info@landmarkworldwide.com</div></div></a>' +
+          '<a class="cway" href="tel:+13124403464"><div class="gi"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.7 2z"/></svg></div><div><div class="lab">Phone</div><div class="val">+1 (312) 440-3464</div></div></a>' +
+          '<button class="cway" id="fbLink" type="button"><div class="gi"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.9 9.9 0 0 1-4-.9L3 21l1.9-4.5A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/></svg></div><div><div class="lab">We want to hear from you</div><div class="val">How’s it going so far? &rarr;</div></div></button>' +
+        '</div>' +
+      '</div>' +
+    '</div></section>';
+
+  var curricHtml =
+    '<section class="curric"><div class="wrap">' +
+      '<h2>There’s a whole curriculum <span class="serif-it">beyond this weekend.</span></h2>' +
+      '<a class="cbtn" href="https://www.landmarkworldwide.com/programs" target="_blank" rel="noopener">Explore the Full Landmark Curriculum <svg viewBox="0 0 36 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:26px;height:10px;flex:none;"><path d="M0 7h30M24 1l8 6-8 6"/></svg></a>' +
+    '</div></section>';
+
+  var root = document.getElementById('portal-root');
+  if(root) root.innerHTML = heroHtml + midSectionsHtml + lmfBandHtml + curricHtml + contactHtml;
+
+  // ---- Upcoming/Up-Next tab + All Programs tab, shared grid ----
+  var progTabs = document.getElementById('progTabs');
+  if(progTabs){
+    progTabs.style.display = '';
+    progTabs.querySelector('.wrap').innerHTML =
+      '<button class="active" data-tab="current">' + tabFirstLabel + '</button><button data-tab="all">All Programs</button>';
+  }
+  var gridRoot = document.getElementById('program-grid-root');
+  function activateTab(name){
+    var isAll = name === 'all';
+    if(root) root.style.display = isAll ? 'none' : '';
+    if(gridRoot) gridRoot.style.display = isAll ? '' : 'none';
+    if(progTabs) progTabs.querySelectorAll('button').forEach(function(b){ b.classList.toggle('active', (b.getAttribute('data-tab') === 'all') === isAll); });
+    window.scrollTo({ top: 0 });
+  }
+  if(progTabs) progTabs.querySelectorAll('button').forEach(function(b){
+    b.addEventListener('click', function(){ activateTab(b.getAttribute('data-tab')); });
+  });
+  if(gridRoot) gridRoot.style.display = 'none';
+
+  var _saCards = Portal.render._sec.seminarAcCards(data);
+  var forumTitle = 'The Landmark ' + courseType;
+  Portal.programGrid.render(gridRoot, [
+    { key: 'forum', title: forumTitle, state: 'reg', pill: { label: 'Completed', variant: 'done' },
+      detailRows: [
+        { label: 'Completed', value: hasStartLabel(startTs, ianaId) },
+        { label: 'Format', value: format }
+      ],
+      cta: { label: 'Download Certificate', variant: 'cert' } },
+    _saCards.seminar,
+    _saCards.ac,
+    { key: 'cap', state: 'dim', cta: { label: 'Learn More', variant: 'ghost' } },
+    { key: 'cpc', state: 'dim', cta: { label: 'Learn More', variant: 'ghost' } },
+    { key: 'tmlp', state: 'dim', cta: { label: 'Learn More', variant: 'ghost' } },
+    { key: 'wisdom', state: 'dim', cta: { label: 'Learn More', variant: 'ghost' } },
+    { key: 'partner', state: 'dim', cta: { label: 'Learn More', variant: 'ghost' } }
+  ], { heading: 'All Programs.', lede: 'A map of where you are and what’s ahead — what you’ve completed, and where the curriculum goes from here.' });
+
+  function hasStartLabel(ts, iana){
+    return isNaN(ts) ? 'TBD' : Portal.format.weekdayMonthDay(ts, iana);
+  }
+
+  // ---- certificate modal content ----
+  var certName = document.getElementById('certName');
+  var certProgram = document.getElementById('certProgram');
+  var certDates = document.getElementById('certDates');
+  if(certName) certName.textContent = (firstName + ' ' + lastName).trim();
+  if(certProgram) certProgram.textContent = forumTitle;
+  if(certDates) certDates.textContent = [
+    !isNaN(startTs) ? Portal.format.dateRange(startTs, isNaN(endTs) ? startTs : endTs, ianaId) : '',
+    !isNaN(gradTs) ? 'Graduation ' + Portal.format.weekdayMonthDay(gradTs, ianaId).split(', ')[1] : '',
+    format
+  ].filter(Boolean).join(' · ');
+
+  // ---- wire behavior ----
+  var hrLink = document.getElementById('hrLink');
+  if(hrLink) hrLink.addEventListener('click', function(e){ e.preventDefault(); Portal.modal.open('hrModal', 'hrScrim'); });
+  var fbLink = document.getElementById('fbLink');
+  if(fbLink) fbLink.addEventListener('click', function(e){ e.preventDefault(); Portal.modal.open('fbModal', 'fbScrim'); });
+
+  if(winner){
+    Portal.techCheck.init();
+    document.querySelectorAll('.flip').forEach(function(f){
+      f.addEventListener('click', function(){ f.classList.toggle('flipped'); });
+    });
+    var cdD = document.getElementById('cd-d'), cdH = document.getElementById('cd-h'), cdM = document.getElementById('cd-m');
+    var tick = function(){
+      var d = winner.startTs - Date.now(); if(d < 0) d = 0;
+      cdD.textContent = Math.floor(d / 86400000);
+      cdH.textContent = Math.floor((d % 86400000) / 3600000);
+      cdM.textContent = Math.floor((d % 3600000) / 60000);
+    };
+    tick();
+    window.setInterval(tick, 30000);
+
+    var nextCourseTypeForCal = winner.next.title || Portal.pdata[winner.key].title;
+    var calEvents = [{
+      start: winner.startTs, end: !isNaN(nextEndTs) ? nextEndTs : winner.startTs + 3 * 3600000,
+      summary: 'The Landmark ' + nextCourseTypeForCal, location: winner.next.format || 'Online',
+      description: 'Join from your Landmark member portal.'
+    }];
+    if(!isNaN(nextGradTs)){
+      calEvents.push({ start: nextGradTs, end: nextGradTs + 2 * 3600000, summary: 'The Landmark ' + nextCourseTypeForCal + ' — Final Session', location: winner.next.format || 'Online' });
+    }
+    var heroAddCal = document.getElementById('heroAddCal');
+    if(heroAddCal) heroAddCal.addEventListener('click', function(){ Portal.calendar.download(nextCourseTypeForCal.toLowerCase().replace(/\s+/g, '-') + '.ics', calEvents); });
+  } else {
+    var heroNext = document.getElementById('heroNext');
+    if(heroNext) heroNext.addEventListener('click', function(){
+      Portal.programGrid.openDetail({
+        key: (data.post && data.post.recommendedNext === 'seminar') ? 'seminar' : 'ac',
+        pill: { label: 'Recommended Next' },
+        detailRows: [],
+        cta: { label: 'Explore Courses', variant: 'solid' },
+        onCta: function(){ window.open('https://www.landmarkworldwide.com/schedules', '_blank', 'noopener'); }
+      });
+    });
+  }
 };
