@@ -106,3 +106,18 @@ Checked live 2026-08-07 against `event team` (10007), `invitations` (10003), `co
 
 ### 6.4 Resolved 2026-08-08 — TOS/FIF gate
 **Was flagged as ambiguous (two unrelated TOS-style consent field sets exist across `registrations` and `contacts`); client resolved it directly.** The Home roster's TOS/FIF gate uses `registrations.f2585` "Agreed to Registration Policies" (TOS) and `registrations.f2579` "Information Form Completed" (FIF) — see §6.1. The `contacts.f2335`/`f2723`/`f2724` LF-specific trio is not used for this gate. Superseded, kept only so the reasoning trail isn't lost if this ever needs re-litigating.
+
+## 7. ONTRApage install — manual step, needs an Ontraport admin
+
+**No tool available here can create, read, or edit Ontraport Page Builder content.** Confirmed 2026-08-08: there's no `create_page`/`edit_page` API tool, and the page-template object itself (`objectID 178`, target of `page_120_template_id`/`page_121_template_id`/`page_125_template_id` etc.) isn't a queryable object type through this API ("Object type 178 is not recognized"). This has to happen by hand in the Page Builder UI.
+
+**What's ready to hand off:** `member-portal.html` is final — its `PORTAL_DATA` fixture already carries real merge-field syntax (§1-6 above) and its closing `<script src>` already points at the hosted engine (`https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/portal-engine.js`, confirmed live and current as of the 2026-08-08 push). No further content edits needed before pasting it in.
+
+**Decision already made 2026-08-08 (client, direct):** the unified page replaces all three of the existing Pre-Event (`page_120`)/Post Event (`page_121`)/During Event (`page_125`) page templates, and all three keep resolving to it — **repoint, don't retire** — so any automation/email already linking to `page_120_url`/`page_121_url`/`page_125_url` keeps working unchanged; only the rendered content behind those URLs changes.
+
+**What an Ontraport admin needs to do by hand:**
+1. In Page Builder, create one new Custom HTML page (or repurpose the existing "During Event" template, whichever's cleaner given current admin workflow) and paste in the full contents of `member-portal.html` as shipped.
+2. Repoint the Pre-Event, Post Event, and During Event page-template assignments (wherever that's configured for the `registrations` object's personalized pages — likely CRM Objects → Registrations → Pages, not directly editable through this API) so all three now render the new/repurposed template.
+3. Spot-check at least one real registration's `page_120_url`/`page_121_url`/`page_125_url` after the repoint to confirm the merge fields resolve correctly live (not just in the local `verify-mergefields.js` harness) and that all three URLs land on the same unified page, correctly phase-dispatching per `Portal.init()`.
+
+**Open mechanical question, not yet answered:** whether Ontraport's Custom HTML block expects the full document (`<html><head>...<body>...`) as `member-portal.html` currently is, or just the inner body content with head-level assets (fonts, `<style>`) handled separately by the page shell. Nothing in this project's docs settles this — needs a first-hand check in the Page Builder before pasting, or a quick support question if it's not obvious from the editor itself.
