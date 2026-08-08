@@ -651,7 +651,9 @@ Portal.account = (function(){
   function populateForm(data){
     data = data || {};
     var set = function(id, val){ var el = document.getElementById(id); if(el) el.value = val || ''; };
-    set('acctFirst', data.firstName);
+    // acctDisplay pulls from Display Name (contacts.f2620), not First
+    // Name — 2026-08-08 decision, keeps the real contact record intact.
+    set('acctDisplay', data.displayName);
     set('acctLast', data.lastName);
     set('acctEmail', data.email);
     set('acctPhone', data.phone);

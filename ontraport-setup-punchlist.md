@@ -13,7 +13,7 @@ Checked live against the real `registrations` (10001) and `events` (10000) schem
 - `events.f2469` "Event Zoom Link: Participants" — present.
 - `events.f2753` "Session Dates" (longtext, staff-pasted list) — functional, just needs an agreed parse format when Stage 4 actually consumes it.
 - `registrations.f3086` "Countdown Timer Starting Reference" and `events.f2754`/`f2757` (Session Start Time / Event Time Zone) — the fields the ported countdown logic (`Portal.dateUtil`) already reads.
-- My Account modal (added 2026-08-07) field mapping, live-confirmed on `contacts` (objectID 0): First Name → `firstname`, Last Name → `lastname`, Email → `email`, Mobile phone → `sms_number` (not `office_phone` — `sms_number` is what the existing SMS-consent fields are already keyed to), Time zone → `timezone` (real native `timezone`-type field), Photo → `profile_image` (native `image`-type field). Also found: `f2792` "Name Likes" (what the participant told us they want to be called — now used everywhere the portal greets someone, with a fallback to First Name, per 2026-08-07 decision) and `f2620` "Display Name" (portal-facing display name, believed to default from First Name — **unconfirmed**, see item 5). None of these need new fields created — the gap is the write-back mechanism, not the fields. See item 5.
+- My Account modal field mapping, live-confirmed on `contacts` (objectID 0): Last Name → `lastname`, Email → `email`, Mobile phone → `sms_number` (not `office_phone` — `sms_number` is what the existing SMS-consent fields are already keyed to), Time zone → `timezone` (real native `timezone`-type field), Photo → `profile_image` (native `image`-type field). **Name field, decided 2026-08-08: the modal's primary editable name field is `f2620` "Display Name", not First Name** — a self-service "how you'd like to be addressed" field (e.g. "Chris R.") that keeps `firstname` untouched. Separate from `f2792` "Name Likes" (the original intake-form preference, still what every greeting elsewhere in the portal uses, per the 2026-08-07 `nameLikes || firstName` decision — confirmed 2026-08-08 these stay independent, Display Name does not feed greetings). None of these need new fields created — the gap is the write-back mechanism, not the fields. See item 5.
 
 ## 1. Populate two empty dropdowns
 
@@ -26,11 +26,24 @@ This is the CS's manual day-release control the whole hybrid session-resolution 
 
 **Resolved shape:** change the option set to **`1`, `2`, `3`, `Final`** — blank/unset means "nothing released yet" (Pre-event), `Final` covers Graduation. No numeric/unbounded rework needed — Seminar's own ~10-week cadence is confirmed out of scope for this pilot.
 
-## 3. Build a new Course Materials custom object
+## 3. Course Materials release triggers — built 2026-08-08, narrower than originally scoped
 
-No backing data model exists at all today for the CS dashboard's per-resource release toggles. What exists on `events` is ~10 fixed, inconsistently-named URL fields (`f2710`-`f2714`, `f3026`-`f3031`) with no release toggle, no per-item metadata, no section grouping — not enough.
+The full custom object below was never built. Instead, the client added **6 fixed checkboxes directly on `events`**, each with a `related_data` mirror on `registrations` (same live-pull-through pattern as item 4's Announcement triggers) — confirmed live 2026-08-08:
 
-New object, one row per resource:
+| Day | Item | events checkbox | registrations mirror (read this, no prefix) | URL field (events, `Events//` prefix) |
+|---|---|---|---|---|
+| 1 | Assignments | `f3121` | `f3127` "Day 1 Assignments Visible?" | `f3027` "LM-Day 1 Assignments" |
+| 1 | Agreements | `f3122` | `f3128` "Day 1 Agreements Visible?" | `f3026` "Day 1 Agreements" |
+| 1 | Letter | `f3123` | `f3129` "Day 1 Letter Visible?" | `f3028` "LM-Day 1 Letter" |
+| 2 | Assignments | `f3124` | `f3130` "Day 2 Assignments" (no "Visible?" suffix, unlike siblings) | `f3029` "LM-Day 2 Assignment" |
+| 2 | Letter | `f3125` | `f3131` "Day 2 Letter Visible?" | `f3030` "LM-Day 2 Letter" |
+| 3 | Follow-Through | `f3126` | `f3132` "Day 3 Follow Through Visible?" | `f3031` "LM-Day 3 Follow Through" |
+
+**Confirmed 2026-08-08: the "LM-" `f3026`-`f3031` set is the authoritative URL field set**, not the legacy `f2708`-`f2714` set (`Workbook URL`, `Day 1/2/3 Materials URL`, `AC Materials URL`, `Materials Video URL`) — those legacy fields are superseded, not a second source of truth to reconcile against.
+
+**What this is NOT, confirmed intentional for the pilot:** no per-item metadata (no Kind categorization, no Session Index, no First Shown At timestamp, no Notified flag — the original object design below), no toggle at all for Workbook/Materials Video/Day 3 Materials/AC Materials, and nothing for Graduation. **Decided 2026-08-08: omit all of these entirely rather than build around a guess** — the Member Portal's During-event assignments stack only renders the 6 items above; the renderer's existing empty-state covers Graduation and anything else omitted. Wired into `member-portal.html`'s `PORTAL_DATA.materials` — see that file for the exact merge-tag mapping.
+
+<details><summary>Original fuller object design (superseded, kept for reference only)</summary>
 
 | Field | Type | Notes |
 |---|---|---|
@@ -44,18 +57,15 @@ New object, one row per resource:
 | First Shown At | Timestamp | auto-set on first release |
 | Notified | Checkbox | matches the dashboard's existing notify tracking |
 
-## 4. Add two new checkbox fields for Announcements
+</details>
 
-The CS dashboard's "Announcements" card (Seminar registration open / AC registration open) has no backing fields. Add:
+## 4. Announcements checkboxes — done 2026-08-08
 
-- **`Seminar Open`** (checkbox)
-- **`Advanced Course Open`** (checkbox)
+Built exactly per the recommended placement: `events.f3104` "Seminar Reg Open" / `events.f3105` "AC Reg Open" (checkboxes), each with a `registrations`-side `related_data` mirror — `f3106` "Trigger Seminar Announcement: DURING EVENT" / `f3107` "Trigger AC Announcement: DURING EVENT". This resolves the fan-out concern this item originally flagged: each registration has its own live-mirrored trigger field to condition on, no separate fan-out automation needed to get from "event-level toggle" to "per-registrant visibility."
 
-Not yet decided whether these belong on `registrations` (10001) or `events` (10000) — confirm before creating. Given the CS toggles this once per cohort (same pattern as `Todays Session (Day)`), `events` is the more consistent placement — but if placed there, the automation needs to fan out to every linked `registrations` record for that event rather than firing on the event record itself.
+Still to confirm/build: the actual Ontraport automation sending the participant email/SMS on `true` (not yet verified as built — the fields exist, the automation wiring is a separate check). Wired into `member-portal.html`'s `PORTAL_DATA` as `seminarRegOpen`/`acRegOpen`, read directly off `registrations` (no prefix).
 
-Wire an Ontraport automation on each: condition = field value is `true` → send the participant email/SMS announcing that program's registration is open.
-
-**Portal-side note:** these are not surfaced in the Member Portal UI — CS-side notification only, confirmed 2026-08-07. No grid/pill/copy change needed unless that changes later.
+**Portal-side note, still accurate:** not surfaced in the Member Portal UI — CS-side notification only, confirmed 2026-08-07. No grid/pill/copy change needed unless that changes later.
 
 ## 5. My Account write-back — narrowed 2026-08-08, real architecture decision needed
 
@@ -68,6 +78,8 @@ The My Account modal's "Save Changes" (currently a UI-only stub — see `member-
 - **This is a real decision, not just a technical detail:**
   1. **Rebuild My Account's fields as native Ontraport Form elements**, styled via Ontraport's own style settings to match the existing modal as closely as possible (docs confirm forms are stylable and support image/file upload fields — so `profile_image` could plausibly go through this path too). Gets the write-back essentially for free, but the modal's exact custom look-and-feel may not be fully reproducible with native form styling — some visual fidelity risk.
   2. **Keep the custom modal exactly as designed**, and build the fallback server-side proxy (serverless function/webhook holding the API key, called from the client, calling `update_object` server-side) to submit its data instead. Full design control, more to build and secure.
+
+**Decided 2026-08-08 (design lead, direct): option 2.** Native Ontraport form elements are ruled out — My Account stays fully custom-coded, write-back goes through a server-side proxy once that infra exists (not built yet). Also decided: the modal's primary editable name field is `f2620` "Display Name", not `firstname` — see the "Already fine" section above and `member-portal.html`'s `PORTAL_DATA`/My Account modal for the wiring. When the proxy gets built, its target for that field is `contacts.f2620`, never `firstname` — flagged directly in the code comment at the Save Changes stub so this doesn't drift.
   - Needs a call from whoever owns the visual bar for this modal — how much fidelity loss option 1 would actually mean is only knowable by testing Ontraport's form styling controls hands-on in the Page Builder (same manual-access blocker as §7's ONTRApage install).
 
 **Photo specifically:** Ontraport's native forms generally do support image/file upload fields (confirmed via their docs), so the native path may cover `profile_image` directly — but this isn't confirmed for the authenticated-member-update case specifically. If it doesn't pan out, the agreed fallback is uploading to Cloudinary client-side (same pattern already used for this project's own image assets) and writing the resulting URL into `profile_image` via the proxy path — `profile_image` is a plain `image`-type field, so a URL string should be a valid value either way.

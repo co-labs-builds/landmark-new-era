@@ -784,7 +784,7 @@
           </div>
         </div>
         <div class="acct-grid">
-          <div><label class="acct-lab" for="acctFirst">First name</label><input class="acct-in" id="acctFirst" value=""></div>
+          <div><label class="acct-lab" for="acctDisplay">Display name</label><input class="acct-in" id="acctDisplay" value="" placeholder="How you'd like to be addressed, e.g. &quot;Chris R.&quot;"></div>
           <div><label class="acct-lab" for="acctLast">Last name</label><input class="acct-in" id="acctLast" value=""></div>
           <div class="full"><label class="acct-lab" for="acctEmail">Email</label><input class="acct-in" id="acctEmail" type="email" value=""></div>
           <div><label class="acct-lab" for="acctPhone">Mobile phone</label><input class="acct-in" id="acctPhone" type="tel" value=""></div>
@@ -1003,6 +1003,11 @@
       this.textContent='Thank you — we hear you.'; this.disabled=true;
     });
 
+    // Still a UI-only stub — real write-back is a server-side proxy (design
+    // lead ruled out native Ontraport form elements, 2026-08-08), not yet
+    // built. When wired, the Display Name field targets contacts.f2620
+    // "Display Name" specifically — never firstname, which stays untouched
+    // so the participant's real name on file is never overwritten by this.
     document.getElementById('acctSave').addEventListener('click', function(){
       var b=this; b.textContent='Saved ✓'; b.disabled=true;
       setTimeout(function(){ b.textContent='Save Changes'; b.disabled=false; }, 2200);
@@ -1131,6 +1136,11 @@
       // 2026-08-07 decision — see Portal.render's own firstName
       // resolution (data.nameLikes || data.firstName).
       nameLikes: '[Contacts//Name Likes]',
+      // Display Name (contacts.f2620) — My Account's editable "how you'd
+      // like to be addressed" field (2026-08-08 decision), separate from
+      // Name Likes: this is self-service portal-only, Name Likes is the
+      // original intake-form preference and stays what greetings use.
+      displayName: '[Contacts//Display Name]',
       email: '[Contacts//Email]',
       phone: '[Contacts//SMS Number]', // not Office Phone — this is what the SMS-consent fields are already keyed to
       profileImageUrl: '[Contacts//Profile Image]',
@@ -1149,6 +1159,13 @@
         hasSeminarReg: '[Registered for Seminar##checkediftrue]' === 'true',
         hasACReg: '[Registered for Advanced Course##checkediftrue]' === 'true'
       },
+      // Seminar/AC "registration open" announcement triggers — added
+      // 2026-08-08. Client created events.f3104/f3105 (Seminar Reg Open /
+      // AC Reg Open) plus registrations.f3106/f3107 as related_data live
+      // mirrors, same pattern as graduation's f3099/f3100 — read directly
+      // off this registration, no Events// prefix needed.
+      seminarRegOpen: '[Trigger Seminar Announcement: DURING EVENT##checkediftrue]' === 'true',
+      acRegOpen: '[Trigger AC Announcement: DURING EVENT##checkediftrue]' === 'true',
 
       // ---- the event (cross-object) ----
       // Format (events.f2234) renders as its label directly
@@ -1190,11 +1207,43 @@
       // "Already fine" section's own caveat) — resolveCurrentSession()
       // still works fine off currentReleasedSession alone without it.
       sessionDates: [],
-      currentReleasedSession: currentReleasedSession
-      // materials, seminarNext, acNext, graduationGuests: all blocked
-      // on Ontraport-side setup that doesn't exist yet (punchlist
-      // items 1-3) — intentionally omitted rather than faked; every
-      // renderer already has a real empty-state for each of these.
+      currentReleasedSession: currentReleasedSession,
+
+      // Course Materials release triggers — added 2026-08-08. NOT the
+      // fuller Course Materials custom object originally scoped
+      // (punchlist item 3) — client instead added 6 fixed checkboxes on
+      // events (Day 1 Assignments/Agreements/Letter, Day 2 Assignments/
+      // Letter, Day 3 Follow-Through) with registrations-side related_data
+      // mirrors (f3127-f3132, read directly, no prefix) and paired URL
+      // fields on events (the "LM-" f3026-f3031 set, confirmed the
+      // authoritative one over the legacy f2708-f2714 set — Events//
+      // prefix needed for these). Workbook/Materials Video/Day 3
+      // Materials/AC Materials/Graduation have no toggle at all and are
+      // intentionally omitted, not faked — confirmed out of scope for
+      // this pilot. Shape matches Portal.render.during()'s existing
+      // sessions[]/graduation[] consumption exactly (grouped by day, not
+      // a flat list) — see sessionCardHtml/resGroupHtml.
+      materials: {
+        sessions: [
+          { index: 1, label: 'Day 1', items: [
+            { name: 'Day 1 Assignments', url: '[Events//LM-Day 1 Assignments]', released: '[Day 1 Assignments Visible?##checkediftrue]' === 'true' },
+            { name: 'Day 1 Agreements',  url: '[Events//Day 1 Agreements]',      released: '[Day 1 Agreements Visible?##checkediftrue]' === 'true' },
+            { name: 'Day 1 Letter',      url: '[Events//LM-Day 1 Letter]',       released: '[Day 1 Letter Visible?##checkediftrue]' === 'true' }
+          ]},
+          { index: 2, label: 'Day 2', items: [
+            { name: 'Day 2 Assignments', url: '[Events//LM-Day 2 Assignment]',   released: '[Day 2 Assignments##checkediftrue]' === 'true' },
+            { name: 'Day 2 Letter',      url: '[Events//LM-Day 2 Letter]',       released: '[Day 2 Letter Visible?##checkediftrue]' === 'true' }
+          ]},
+          { index: 3, label: 'Day 3', items: [
+            { name: 'Day 3 Follow-Through', url: '[Events//LM-Day 3 Follow Through]', released: '[Day 3 Follow Through Visible?##checkediftrue]' === 'true' }
+          ]}
+        ],
+        graduation: [] // no toggle exists — renderer already has a real empty-state
+      }
+      // seminarNext, acNext, graduationGuests: still blocked on
+      // Ontraport-side setup that doesn't exist yet (punchlist items
+      // 1-2) — intentionally omitted rather than faked; every renderer
+      // already has a real empty-state for each of these.
     };
   })();
   </script>
