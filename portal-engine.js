@@ -45,8 +45,14 @@ Portal.dateUtil = (function(){
     catch(e){ return ""; }
   }
 
-  /* "2026-09-25" | "09/25/2026" | "Sep 25, 2026" -> [y,m,d] */
+  /* "2026-09-25" | "09/25/2026" | "Sep 25, 2026" | "Tues, Aug 18, 2026" -> [y,m,d].
+     The trailing form matters for real data: Ontraport's own Graduation Day
+     and Date field (events.f2987/f3099) is documented with exactly that
+     "Tues, Aug 18, 2026" shape — a non-standard weekday abbreviation
+     Date.parse isn't guaranteed to handle — so a leading "Weekday, " prefix
+     is stripped before falling through to Date.parse. */
   function parseDate(s){
+    s = String(s).trim().replace(/^[A-Za-z]+,\s*/, "");
     var m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);
     if(m) return [+m[1],+m[2],+m[3]];
     m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s);
@@ -1001,7 +1007,7 @@ Portal.render.pre = function(data){
     time: data.sessionStartTime,
     timeZone: tz
   });
-  var endTs = Portal.dateUtil.resolveStart({ reference: data.eventEnd, timeZone: tz }) ||
+  var endTs = Portal.dateUtil.resolveStart({ reference: data.eventEnd && data.eventEnd.reference, date: data.eventEnd && data.eventEnd.date, time: data.eventEnd && data.eventEnd.time, timeZone: tz }) ||
     (isNaN(startTs) ? NaN : startTs + 2 * 86400000); // fallback: assume a 3-day span if no explicit end given
   var gradTs = data.graduation ? Portal.dateUtil.resolveStart({
     reference: data.graduation.reference, date: data.graduation.date, time: data.graduation.time, timeZone: tz
@@ -1240,7 +1246,7 @@ Portal.render.during = function(data){
   });
   var hasStart = !isNaN(startTs);
   var roomOpenTs = hasStart ? startTs - 30 * 60000 : NaN;
-  var endTs = Portal.dateUtil.resolveStart({ reference: data.eventEnd, timeZone: tz });
+  var endTs = Portal.dateUtil.resolveStart({ reference: data.eventEnd && data.eventEnd.reference, date: data.eventEnd && data.eventEnd.date, time: data.eventEnd && data.eventEnd.time, timeZone: tz });
   var gradTs = data.graduation ? Portal.dateUtil.resolveStart({
     reference: data.graduation.reference, date: data.graduation.date, time: data.graduation.time, timeZone: tz
   }) : NaN;
@@ -1663,7 +1669,7 @@ Portal.render.post = function(data){
   var startTs = Portal.dateUtil.resolveStart({
     reference: data.eventStartUTC, date: data.eventStartDate, time: data.sessionStartTime, timeZone: tz
   });
-  var endTs = Portal.dateUtil.resolveStart({ reference: data.eventEnd, timeZone: tz }) ||
+  var endTs = Portal.dateUtil.resolveStart({ reference: data.eventEnd && data.eventEnd.reference, date: data.eventEnd && data.eventEnd.date, time: data.eventEnd && data.eventEnd.time, timeZone: tz }) ||
     (isNaN(startTs) ? NaN : startTs + 2 * 86400000);
   var gradTs = data.graduation ? Portal.dateUtil.resolveStart({
     reference: data.graduation.reference, date: data.graduation.date, time: data.graduation.time, timeZone: tz
@@ -1922,7 +1928,7 @@ Portal.phase = (function(){
     });
     if(isNaN(startTs)) return 'pre';
 
-    var endTs = Portal.dateUtil.resolveStart({ reference: data.eventEnd, timeZone: tz });
+    var endTs = Portal.dateUtil.resolveStart({ reference: data.eventEnd && data.eventEnd.reference, date: data.eventEnd && data.eventEnd.date, time: data.eventEnd && data.eventEnd.time, timeZone: tz });
     if(isNaN(endTs)) endTs = startTs + 2 * 86400000; // same 3-day fallback every renderer already uses
     var gradTs = data.graduation ? Portal.dateUtil.resolveStart({
       reference: data.graduation.reference, date: data.graduation.date, time: data.graduation.time, timeZone: tz

@@ -1078,25 +1078,125 @@
   </script>
 
   <!-- =========================================================
-     window.PORTAL_DATA — placeholder fixture for the real Aug 14
-     pilot cohort until the Portal Context Resolver automation
-     (out of this plan's scope) exists to populate this for real.
-     Shaped exactly like every render.*'s own fixtures throughout
-     this build, so Portal.init() below has something real to
-     compute a phase from and dispatch on — this is the actual
-     integration point Stage 6 exists to wire, not a preview.
+     window.PORTAL_DATA — real Ontraport merge fields, Registration-
+     based (this page's own object is `registrations`, objectID
+     10001; cross-object fields use the `[ObjectName//Field]` prefix
+     per [[ontraport-merge-field-syntax]]). Field-by-field mapping
+     confirmed live 2026-08-07 against the real `contacts`,
+     `registrations`, and `events` schemas — see
+     `ontraport-setup-punchlist.md` for the full reconciliation.
+
+     Safe to test locally, outside Ontraport: Portal.dateUtil.val()
+     already treats any string starting with "[" as unset, so an
+     un-substituted merge tag degrades to the same graceful-empty
+     state every renderer already handles for a genuinely missing
+     field — no separate dev/prod fixture needed.
+
+     Checkbox fields use the ##checkediftrue modifier (renders the
+     literal strings "true"/"false") and dropdown fields render
+     their option LABEL, not the option ID — both confirmed via
+     Ontraport's own merge-field-formatting docs, not assumed.
      ========================================================= -->
   <script>
-  window.PORTAL_DATA = {
-    firstName: 'Jordan', lastName: 'Reyes', courseType: 'Forum', format: 'Online',
-    email: 'jordan.reyes@example.com', phone: '(555) 010-2846',
-    tz: 'US Pacific · PST/PDT · GMT-8/-7 (America/Los_Angeles)',
-    eventStartUTC: '2026-08-14T17:00:00Z', eventEnd: '2026-08-16T23:00:00Z',
-    graduation: { reference: '2026-08-18T19:00:00Z' },
-    sessionDates: ['2026-08-14', '2026-08-15', '2026-08-16'],
-    currentReleasedSession: null,
-    post: { hasSeminarReg: false, hasACReg: false }
-  };
+  (function(){
+    // Course Type (registrations.f2830) renders as its full dropdown
+    // label ("Landmark Forum", "Seminar", "Advanced Course", ...) —
+    // every renderer in this file expects the short form used
+    // throughout (Forum/Seminar/AC), so normalize here rather than
+    // touching every render function's own copy.
+    var COURSE_TYPE_MAP = {
+      'Landmark Forum': 'Forum',
+      'Seminar': 'Seminar',
+      'Advanced Course': 'AC',
+      'Graduate Course': 'Graduate Course',
+      'Subscription': 'Subscription',
+      'Other': 'Other'
+    };
+    var rawCourseType = '[Course Type]';
+    var courseType = COURSE_TYPE_MAP[rawCourseType] || 'Forum';
+
+    // Todays Session (Day) (events.f3025) is still a Day-1/2/3-only
+    // dropdown as of 2026-08-07 (punchlist Gap 1 — the "Final" option
+    // for Graduation hasn't been added to the field's option set yet).
+    // Renders as its label ("Day 1"), not a bare number.
+    var rawSessionDay = '[Events//Todays Session (Day)]';
+    var sessionDayMatch = /^Day (\d+)$/.exec(rawSessionDay);
+    var currentReleasedSession = sessionDayMatch ? +sessionDayMatch[1] : null;
+
+    window.PORTAL_DATA = {
+      // ---- contacts (cross-object) ----
+      firstName: '[Contacts//First Name]',
+      lastName: '[Contacts//Last Name]',
+      // Name Likes (contacts.f2792) wins for greetings per the
+      // 2026-08-07 decision — see Portal.render's own firstName
+      // resolution (data.nameLikes || data.firstName).
+      nameLikes: '[Contacts//Name Likes]',
+      email: '[Contacts//Email]',
+      phone: '[Contacts//SMS Number]', // not Office Phone — this is what the SMS-consent fields are already keyed to
+      profileImageUrl: '[Contacts//Profile Image]',
+
+      // ---- this registration (own object, no prefix) ----
+      courseType: courseType,
+      // Zoom Join URL (registrations.f2795) is a real PER-REGISTRANT
+      // unique join link (written by the n8n/Zoom automation at
+      // registration time) — confirmed 2026-08-07, replaces the
+      // earlier assumption that this was the shared events.f2469
+      // link. That shared field is real too but isn't what the
+      // "Join Your Forum" CTA should point at.
+      zoomJoin: '[Zoom Join URL]',
+      infoFormCompleted: '[Information Form Completed##checkediftrue]' === 'true',
+      post: {
+        hasSeminarReg: '[Registered for Seminar##checkediftrue]' === 'true',
+        hasACReg: '[Registered for Advanced Course##checkediftrue]' === 'true'
+      },
+
+      // ---- the event (cross-object) ----
+      // Format (events.f2234) renders as its label directly
+      // ("Online" / "In Person" / "Hybrid") — no normalization
+      // needed, these already read naturally as-is.
+      format: '[Events//Format (in person, online, Hybrid)]',
+      // Calendar Time Zone (IANA) (events.f2757) — its dropdown
+      // label is already in the exact
+      // "US Pacific · PST/PDT · GMT-8/-7 (America/Los_Angeles)"
+      // shape Portal.dateUtil.ianaOf() parses the IANA id out of.
+      // Do NOT use the older "Event Time Zone" (f2318) — that one
+      // is explicitly display-only per its own field description.
+      tz: '[Events//Calendar Time Zone (IANA)]',
+      // Countdown Timer Starting Reference (registrations.f3086) is
+      // a precomputed UTC instant purpose-built for exactly this —
+      // "UTC time code for an event start time to use countdowns for
+      // dynamic pages" per its own field description.
+      eventStartUTC: '[Countdown Timer Starting Reference]',
+      // Event End Date (events.f2395) is a real fulldate field, so
+      // requesting it in ISO shape via the %Y-%m-%d format modifier
+      // avoids any date-parsing ambiguity (confirmed via Ontraport's
+      // merge-field-formatting docs — PHP date() tokens, same
+      // pattern as their own %F j, Y g:i a example).
+      eventEnd: { date: '[Events//Event End Date%Y-%m-%d]', time: '[Events//Session End Time]' },
+      // Graduation Day and Date / Start Time (registrations.f3099/
+      // f3100) — registration-side mirrors of the Event's own
+      // Graduation fields, purpose-built so a registration-based
+      // template like this one doesn't need a cross-object prefix.
+      // These are TEXT fields, not fulldate, so no %-format modifier
+      // applies — staff-entered shape is documented as e.g.
+      // "Tues, Aug 18, 2026"; Portal.dateUtil.parseDate() now strips
+      // a leading weekday prefix specifically for this format.
+      graduation: { date: '[Graduation Day and Date]', time: '[Graduation Start Time]' },
+
+      // ---- known-blocked, not yet wireable — see
+      // ontraport-setup-punchlist.md for the underlying gaps ----
+      // sessionDates: events.f2753 exists but is unstructured
+      // longtext with no agreed parse format yet (punchlist,
+      // "Already fine" section's own caveat) — resolveCurrentSession()
+      // still works fine off currentReleasedSession alone without it.
+      sessionDates: [],
+      currentReleasedSession: currentReleasedSession
+      // materials, seminarNext, acNext, graduationGuests: all blocked
+      // on Ontraport-side setup that doesn't exist yet (punchlist
+      // items 1-3) — intentionally omitted rather than faked; every
+      // renderer already has a real empty-state for each of these.
+    };
+  })();
   </script>
   <script src="portal-engine.js"></script>
   <script>Portal.init();</script>
