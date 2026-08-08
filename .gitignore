@@ -1,0 +1,7 @@
+# One-off paste-ready extracts for manual Ontraport Page Builder install.
+# Mechanical snapshots of member-portal.html at generation time -- would
+# drift from source immediately on the next edit. Regenerate fresh
+# (see C:\Users\chris\.claude\plans\review-the-docs-and-mutable-moler.md)
+# rather than trusting a committed copy.
+INSTALL-header-code.html
+INSTALL-body-block.html
