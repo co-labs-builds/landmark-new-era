@@ -602,7 +602,13 @@ Portal.confetti = (function(){
    ========================================================= */
 
 /* =========================================================
-   Portal.account — the floating top-right avatar control.
+   Portal.account — the floating top-right avatar control AND
+   the My Account modal it opens (added 2026-08-07: originally
+   scoped out — "logout only, no My Profile" was a locked build
+   rule — reversed on direct instruction once it became clear
+   participants need a real way to change their display name
+   and photo, not just log out).
+
    setAvatar(url) swaps #fabAccountIcon's contents for a real
    photo when the Contact record's Profile Image URL is set,
    falling back to the default person-outline SVG (the shell's
@@ -610,23 +616,60 @@ Portal.confetti = (function(){
    affordance on every phase (mobile hides the nav CTA slot
    entirely, see member-portal.html's mobile media query) so the
    avatar is a stable, familiar element across Pre/During/Post.
-   Called once from Portal.init() (Stage 6), not per-renderer —
-   it used to be called only from render.during, which silently
-   meant Pre/Post never showed a real photo; centralizing it in
-   init() fixed that gap for all three phases at once. Exact
+
+   populateForm(data) and wirePhotoUpload() are both called once
+   from Portal.init() (Stage 6), same as setAvatar — My Account
+   is static shell markup (not phase-rendered), so it only needs
+   wiring/filling once per page load, not per-renderer. Exact
    crop/fit is a later polish pass; this just wires the
-   capability to show *something* now.
+   capability to show *something* now — actual persistence to
+   Ontraport is out of this plan's scope, same boundary kept
+   everywhere else in this file (the existing acctSave/acctPayBtn
+   stubs in member-portal.html's shell script already reflect
+   that; this doesn't change it).
    ========================================================= */
 Portal.account = (function(){
   var DEFAULT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+
+  function escapeAttr(s){
+    return String(s).replace(/[&<>"\']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', '\'':'&#39;' }[c]; });
+  }
+
   function setAvatar(url){
     var icon = document.getElementById('fabAccountIcon');
-    if(!icon) return;
-    icon.innerHTML = url ?
-      '<img class="fab-account__avatar" src="' + String(url).replace(/[&<>"\']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', '\'':'&#39;' }[c]; }) + '" alt="">' :
-      DEFAULT_ICON;
+    if(icon) icon.innerHTML = url ? '<img class="fab-account__avatar" src="' + escapeAttr(url) + '" alt="">' : DEFAULT_ICON;
+    var preview = document.getElementById('acctPhotoPreview');
+    if(preview) preview.innerHTML = url ? '<img src="' + escapeAttr(url) + '" alt="">' : DEFAULT_ICON;
   }
-  return { setAvatar: setAvatar };
+
+  function populateForm(data){
+    data = data || {};
+    var set = function(id, val){ var el = document.getElementById(id); if(el) el.value = val || ''; };
+    set('acctFirst', data.firstName);
+    set('acctLast', data.lastName);
+    set('acctEmail', data.email);
+    set('acctPhone', data.phone);
+    set('acctTz', data.tz);
+  }
+
+  var photoUploadWired = false;
+  function wirePhotoUpload(){
+    if(photoUploadWired) return; photoUploadWired = true;
+    var btn = document.getElementById('acctPhotoBtn');
+    var input = document.getElementById('acctPhotoInput');
+    if(!btn || !input) return;
+    btn.addEventListener('click', function(){ input.click(); });
+    input.addEventListener('change', function(){
+      var file = input.files && input.files[0];
+      if(!file) return;
+      // Local preview only (URL.createObjectURL) — actual upload/hosting
+      // is an Ontraport-side integration out of this plan's scope, same
+      // as every other not-yet-wired persistence path in this file.
+      setAvatar(URL.createObjectURL(file));
+    });
+  }
+
+  return { setAvatar: setAvatar, populateForm: populateForm, wirePhotoUpload: wirePhotoUpload };
 })();
 
 Portal.techCheck = (function(){
@@ -1885,6 +1928,8 @@ Portal.phase = (function(){
 Portal.init = function(){
   var data = window.PORTAL_DATA || {};
   Portal.account.setAvatar(data.profileImageUrl);
+  Portal.account.populateForm(data);
+  Portal.account.wirePhotoUpload();
   var phase = Portal.phase.compute(data, Date.now());
   if(phase === 'pre') Portal.render.pre(data);
   else if(phase === 'during') Portal.render.during(data);

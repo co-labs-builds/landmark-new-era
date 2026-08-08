@@ -100,6 +100,10 @@
   .fab-account__trigger .fab-account__avatar{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;}
   .fab-account__menu{position:absolute;top:calc(100% + 10px);right:0;min-width:150px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 20px 50px rgba(14,26,25,.22);padding:6px;opacity:0;transform:translateY(-6px);pointer-events:none;transition:opacity .15s,transform .15s;}
   .fab-account.open .fab-account__menu{opacity:1;transform:none;pointer-events:auto;}
+  .fab-account__item{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;padding:11px 12px;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;text-align:left;}
+  .fab-account__item:hover{background:var(--paper);}
+  .fab-account__item svg{width:16px;height:16px;flex:none;}
+  .fab-account__div{height:1px;background:var(--line);margin:4px 2px;}
   .fab-account__logout{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;padding:11px 12px;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:600;color:var(--coral-ink);cursor:pointer;text-align:left;}
   .fab-account__logout:hover{background:var(--paper);}
   .fab-account__logout svg{width:16px;height:16px;flex:none;}
@@ -172,6 +176,12 @@
   .pbtn2.gcert:hover{background:var(--green-bright);color:#fff;}
 
   /* My Account */
+  .acct-photo-row{display:flex;align-items:center;gap:16px;margin-bottom:20px;}
+  .acct-photo-preview{width:64px;height:64px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none;}
+  .acct-photo-preview svg{width:26px;height:26px;}
+  .acct-photo-preview img{width:100%;height:100%;object-fit:cover;display:block;}
+  .acct-photo-actions{display:flex;flex-direction:column;gap:3px;}
+  .acct-photo-hint{font-size:12px;color:var(--gray);}
   .acct-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;}
   .acct-grid .full{grid-column:1 / -1;}
   .acct-lab{display:block;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);margin:0 0 5px;}
@@ -678,6 +688,11 @@
       <span id="fabAccountIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
     </button>
     <div class="fab-account__menu" id="fabAccountMenu" role="menu">
+      <button class="fab-account__item" id="acctMenuBtn" role="menuitem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        My Account
+      </button>
+      <div class="fab-account__div"></div>
       <button class="fab-account__logout" id="logoutBtn" role="menuitem">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
         Log Out
@@ -760,6 +775,14 @@
     <div class="mbody">
       <div class="acct-sec">
         <div class="sec-t">Profile</div>
+        <div class="acct-photo-row">
+          <span class="acct-photo-preview" id="acctPhotoPreview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+          <div class="acct-photo-actions">
+            <button type="button" class="acct-link" id="acctPhotoBtn">Upload photo</button>
+            <span class="acct-photo-hint">JPG or PNG, at least 200&times;200px</span>
+            <input type="file" id="acctPhotoInput" accept="image/*" style="display:none;">
+          </div>
+        </div>
         <div class="acct-grid">
           <div><label class="acct-lab" for="acctFirst">First name</label><input class="acct-in" id="acctFirst" value=""></div>
           <div><label class="acct-lab" for="acctLast">Last name</label><input class="acct-in" id="acctLast" value=""></div>
@@ -1011,6 +1034,15 @@
       if(!fab.contains(e.target)) fab.classList.remove('open');
     });
     document.addEventListener('keydown', function(e){ if(e.key==='Escape') fab.classList.remove('open'); });
+    // My Account is the one static (non phase-rendered) trigger for
+    // acctModal — everything else that opens it would be a phase-
+    // rendered dynamic element, same boundary Stage 1 drew for the
+    // wire() list below. Present on every phase since the fab control
+    // itself is shell chrome, not phase-specific markup.
+    document.getElementById('acctMenuBtn').addEventListener('click', function(){
+      fab.classList.remove('open');
+      Portal.modal.open('acctModal', 'acctScrim');
+    });
     document.getElementById('logoutBtn').addEventListener('click', function(){
       // Wired to Ontraport's native membership logout in Stage 8 hand-off.
     });
@@ -1046,14 +1078,6 @@
   </script>
 
   <!-- =========================================================
-     window.PORTAL_DATA / portal-engine.js attach point. Real
-     participant data arrives via the Portal Context Resolver in
-     a later stage — empty here on purpose. portal-engine.js is
-     now a real file (Stage 2: Portal.pdata + Portal.programGrid),
-     hosted alongside this shell for local review; swap for the
-     Ontraport-hosted URL at hand-off (Stage 8).
-     ========================================================= -->
-  <!-- =========================================================
      window.PORTAL_DATA — placeholder fixture for the real Aug 14
      pilot cohort until the Portal Context Resolver automation
      (out of this plan's scope) exists to populate this for real.
@@ -1065,6 +1089,7 @@
   <script>
   window.PORTAL_DATA = {
     firstName: 'Jordan', lastName: 'Reyes', courseType: 'Forum', format: 'Online',
+    email: 'jordan.reyes@example.com', phone: '(555) 010-2846',
     tz: 'US Pacific · PST/PDT · GMT-8/-7 (America/Los_Angeles)',
     eventStartUTC: '2026-08-14T17:00:00Z', eventEnd: '2026-08-16T23:00:00Z',
     graduation: { reference: '2026-08-18T19:00:00Z' },
