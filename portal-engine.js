@@ -152,49 +152,49 @@ Portal.pdata = {
   forum: {
     title: 'The Landmark Forum',
     blurb: 'Three days that redefined what’s possible — and the foundation for everything that follows.',
-    photo: 'Assets/lm-mp-program-forum.jpg',
+    photo: 'https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-program-forum.jpg',
     detail: { desc: '<p>Three full days, designed as one complete experience. Across the weekend you take apart the hidden constraints that have been running your life — and leave with a new freedom in the areas that matter most.</p>' }
   },
   seminar: {
     title: 'Seminar Series',
     blurb: 'Ten evening sessions that turn your Forum breakthroughs into lasting momentum in everyday life.',
-    photo: 'Assets/lm-mp-program-seminar.jpg',
+    photo: 'https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-program-seminar.jpg',
     detail: { desc: '<p>Evening sessions on a specific area of life — restoring workability and power in the places life feels stuck, applied week by week to your relationships, work, and goals.</p>' }
   },
   ac: {
     title: 'Advanced Course',
     blurb: 'The Forum cleared the canvas. The Advanced Course is where you pick up the brush — from awareness to authorship.',
-    photo: 'Assets/lm-mp-program-ac.jpg',
+    photo: 'https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-program-ac.jpg',
     detail: { desc: '<p>The Forum cleared the canvas. The Advanced Course is where you pick up the brush — moving from awareness to authorship, and designing a future you invent rather than inherit.</p><p>Open to Landmark Forum graduates.</p>' }
   },
   cap: {
     title: 'Communication: Access to Power',
     blurb: 'A new relationship to communication — ease, power, and freedom in the conversations that matter most.',
-    photo: 'Assets/lm-mp-program-cap.jpg',
+    photo: 'https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-program-cap.jpg',
     detail: { desc: '<p>A new relationship to communication — discovering how much of life happens in language, and gaining ease and power in the conversations that matter most.</p>' }
   },
   cpc: {
     title: 'Communication: Power to Create',
     blurb: 'Builds on Access to Power — using language to bring ideas, projects, and possibilities into reality.',
-    photo: 'Assets/lm-mp-program-cpc.jpg',
+    photo: 'https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-program-cpc.jpg',
     detail: { desc: '<p>Builds directly on Access to Power — using language not just to relate, but to create: bringing ideas, projects, and possibilities into reality.</p>' }
   },
   tmlp: {
     title: 'Team Management &amp; Leadership Program',
     blurb: 'A program in leading and being led — creating teams that accomplish what none of you could alone.',
-    photo: 'Assets/lm-mp-program-tmlp.jpg',
+    photo: 'https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-program-tmlp.jpg',
     detail: { desc: '<p>A year-long program in leading and being led — building the kind of teams that accomplish what none of the members could alone, and becoming someone others choose to follow.</p>' }
   },
   wisdom: {
     title: 'Wisdom Course',
     blurb: 'For people committed to living fully — bringing wisdom, play, and possibility to everyday life.',
-    photo: 'Assets/lm-mp-program-wisdom.jpg',
+    photo: 'https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-program-wisdom.jpg',
     detail: { desc: '<p>For people committed to living fully — a course about everyday life that brings wisdom, play, and possibility to the year you are actually living.</p>' }
   },
   partner: {
     title: 'Partnership Exploration',
     blurb: 'Explore what true partnership makes possible — at home, at work, and in your community.',
-    photo: 'Assets/lm-mp-program-partner.jpg',
+    photo: 'https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-program-partner.jpg',
     detail: { desc: '<p>An exploration of what true partnership makes possible — at home, at work, and in your community — and what becomes available when you create it deliberately.</p>' }
   }
 };
@@ -864,13 +864,13 @@ Portal.render = Portal.render || {};
 Portal.render._sec = {
   prepare: function(courseType, infoFormDone){
     var infoCardHtml = infoFormDone ?
-      '<div class="pcard done"><div class="ph"><span class="pill pr pill-done">Completed</span><img src="Assets/lm-mp-prepare-form.jpg" alt="Complete your information form"></div><div class="pbody"><div class="ptag serif-it">a few minutes.</div><h3>Complete Your Information Form</h3><p>Thanks — we have everything we need from you.</p></div></div>' :
-      '<div class="pcard"><div class="ph"><img src="Assets/lm-mp-prepare-form.jpg" alt="Complete your information form"></div><div class="pbody"><div class="ptag serif-it">a few minutes.</div><h3>Complete Your Information Form</h3><p>We still need a few details from you before the weekend. It only takes a few minutes.</p><span class="go">Finish now &rarr;</span></div></div>';
+      '<div class="pcard done"><div class="ph"><span class="pill pr pill-done">Completed</span><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-prepare-form.jpg" alt="Complete your information form"></div><div class="pbody"><div class="ptag serif-it">a few minutes.</div><h3>Complete Your Information Form</h3><p>Thanks — we have everything we need from you.</p></div></div>' :
+      '<div class="pcard"><div class="ph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-prepare-form.jpg" alt="Complete your information form"></div><div class="pbody"><div class="ptag serif-it">a few minutes.</div><h3>Complete Your Information Form</h3><p>We still need a few details from you before the weekend. It only takes a few minutes.</p><span class="go">Finish now &rarr;</span></div></div>';
     return '<section class="block paper" id="prepare"><div class="wrap">' +
       '<div class="sec-head"><div class="eyebrow">Get Ready</div><h2>Prepare for your ' + courseType + '</h2><p>A few simple things to take care of before your course begins. Each takes just a couple of minutes.</p></div>' +
       '<div class="pcards">' +
-        '<div class="pcard"><div class="ph"><img src="Assets/lm-mp-prepare-calendar.jpg" alt="Add the ' + courseType + ' to your calendar"></div><div class="pbody"><div class="ptag serif-it">block the time.</div><h3>Add to Your Calendar</h3><p>Block Friday through Sunday, plus the Tuesday graduation evening, so nothing slips into your ' + courseType + ' time.</p><span class="go" id="prepAddCal">Add to calendar &rarr;</span></div></div>' +
-        '<div class="pcard"><div class="ph"><img src="Assets/lm-mp-prepare-techcheck.jpg" alt="Test your camera, microphone, and connection"></div><div class="pbody"><div class="ptag serif-it">join with ease.</div><h3>Tech Check</h3><p>Test your connection, camera, and sound so joining on Friday is completely effortless.</p><span class="go" id="techOpen">Check your setup &rarr;</span></div></div>' +
+        '<div class="pcard"><div class="ph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-prepare-calendar.jpg" alt="Add the ' + courseType + ' to your calendar"></div><div class="pbody"><div class="ptag serif-it">block the time.</div><h3>Add to Your Calendar</h3><p>Block Friday through Sunday, plus the Tuesday graduation evening, so nothing slips into your ' + courseType + ' time.</p><span class="go" id="prepAddCal">Add to calendar &rarr;</span></div></div>' +
+        '<div class="pcard"><div class="ph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-prepare-techcheck.jpg" alt="Test your camera, microphone, and connection"></div><div class="pbody"><div class="ptag serif-it">join with ease.</div><h3>Tech Check</h3><p>Test your connection, camera, and sound so joining on Friday is completely effortless.</p><span class="go" id="techOpen">Check your setup &rarr;</span></div></div>' +
         infoCardHtml +
       '</div>' +
     '</div></section>';
@@ -921,7 +921,7 @@ Portal.render._sec = {
   bepresent: function(){
     return '<section class="block alt" style="padding-top:0;"><div class="wrap">' +
       '<div class="g-note" id="bepresent">' +
-        '<div class="np"><img src="Assets/lm-mp-engage-photo.jpg" alt="A Forum participant fully engaged in the room"></div>' +
+        '<div class="np"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-engage-photo.jpg" alt="A Forum participant fully engaged in the room"></div>' +
         '<div class="gtxt"><h4>Above all — <span class="swipe">come ready to engage.</span></h4>' +
         '<p>There’s nothing to study or prepare in advance — just come ready to engage fully. Between now and Friday, keep considering what you’d like to be different, and what you’d love to create. Bring your real life with you: the relationships, the situations, and the parts of your life that matter most.</p></div>' +
       '</div>' +
@@ -1057,7 +1057,7 @@ Portal.render.pre = function(data){
   var bepresentHtml = Portal.render._sec.bepresent();
   var faqHtml = Portal.render._sec.faq(courseType, hasStart, roomOpenTs, startTs, ianaId);
 
-  var lmfBandHtml = '<div class="lmf-band"><img src="Assets/lm-mp-lmf-logo.png" alt="The Landmark Forum"></div>';
+  var lmfBandHtml = '<div class="lmf-band"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-lmf-logo.png" alt="The Landmark Forum"></div>';
 
   // ---- contact ----
   var contactHtml =
@@ -1285,7 +1285,7 @@ Portal.render.during = function(data){
         (!isNaN(gradTs) ? '<div class="pc-grad"><span>Graduation</span> &middot; ' + Portal.format.weekdayShort(gradTs, ianaId) + ' ' + Portal.format.dayPeriodLabel(gradTs, ianaId) + ', ' + Portal.format.weekdayMonthDay(gradTs, ianaId).split(', ')[1] + '</div>' : '') +
         '<div class="pc-fine">' + format + ' &middot; Full-day experience &middot; Starts ' + (hasStart ? Portal.format.time(startTs, ianaId) + ' ' + Portal.format.zoneLabel(ianaId) : 'time TBD') + '</div>' +
         '<div class="pc-cta">' +
-          '<img class="pc-logo" src="Assets/lm-mp-lmf-logo.png" alt="The Landmark ' + courseType + '">' +
+          '<img class="pc-logo" src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-lmf-logo.png" alt="The Landmark ' + courseType + '">' +
           (data.zoomJoin ?
             '<a class="btn-join" href="' + joinHref() + '" target="_blank" rel="noopener">' + joinLabel() + ' <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></a>' :
             '<span class="btn-join" aria-disabled="true">Link available soon</span>') +
@@ -1304,10 +1304,10 @@ Portal.render.during = function(data){
     '<section class="block paper" id="programs"><div class="wrap">' +
       '<div class="sec-head"><div class="eyebrow">This Weekend</div><h2>A few things to take advantage of</h2></div>' +
       '<div class="actions">' +
-        '<div class="acard"><div class="aph"><img src="Assets/lm-mp-during-acard-invite.jpg" alt=""></div><div class="abody"><div class="aeye">Graduation</div><h4>Invite Friends &amp; Family</h4><p>Tuesday evening is a celebration of what you’ve created. Invite the people who matter most to be there.</p><a href="#graduation" class="go">Invite guests &rarr;</a></div></div>' +
-        '<div class="acard"><div class="aph"><img src="Assets/lm-mp-during-acard-seminar.jpg" alt=""><span class="abadge">Free</span></div><div class="abody"><div class="aeye">On Us</div><h4>Claim Your Complimentary Seminar</h4><p>Your next seminar is on us. Reserve your spot and keep exploring what’s possible.</p><span class="go">Claim your seminar &rarr;</span></div></div>' +
-        '<div class="acard"><div class="aph"><img src="Assets/lm-mp-during-acard-ac.jpg" alt=""><span class="abadge">Save $300</span></div><div class="abody"><div class="aeye">Keep Going</div><h4>Advanced Course &mdash; Reserve Your Spot</h4><p>Continue your momentum into the Advanced Course. Register before Friday to save $300.</p><span class="go">Reserve your spot &rarr;</span></div></div>' +
-        '<div class="acard"><div class="aph"><img src="Assets/lm-mp-during-acard-gift.jpg" alt=""></div><div class="abody"><div class="aeye serif-it" style="text-transform:none;letter-spacing:.02em;font-size:14px;">Give transformation.</div><h4 class="serif-it" style="color:var(--green);font-weight:300;font-size:20px;">Gift someone their ' + courseType + '.</h4><p>Many people are here this weekend because of the generosity of someone who came before them. If you feel moved, here’s an opportunity to make it possible for someone else.</p><span class="go serif-it" style="font-style:italic;font-weight:300;font-size:14px;">Contribute &rarr;</span></div></div>' +
+        '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-invite.jpg" alt=""></div><div class="abody"><div class="aeye">Graduation</div><h4>Invite Friends &amp; Family</h4><p>Tuesday evening is a celebration of what you’ve created. Invite the people who matter most to be there.</p><a href="#graduation" class="go">Invite guests &rarr;</a></div></div>' +
+        '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-seminar.jpg" alt=""><span class="abadge">Free</span></div><div class="abody"><div class="aeye">On Us</div><h4>Claim Your Complimentary Seminar</h4><p>Your next seminar is on us. Reserve your spot and keep exploring what’s possible.</p><span class="go">Claim your seminar &rarr;</span></div></div>' +
+        '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-ac.jpg" alt=""><span class="abadge">Save $300</span></div><div class="abody"><div class="aeye">Keep Going</div><h4>Advanced Course &mdash; Reserve Your Spot</h4><p>Continue your momentum into the Advanced Course. Register before Friday to save $300.</p><span class="go">Reserve your spot &rarr;</span></div></div>' +
+        '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-gift.jpg" alt=""></div><div class="abody"><div class="aeye serif-it" style="text-transform:none;letter-spacing:.02em;font-size:14px;">Give transformation.</div><h4 class="serif-it" style="color:var(--green);font-weight:300;font-size:20px;">Gift someone their ' + courseType + '.</h4><p>Many people are here this weekend because of the generosity of someone who came before them. If you feel moved, here’s an opportunity to make it possible for someone else.</p><span class="go serif-it" style="font-style:italic;font-weight:300;font-size:14px;">Contribute &rarr;</span></div></div>' +
       '</div>' +
     '</div></section>';
 
@@ -1438,7 +1438,7 @@ Portal.render.during = function(data){
   var graduationHtml =
     '<section class="block paper" id="graduation"><div class="wrap">' +
       '<div class="gradfeat">' +
-        '<div class="gph"><img src="Assets/lm-mp-during-grad-photo.jpg" alt=""></div>' +
+        '<div class="gph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-grad-photo.jpg" alt=""></div>' +
         '<div>' +
           '<div class="geye">The Graduation Evening</div>' +
           '<h3>Tuesday evening &ndash; <span class="serif-it">an experience like no other.</span></h3>' +
@@ -1488,7 +1488,7 @@ Portal.render.during = function(data){
       }).join('') + '</div>' +
     '</div></div></section>';
 
-  var lmfBandHtml = '<div class="lmf-band"><img src="Assets/lm-mp-lmf-logo.png" alt="The Landmark ' + courseType + '"></div>';
+  var lmfBandHtml = '<div class="lmf-band"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-lmf-logo.png" alt="The Landmark ' + courseType + '"></div>';
 
   // ---- contact ----
   var contactHtml =
@@ -1772,7 +1772,7 @@ Portal.render.post = function(data){
       '</div></section>';
   }
 
-  var lmfBandHtml = '<div class="lmf-band"><img src="Assets/lm-mp-lmf-logo.png" alt="The Landmark Forum"></div>';
+  var lmfBandHtml = '<div class="lmf-band"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-lmf-logo.png" alt="The Landmark Forum"></div>';
 
   var contactHtml =
     '<section class="contact" id="contact"><div class="wrap">' +
