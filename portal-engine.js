@@ -981,7 +981,14 @@ Portal.render._sec = {
 
 Portal.render.pre = function(data){
   data = data || {};
-  var firstName = data.firstName || '';
+  // Name Likes (contacts.f2792 — what they told us they want to be
+  // called) wins over First Name for anything greeting-facing, falling
+  // back to First Name when Name Likes is unset. Per direct instruction
+  // 2026-08-07: this mirrors how the merge-field version would read —
+  // [Name Likes] with a [Contacts//First Name] fallback — just resolved
+  // here instead of in static Ontraport merge-tag copy, consistent with
+  // every other participant-facing value in this file.
+  var firstName = data.nameLikes || data.firstName || '';
   var courseType = data.courseType || 'Forum';
   var format = data.format || 'Online';
   var infoFormDone = !!data.infoFormCompleted; // registrations.f2579 "Information Form Completed"
@@ -1203,7 +1210,14 @@ Portal.session = (function(){
    ========================================================= */
 Portal.render.during = function(data){
   data = data || {};
-  var firstName = data.firstName || '';
+  // Name Likes (contacts.f2792 — what they told us they want to be
+  // called) wins over First Name for anything greeting-facing, falling
+  // back to First Name when Name Likes is unset. Per direct instruction
+  // 2026-08-07: this mirrors how the merge-field version would read —
+  // [Name Likes] with a [Contacts//First Name] fallback — just resolved
+  // here instead of in static Ontraport merge-tag copy, consistent with
+  // every other participant-facing value in this file.
+  var firstName = data.nameLikes || data.firstName || '';
   var courseType = data.courseType || 'Forum';
   var format = data.format || 'Online';
   var tz = data.tz || 'US Pacific · PST/PDT · GMT-8/-7 (America/Los_Angeles)';
@@ -1631,7 +1645,14 @@ Portal.post = (function(){
    ========================================================= */
 Portal.render.post = function(data){
   data = data || {};
-  var firstName = data.firstName || '';
+  // Name Likes (contacts.f2792 — what they told us they want to be
+  // called) wins over First Name for anything greeting-facing, falling
+  // back to First Name when Name Likes is unset. Per direct instruction
+  // 2026-08-07: this mirrors how the merge-field version would read —
+  // [Name Likes] with a [Contacts//First Name] fallback — just resolved
+  // here instead of in static Ontraport merge-tag copy, consistent with
+  // every other participant-facing value in this file.
+  var firstName = data.nameLikes || data.firstName || '';
   var lastName = data.lastName || '';
   var courseType = data.courseType || 'Forum'; // the just-completed course
   var format = data.format || 'Online';

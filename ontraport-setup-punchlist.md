@@ -13,6 +13,7 @@ Checked live against the real `registrations` (10001) and `events` (10000) schem
 - `events.f2469` "Event Zoom Link: Participants" — present.
 - `events.f2753` "Session Dates" (longtext, staff-pasted list) — functional, just needs an agreed parse format when Stage 4 actually consumes it.
 - `registrations.f3086` "Countdown Timer Starting Reference" and `events.f2754`/`f2757` (Session Start Time / Event Time Zone) — the fields the ported countdown logic (`Portal.dateUtil`) already reads.
+- My Account modal (added 2026-08-07) field mapping, live-confirmed on `contacts` (objectID 0): First Name → `firstname`, Last Name → `lastname`, Email → `email`, Mobile phone → `sms_number` (not `office_phone` — `sms_number` is what the existing SMS-consent fields are already keyed to), Time zone → `timezone` (real native `timezone`-type field), Photo → `profile_image` (native `image`-type field). Also found: `f2792` "Name Likes" (what the participant told us they want to be called — now used everywhere the portal greets someone, with a fallback to First Name, per 2026-08-07 decision) and `f2620` "Display Name" (portal-facing display name, believed to default from First Name — **unconfirmed**, see item 5). None of these need new fields created — the gap is the write-back mechanism, not the fields. See item 5.
 
 ## 1. Populate two empty dropdowns
 
@@ -55,6 +56,17 @@ Not yet decided whether these belong on `registrations` (10001) or `events` (100
 Wire an Ontraport automation on each: condition = field value is `true` → send the participant email/SMS announcing that program's registration is open.
 
 **Portal-side note:** these are not surfaced in the Member Portal UI — CS-side notification only, confirmed 2026-08-07. No grid/pill/copy change needed unless that changes later.
+
+## 5. My Account write-back — mechanism unresolved, don't build against a guess
+
+The My Account modal's "Save Changes" (currently a UI-only stub — see `member-portal.html`) needs a real submission path, and it can't be a direct client-side call to `update_object`/`saveorupdate_object` — that requires an API key, which can't safely live in browser JS (anyone with devtools could read it and edit any contact record, not just their own). Two real options, neither fully verified yet:
+
+- **Preferred: Ontraport's native "update the logged-in contact" form mechanism.** Confirmed to exist — it's what powers Ontraport's own prebuilt "My Account" / Customer Center app (`page_111_url` etc. already present on `contacts`, and Ontraport's own docs confirm "any info updated in the Customer Center automatically updates your contact records"). **Not yet confirmed:** the exact native form field-naming/binding syntax needed to reuse this mechanism inside our own custom-built modal instead of their prebuilt template — Ontraport's public docs don't document this at the level of detail needed (checked 2026-08-07, both the Forms and My Account app help pages). Needs hands-on verification in the Page Builder, or a support ticket.
+- **Fallback: a small server-side proxy** (serverless function or webhook) holding the API key, called from the client, which then calls `update_object` server-side. Needed regardless of the above for anything the native form can't cover.
+
+**Photo specifically:** Ontraport's native forms generally do support image/file upload fields (confirmed via their docs), so the native path may cover `profile_image` directly — but this isn't confirmed for the authenticated-member-update case specifically. If it doesn't pan out, the agreed fallback is uploading to Cloudinary client-side (same pattern already used for this project's own image assets) and writing the resulting URL into `profile_image` via the proxy path — `profile_image` is a plain `image`-type field, so a URL string should be a valid value either way.
+
+**Confirmed 2026-08-07, apply when this gets wired:** the form's First Name input writes to `firstname` directly (not `f2620` Display Name) — Display Name is believed to default from First Name automatically, so it isn't written to directly. This "believed" needs confirming too, same trip as the form-binding mechanism above.
 
 ---
 
