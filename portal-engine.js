@@ -442,6 +442,144 @@ Portal.calendar = (function(){
 })();
 
 /* =========================================================
+   Portal.confetti — fires on every Certificate-modal open
+   (wired from Portal.modal.open in member-portal.html's own
+   shell script, the single choke point every certModal open
+   already passes through — current call sites and future ones
+   alike — via the modalId === 'certModal' check there, so this
+   fires at the exact moment the button click opens the modal).
+
+   Two canvases, not one: a back layer (z-index 90, behind the
+   modal's own z-index 91) and a front layer (z-index 92, above
+   it), each particle randomly assigned to one at spawn. A
+   single shared layer caused a real bug — during the modal's
+   own .25s opacity transition, back-layer confetti was briefly
+   visible *through* the not-yet-opaque card, reading as "in
+   front" for a split second before the card finished fading in.
+   Splitting the layers makes "some in front, some behind" the
+   actual intended look instead of a transition artifact.
+
+   The cannon sits at bottom-center of the screen and sprays the
+   full brand palette across a 180° upward arc; gravity pulls
+   each piece back down, and it dissolves as it nears the bottom
+   of the screen rather than piling up or vanishing abruptly.
+   ========================================================= */
+Portal.confetti = (function(){
+  var COLORS = ['#f06449', '#c8452a', '#2ea203', '#217a00', '#0d2d31', '#efede7'];
+  var raf = null, layers = null, resizeHandler = null;
+
+  function stop(){
+    if(raf) window.cancelAnimationFrame(raf);
+    if(resizeHandler) window.removeEventListener('resize', resizeHandler);
+    if(layers) layers.forEach(function(l){ if(l.canvas.parentNode) l.canvas.parentNode.removeChild(l.canvas); });
+    raf = null; layers = null; resizeHandler = null;
+  }
+
+  function makeLayer(zIndex){
+    var canvas = document.createElement('canvas');
+    canvas.style.cssText = 'position:fixed;inset:0;z-index:' + zIndex + ';pointer-events:none;';
+    document.body.appendChild(canvas);
+    return { canvas: canvas, ctx: canvas.getContext('2d') };
+  }
+
+  function fire(opts){
+    opts = opts || {};
+    stop(); // re-triggering mid-burst restarts cleanly rather than stacking canvases
+
+    var back = makeLayer(90);  // behind .modal (z-index 91)
+    var front = makeLayer(92); // in front of .modal
+    layers = [back, front];
+
+    var dpr = window.devicePixelRatio || 1;
+    function size(){
+      layers.forEach(function(l){
+        l.canvas.width = window.innerWidth * dpr;
+        l.canvas.height = window.innerHeight * dpr;
+        l.canvas.style.width = window.innerWidth + 'px';
+        l.canvas.style.height = window.innerHeight + 'px';
+        l.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      });
+    }
+    size();
+    resizeHandler = size;
+    window.addEventListener('resize', resizeHandler);
+
+    var vh = window.innerHeight;
+    var originX = window.innerWidth / 2;
+    var originY = vh; // cannon sits at bottom-center of the screen
+    var GRAVITY = 0.32;
+    var fadeStartY = vh * 0.55; // dissolve as pieces near the bottom, not on a fixed timer
+
+    var particles = [];
+    var count = opts.count || 330; // +50% over the original 220
+    var SPREAD_DEG = 100; // tightened from a full 180deg fan to a cannon-width cone, still centered straight up
+    for(var i = 0; i < count; i++){
+      var angle = (-90 + (Math.random() - 0.5) * SPREAD_DEG) * Math.PI / 180;
+      var speed = 15 + Math.random() * 16; // needs real force to reach mid-screen from a bottom-edge origin
+      particles.push({
+        x: originX, y: originY,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 5 + Math.random() * 5,
+        color: COLORS[(Math.random() * COLORS.length) | 0],
+        rot: Math.random() * Math.PI * 2,
+        vrot: (Math.random() - 0.5) * 0.3,
+        shape: Math.random() < 0.7 ? 'rect' : 'circle',
+        layer: Math.random() < 0.5 ? back : front // ~half behind the popup, half in front, from the same cannon
+      });
+    }
+
+    // Hard time-based fade on top of the position-based one below — a
+    // "nice little experience" means it wraps up fast, so nothing (not
+    // even a slow high-arc outlier) is allowed to hang around past
+    // ~1.9s, regardless of where it physically is on screen.
+    var TIME_FADE_START = 1100, TIME_FADE_END = 1900;
+
+    var startTs = null;
+    function tick(ts){
+      if(!startTs) startTs = ts;
+      layers.forEach(function(l){ l.ctx.clearRect(0, 0, l.canvas.width, l.canvas.height); });
+      var elapsed = ts - startTs;
+      var timeAlpha = elapsed < TIME_FADE_START ? 1 : Math.max(0, 1 - (elapsed - TIME_FADE_START) / (TIME_FADE_END - TIME_FADE_START));
+      var alive = timeAlpha > 0;
+      particles.forEach(function(p){
+        if(p.y > vh + 40) return; // already off the bottom edge — dissolved
+        p.vy += GRAVITY;
+        p.vx *= 0.995;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.vrot;
+        var posAlpha = p.y > fadeStartY ? Math.max(0, 1 - (p.y - fadeStartY) / (vh - fadeStartY)) : 1;
+        var alpha = Math.min(posAlpha, timeAlpha);
+        if(alpha <= 0) return;
+        var ctx = p.layer.ctx;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        if(p.shape === 'circle'){
+          ctx.beginPath();
+          ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+        }
+        ctx.restore();
+      });
+      if(alive){
+        raf = window.requestAnimationFrame(tick);
+      } else {
+        stop();
+      }
+    }
+    raf = window.requestAnimationFrame(tick);
+  }
+
+  return { fire: fire, stop: stop };
+})();
+
+/* =========================================================
    Portal.techCheck — the Prepare-card "Tech Check" wizard
    (camera/mic -> connection -> Zoom test -> confirm), opened
    from #techOpen. The shipped Pre-event mockup's card was

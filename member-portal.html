@@ -933,6 +933,11 @@
       open: function(modalId, scrimId){
         document.getElementById(modalId).classList.add('open');
         document.getElementById(scrimId).classList.add('open');
+        // Confetti on every Certificate-modal open, current and future
+        // call sites alike — Portal.confetti lives in portal-engine.js,
+        // already loaded by the time any modal actually opens (user
+        // interaction, well after script load), so no ordering issue.
+        if(modalId === 'certModal' && Portal.confetti) Portal.confetti.fire();
       },
       shut: function(modalId, scrimId){
         document.getElementById(modalId).classList.remove('open');
@@ -1052,58 +1057,45 @@
   <script src="portal-engine.js"></script>
 
   <!-- =========================================================
-     STAGE 4 REVIEW PREVIEW ONLY — not shipped code, swapped stage
-     by stage (was Pre-event through Stage 3). Renders the During-
-     event page with a sample fixture — CS override mid-week, Day
-     One fully released, Day Two partially released, Day Three not
-     yet begun (dimmed), 7 guests (so pagination is visible across
-     2 pages), and a seminar the participant is registered to plus
-     a recommended-but-not-registered Advanced Course — so every
-     2026-08-07 review-round fix is visually checkable at once.
+     STAGE 5 REVIEW PREVIEW ONLY — not shipped code, swapped stage
+     by stage (was During-event through Stage 4). Renders the
+     Post-event page. Set STATE below to switch which hero case is
+     showing: 'A' = not registered for anything upcoming, 'B' =
+     registered for Seminar only, 'C' = registered for AC only.
+     All three share the same firstName/lastName/completed-Forum
+     data so the Certificate modal (bottom of the All Programs
+     grid, forum card) is checkable from every state — including
+     the new confetti-on-open behavior.
      Delete this block once Portal.init() (Stage 6) exists to
      dispatch real resolver data.
      ========================================================= -->
   <script>
   (function(){
-    Portal.render.during({
-      firstName: 'Jordan',
-      courseType: 'Forum',
-      format: 'Online',
-      eventStartUTC: '2026-08-14T16:00:00Z',
-      eventEnd: '2026-08-16T23:00:00Z',
+    var STATE = 'A'; // 'A' | 'B' | 'C'
+
+    var base = {
+      firstName: 'Jordan', lastName: 'Reyes', courseType: 'Forum', format: 'Online',
       tz: 'US Pacific · PST/PDT · GMT-8/-7 (America/Los_Angeles)',
-      graduation: { date: '2026-08-18', time: '6:00 PM' },
-      sessionDates: ['2026-08-14', '2026-08-15', '2026-08-16'],
-      currentReleasedSession: '2',
-      zoomJoin: 'https://zoom.us/w/92728047587?tk=nQcZpiYGJ7VHsG_PhPLSGw_LqVw3fkrUdHBbba-gRLs.DQkAAAAVlwW34xYwYWpEVnJTQVNKYW1DSHRhdkd4UUVRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&pwd=YmjgWJakPN79a0qaREJ0nZVS07CA36.1',
-      materials: {
-        sessions: [
-          { index: 1, label: 'Day One', items: [
-            { name: 'Day 1 Assignments', kind: 'Assignment', url: '#', released: true },
-            { name: 'Day 1 Agreements', kind: 'Agreement', url: '#', released: true },
-            { name: 'Day 1 Letter', kind: 'Letter', url: '#', released: true }
-          ]},
-          { index: 2, label: 'Day Two', items: [
-            { name: 'Day 2 Assignments', kind: 'Assignment', url: '#', released: true },
-            { name: 'Day 2 Letter', kind: 'Letter', url: '#', released: false }
-          ]},
-          { index: 3, label: 'Day Three', items: [] }
-        ],
-        graduation: []
-      },
-      graduationGuests: [
-        { name: 'Alex Rivera', link: 'https://zoom.us/w/92728047581?tk=aBcZpiYGJ7VHsG_guest1TOKEN&pwd=guest1pwd.1' },
-        { name: 'Priya Shah', link: 'https://zoom.us/w/92728047582?tk=aBcZpiYGJ7VHsG_guest2TOKEN&pwd=guest2pwd.1' },
-        { name: 'Daniel Ortiz', link: 'https://zoom.us/w/92728047583?tk=aBcZpiYGJ7VHsG_guest3TOKEN&pwd=guest3pwd.1' },
-        { name: 'Michael Reynolds', link: 'https://zoom.us/w/92728047584?tk=aBcZpiYGJ7VHsG_guest4TOKEN&pwd=guest4pwd.1' },
-        { name: 'Sara Kim', link: 'https://zoom.us/w/92728047585?tk=aBcZpiYGJ7VHsG_guest5TOKEN&pwd=guest5pwd.1' },
-        { name: 'Wen Zhao', link: 'https://zoom.us/w/92728047586?tk=aBcZpiYGJ7VHsG_guest6TOKEN&pwd=guest6pwd.1' },
-        { name: 'Layla Haddad', link: 'https://zoom.us/w/92728047589?tk=aBcZpiYGJ7VHsG_guest7TOKEN&pwd=guest7pwd.1' }
-      ],
-      post: { hasSeminarReg: true, hasACReg: false },
-      seminarNext: { title: 'Integrity: The Bottom Line', beginsLabel: 'Thu, Aug 20, 2026', scheduleLabel: 'Thursdays · 7:00 PM Pacific' },
-      acNext: { formatLabel: '3-day weekend + Tuesday evening' }
-    });
+      eventStartUTC: '2026-08-14T17:00:00Z', eventEnd: '2026-08-16T23:00:00Z',
+      graduation: { reference: '2026-08-18T19:00:00Z' }
+    };
+
+    var FIXTURES = {
+      A: Object.assign({}, base, {
+        post: { hasSeminarReg: false, hasACReg: false }
+      }),
+      B: Object.assign({}, base, {
+        post: { hasSeminarReg: true, hasACReg: false },
+        seminarNext: { title: 'Seminar Series', startUTC: '2026-09-10T17:00:00Z', tz: base.tz, formatLabel: 'Weekly &middot; 10 sessions' }
+      }),
+      C: Object.assign({}, base, {
+        post: { hasSeminarReg: false, hasACReg: true },
+        acNext: { title: 'Advanced Course', startUTC: '2026-09-25T17:00:00Z', endUTC: '2026-09-28T04:00:00Z', gradUTC: '2026-09-30T01:00:00Z', tz: base.tz, formatLabel: '3-day weekend + graduation evening' }
+      })
+    };
+
+    Portal.render.post(FIXTURES[STATE]);
+    document.title = 'PREVIEW · Post-event State ' + STATE + ' · ' + document.title;
   })();
   </script>
 
