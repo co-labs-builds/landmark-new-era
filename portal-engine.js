@@ -1023,6 +1023,19 @@ Portal.render.pre = function(data){
   if(navLinks) navLinks.innerHTML =
     '<a href="#prepare">Prepare</a><a href="#guide">Guidance</a><a href="#faq">FAQ</a><a href="#contact">Contact</a>';
 
+  // ---- program tabs ----
+  // Added 2026-08-09 per direct instruction — the pilot has exactly one
+  // program (this Forum), so there's no "Prior/All Programs" content to
+  // switch to yet; a single always-active "Upcoming Programs" button
+  // matches the reference mockup's own label and .progtabs styling
+  // without inventing a second tab/view that has nothing behind it.
+  var progTabs = document.getElementById('progTabs');
+  if(progTabs){
+    progTabs.style.display = '';
+    progTabs.querySelector('.wrap').innerHTML =
+      '<button class="active" type="button">Upcoming Programs</button>';
+  }
+
   // ---- hero ----
   var heroMetaChips = hasStart ?
     '<span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> ' + courseType + ' &middot; ' + Portal.format.dateRange(startTs, isNaN(endTs) ? startTs : endTs, ianaId) + '</span>' +
@@ -1046,7 +1059,7 @@ Portal.render.pre = function(data){
           '<div class="countdown"><div class="cd-cell"><div class="cd-num" id="cd-d">–</div><div class="cd-lab">Days</div></div><div class="cd-cell"><div class="cd-num" id="cd-h">–</div><div class="cd-lab">Hours</div></div><div class="cd-cell"><div class="cd-num" id="cd-m">–</div><div class="cd-lab">Min</div></div></div>' +
           '<p class="note">The room will open at <b>' + Portal.format.time(roomOpenTs, ianaId) + ' ' + Portal.format.zoneLabel(ianaId) + '</b> — please arrive at least 15 minutes early to make sure your technology is all set. We\'ll see you soon.</p>'
           : '<p class="note">Your start time will appear here as soon as it\'s confirmed.</p>') +
-        '<button class="btn btn-lg" id="heroAddCal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg> Add to Calendar</button>' +
+        '<button class="pbtn pbtn-lg" id="heroAddCal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg> Add to Calendar</button>' +
       '</aside>' +
     '</div></header>';
 
@@ -1714,7 +1727,7 @@ Portal.render.post = function(data){
           '<div class="cd-cap">Until we begin</div>' +
           '<div class="countdown"><div class="cd-cell"><div class="cd-num" id="cd-d">–</div><div class="cd-lab">Days</div></div><div class="cd-cell"><div class="cd-num" id="cd-h">–</div><div class="cd-lab">Hours</div></div><div class="cd-cell"><div class="cd-num" id="cd-m">–</div><div class="cd-lab">Min</div></div></div>' +
           '<p class="note">Please arrive at least 15 minutes before the ' + Portal.format.time(nextStartTs, nextIana) + ' start time. The room opens at <b>' + Portal.format.time(roomOpenTs, nextIana) + '</b> — we’ll see you there.</p>' +
-          '<button class="btn btn-lg" id="heroAddCal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg> Add to Calendar</button>' +
+          '<button class="pbtn pbtn-lg" id="heroAddCal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg> Add to Calendar</button>' +
         '</aside>' +
       '</div></header>';
 

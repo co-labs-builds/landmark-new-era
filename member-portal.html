@@ -78,13 +78,18 @@
   .nav-links{margin-left:auto;display:flex;align-items:center;gap:30px;}
   .nav-links a{color:var(--green-bright);font-size:14.5px;font-weight:400;}
   .nav-links a:hover{color:var(--ink);}
-  /* margin-right reserves room for .fab-account, which floats fixed
-     over this corner independent of the nav row's own flex layout —
-     without it, the CTA slot's content (e.g. During-event's Join
+  /* No margin-left:auto here — .nav-links already owns that job. Flexbox
+     splits free space EVENLY across every auto margin in the row, so a
+     second margin-left:auto here competed with .nav-links' for the same
+     space, opening an unwanted gap between the nav links and this slot
+     whenever it's empty (every phase except During-event's Join button)
+     — confirmed live 2026-08-09, this was the recurring "nav gap" bug.
+     margin-right still reserves room for .fab-account, which floats
+     fixed over this corner independent of the nav row's own flex layout
+     — without it, the CTA slot's content (e.g. During-event's Join
      button) runs flush to .wrap's edge and visually collides with
      the avatar sitting on top of it. */
-  .nav-cta-slot{margin-left:auto;margin-right:60px;display:flex;align-items:center;gap:16px;}
-  .nav-cta-slot:empty{margin-left:auto;}
+  .nav-cta-slot{margin-right:60px;display:flex;align-items:center;gap:16px;}
 
   /* Floating logout control — fixed top-right, one item only. Right
      inset matches .wrap's own side padding (52px desktop, 22px
@@ -121,7 +126,15 @@
      Weight ceiling applied: former 800-weight headings now cap
      at 650; former 700-weight UI labels now cap at 600.
      ========================================================= */
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:none;border-radius:5px;cursor:pointer;font-family:var(--sans);font-weight:600;transition:background .15s,transform .05s;}
+  /* Renamed .btn/.btn-lg -> .pbtn/.pbtn-lg (2026-08-09) — same collision
+     class as .modal->.pmodal above: Ontraport's own page-builder CSS
+     ships a generic .btn utility class too, whose background (their
+     theme's primary blue, op.themeColors['primary-color']) silently
+     won over ours since our base .btn rule never set a background of
+     its own to compete with — .btn-lg{background:var(--green)} was
+     always correct, it just never got a chance to apply. This was the
+     "CTA button is blue" bug reported live 2026-08-09. */
+  .pbtn{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:none;border-radius:5px;cursor:pointer;font-family:var(--sans);font-weight:600;transition:background .15s,transform .05s;}
 
   footer.foot{background:var(--teal-deep);color:rgba(255,255,255,.5);}
   footer.foot .wrap{padding:30px 40px;display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;font-size:13px;}
@@ -135,18 +148,31 @@
      distinct pieces of functionality, not two states of one
      modal — see 2026-08-07 plan revision.)
      ========================================================= */
-  .modal-scrim{position:fixed;inset:0;background:rgba(8,20,19,.55);z-index:90;opacity:0;pointer-events:none;transition:opacity .25s;}
-  .modal-scrim.open{opacity:1;pointer-events:auto;}
-  .modal{position:fixed;z-index:91;top:50%;left:50%;transform:translate(-50%,-46%);width:min(600px,92vw);max-height:88vh;overflow-y:auto;background:var(--paper);border-radius:20px;box-shadow:0 30px 90px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;}
-  .modal.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%);}
-  .modal .mhead{position:sticky;top:0;background:var(--teal);color:#fff;padding:24px 30px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;z-index:2;}
-  .modal .mhead .eyebrow{color:var(--green-bright);}
-  .modal .mhead h3{font-size:24px;font-weight:650;letter-spacing:-.01em;margin-top:8px;}
-  .modal .mclose{background:rgba(255,255,255,.12);border:none;color:#fff;width:34px;height:34px;border-radius:50%;font-size:20px;cursor:pointer;flex:none;line-height:1;}
-  .modal .mbody{padding:26px 30px 30px;}
-  .modal .mbody h4{font-size:15px;font-weight:600;color:var(--ink);margin:20px 0 6px;}
-  .modal .mbody p{font-size:14.5px;color:var(--gray);line-height:1.6;}
-  .modal .mbody p.lead{color:var(--ink);}
+  /* Renamed .modal/.modal-scrim -> .pmodal/.pmodal-scrim (2026-08-09) —
+     Ontraport's own page-builder CSS (Materialize-based) ships a native
+     .modal class with `display:none` as its base state. Our old .modal
+     rule never set `display` at all (only opacity/pointer-events/
+     transform), so Ontraport's display:none won silently and
+     unopposed — no specificity fight, just an uncontested property.
+     display:none suppresses the box entirely, so no opacity change
+     could ever reveal it. Confirmed live via DevTools Computed panel:
+     Ontraport's rule (source opt-styles..._054372) showed display:none
+     PLUS its own left/right/width/margin centering technique that
+     would have kept conflicting with ours even if display alone were
+     patched — renaming avoids the whole class of collision rather than
+     patching one property at a time. */
+  .pmodal-scrim{position:fixed;inset:0;background:rgba(8,20,19,.55);z-index:90;opacity:0;pointer-events:none;transition:opacity .25s;}
+  .pmodal-scrim.open{opacity:1;pointer-events:auto;}
+  .pmodal{position:fixed;z-index:91;top:50%;left:50%;transform:translate(-50%,-46%);width:min(600px,92vw);max-height:88vh;overflow-y:auto;background:var(--paper);border-radius:20px;box-shadow:0 30px 90px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;}
+  .pmodal.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%);}
+  .pmodal .mhead{position:sticky;top:0;background:var(--teal);color:#fff;padding:24px 30px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;z-index:2;}
+  .pmodal .mhead .eyebrow{color:var(--green-bright);}
+  .pmodal .mhead h3{font-size:24px;font-weight:650;letter-spacing:-.01em;margin-top:8px;}
+  .pmodal .mclose{background:rgba(255,255,255,.12);border:none;color:#fff;width:34px;height:34px;border-radius:50%;font-size:20px;cursor:pointer;flex:none;line-height:1;}
+  .pmodal .mbody{padding:26px 30px 30px;}
+  .pmodal .mbody h4{font-size:15px;font-weight:600;color:var(--ink);margin:20px 0 6px;}
+  .pmodal .mbody p{font-size:14.5px;color:var(--gray);line-height:1.6;}
+  .pmodal .mbody p.lead{color:var(--ink);}
   .mclosepar{margin-top:24px;text-align:center;font-family:var(--serif);font-style:italic;font-weight:300;font-size:18px;letter-spacing:.03em;line-height:1.6;color:var(--teal);}
 
   /* Health Resources */
@@ -346,26 +372,34 @@
   .cd-lab{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-top:7px;}
   .anchor .note{font-size:13.5px;color:var(--gray);line-height:1.55;margin-bottom:20px;}
   .anchor .note b{color:var(--ink);font-weight:600;}
-  .btn-lg{width:100%;background:var(--green);color:#fff;padding:16px;font-size:14px;text-transform:uppercase;letter-spacing:.09em;box-shadow:0 8px 22px rgba(33,122,0,.20);}
-  .btn-lg:hover{background:var(--green-bright);} .btn-lg:active{transform:translateY(1px);}
-  .btn-lg svg{width:17px;height:17px;}
+  .pbtn-lg{width:100%;background:var(--green);color:#fff;padding:16px;font-size:14px;text-transform:uppercase;letter-spacing:.09em;box-shadow:0 8px 22px rgba(33,122,0,.20);}
+  .pbtn-lg:hover{background:var(--green-bright);} .pbtn-lg:active{transform:translateY(1px);}
+  .pbtn-lg svg{width:17px;height:17px;}
 
-  /* PREPARE — dark photo cards */
+  /* PREPARE — dark photo cards. Every rule below is scoped under
+     .pcards (never a bare .pcard) — the Program Grid further down this
+     file also defines a base .pcard class for its own, unrelated white
+     cards. An unscoped .pcard rule up here has equal CSS specificity to
+     that later rule and LOSES on source order, silently overriding this
+     section's dark/coral styling with the Program Grid's white/bordered
+     look. This was a real live bug (2026-08-09) — confirmed via a
+     source-order duplicate-selector scan finding exactly one true
+     top-level collision in the whole stylesheet: bare .pcard. Keep
+     every rule in this block scoped under .pcards to prevent recurrence. */
   .pcards{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
-  .pcard{position:relative;background:var(--teal);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;border-left:5px solid var(--coral);transition:box-shadow .25s;}
-  .pcard:hover{box-shadow:0 22px 54px rgba(14,26,25,.22);}
-  .pcard .ph{height:186px;overflow:hidden;position:relative;}
-  .pcard .ph img{width:100%;height:100%;object-fit:cover;display:block;}
-  .pcard .pbody{padding:24px 26px 26px;display:flex;flex-direction:column;flex:1;}
-  .pcard .ptag{font-family:var(--serif);font-style:italic;font-weight:300;color:var(--green-bright);font-size:18px;margin-bottom:3px;}
-  .pcard h3{font-size:20px;font-weight:600;color:#fff;margin-bottom:9px;letter-spacing:-.01em;}
-  .pcard p{font-size:14.5px;color:rgba(255,255,255,.82);line-height:1.55;flex:1;}
-  .pcard .go{margin-top:18px;font-size:13px;font-weight:600;color:var(--green-bright);display:inline-flex;align-items:center;gap:8px;cursor:pointer;}
-  .pcard .go:hover{color:#fff;}
+  .pcards .pcard{position:relative;background:var(--teal);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;border-left:5px solid var(--coral);transition:box-shadow .25s;}
+  .pcards .pcard:hover{box-shadow:0 22px 54px rgba(14,26,25,.22);}
+  .pcards .pcard .ph{height:186px;overflow:hidden;position:relative;}
+  .pcards .pcard .ph img{width:100%;height:100%;object-fit:cover;display:block;}
+  .pcards .pcard .pbody{padding:24px 26px 26px;display:flex;flex-direction:column;flex:1;}
+  .pcards .pcard .ptag{font-family:var(--serif);font-style:italic;font-weight:300;color:var(--green-bright);font-size:18px;margin-bottom:3px;}
+  .pcards .pcard h3{font-size:20px;font-weight:600;color:#fff;margin-bottom:9px;letter-spacing:-.01em;}
+  .pcards .pcard p{font-size:14.5px;color:rgba(255,255,255,.82);line-height:1.55;flex:1;}
+  .pcards .pcard .go{margin-top:18px;font-size:13px;font-weight:600;color:var(--green-bright);display:inline-flex;align-items:center;gap:8px;cursor:pointer;}
+  .pcards .pcard .go:hover{color:#fff;}
   /* Completed state (Information Form card, once registrations.f2579 is
-     checked) — scoped to .pcards so it can't reach the Program Grid's
-     own unrelated .pcard component further down this file. Reuses the
-     .pill/.pill-done component built for that grid rather than a new one. */
+     checked). Reuses the .pill/.pill-done component built for the
+     Program Grid rather than a new one. */
   .pcards .pcard.done .ptag,.pcards .pcard.done h3{text-decoration:line-through;}
 
   /* FLIP CARDS */
@@ -718,8 +752,8 @@
        ========================================================= -->
 
   <!-- HEALTH RESOURCES -->
-  <div class="modal-scrim" id="hrScrim"></div>
-  <div class="modal" id="hrModal" role="dialog" aria-modal="true">
+  <div class="pmodal-scrim" id="hrScrim"></div>
+  <div class="pmodal" id="hrModal" role="dialog" aria-modal="true">
     <div class="mhead"><div><div class="eyebrow">Support</div><h3>Taking care of yourself</h3></div><button class="mclose" id="hrClose" aria-label="Close">&times;</button></div>
     <div class="mbody">
       <p class="lead">This weekend can be full and rich, and sometimes big feelings show up along the way — that's a natural part of looking honestly at your life. Whatever comes up for you is welcome here.</p>
@@ -743,8 +777,8 @@
   </div>
 
   <!-- FEEDBACK -->
-  <div class="modal-scrim" id="fbScrim"></div>
-  <div class="modal" id="fbModal" role="dialog" aria-modal="true">
+  <div class="pmodal-scrim" id="fbScrim"></div>
+  <div class="pmodal" id="fbModal" role="dialog" aria-modal="true">
     <div class="mhead"><div><div class="eyebrow">We Want To Hear From You</div><h3>How's it going so far?</h3></div><button class="mclose" id="fbClose" aria-label="Close">&times;</button></div>
     <div class="mbody">
       <p class="lead">We're always looking for ways to improve. We'd love to hear about your experience — what's working, and what could be working better. You can tell us anything, at any point along the way.</p>
@@ -757,8 +791,8 @@
   </div>
 
   <!-- PROGRAM DETAIL — shell only; Portal.pdata (Stage 2) fills this in -->
-  <div class="modal-scrim" id="pgScrim"></div>
-  <div class="modal" id="pgModal" role="dialog" aria-modal="true">
+  <div class="pmodal-scrim" id="pgScrim"></div>
+  <div class="pmodal" id="pgModal" role="dialog" aria-modal="true">
     <div class="mhead"><div><div class="eyebrow" id="pgEyebrow">Program</div><h3 id="pgTitle"></h3></div><button class="mclose" id="pgClose" aria-label="Close">&times;</button></div>
     <div class="mbody">
       <div class="pgstatus" id="pgStatus"></div>
@@ -769,8 +803,8 @@
   </div>
 
   <!-- MY ACCOUNT -->
-  <div class="modal-scrim" id="acctScrim"></div>
-  <div class="modal" id="acctModal" role="dialog" aria-modal="true">
+  <div class="pmodal-scrim" id="acctScrim"></div>
+  <div class="pmodal" id="acctModal" role="dialog" aria-modal="true">
     <div class="mhead"><div><div class="eyebrow">Your Account</div><h3>My Account</h3></div><button class="mclose" id="acctClose" aria-label="Close">&times;</button></div>
     <div class="mbody">
       <div class="acct-sec">
@@ -816,8 +850,8 @@
   <!-- CERTIFICATE — shell only; participant name/program/dates are
        phase-render inputs, not hardcoded ("Kate" bug fixed at the
        source: no name is baked in here). -->
-  <div class="modal-scrim" id="certScrim"></div>
-  <div class="modal" id="certModal" role="dialog" aria-modal="true" style="width:min(640px,94vw);">
+  <div class="pmodal-scrim" id="certScrim"></div>
+  <div class="pmodal" id="certModal" role="dialog" aria-modal="true" style="width:min(640px,94vw);">
     <div class="mhead"><div><div class="eyebrow">The Landmark Forum</div><h3>Certificate of Completion</h3></div><button class="mclose" id="certClose" aria-label="Close">&times;</button></div>
     <div class="mbody certwrap">
       <div class="certcard" data-print="target">
@@ -837,8 +871,8 @@
   </div>
 
   <!-- SUPPORT (contact form) -->
-  <div class="modal-scrim" id="supportScrim"></div>
-  <div class="modal" id="supportModal" role="dialog" aria-modal="true">
+  <div class="pmodal-scrim" id="supportScrim"></div>
+  <div class="pmodal" id="supportModal" role="dialog" aria-modal="true">
     <div class="mhead"><div><div class="eyebrow">We're Here For You</div><h3>How can we help?</h3></div><button class="mclose" id="supportClose" aria-label="Close">&times;</button></div>
     <div class="mbody">
       <p class="lead">Reach out any time &mdash; give us a call, or send a note below and we'll get right back to you.</p>
@@ -865,8 +899,8 @@
        day1,day2,day3,graduation} contract (Stage 4+). During-event,
        a section with nothing released yet shows res-empty copy
        instead of being omitted. Post-event, everything shows. -->
-  <div class="modal-scrim" id="resScrim"></div>
-  <div class="modal" id="resModal" role="dialog" aria-modal="true">
+  <div class="pmodal-scrim" id="resScrim"></div>
+  <div class="pmodal" id="resModal" role="dialog" aria-modal="true">
     <div class="mhead"><div><div class="eyebrow">The Landmark Forum</div><h3>Your Forum Resources</h3></div><button class="mclose" id="resClose" aria-label="Close">&times;</button></div>
     <div class="mbody" id="resBody">
       <!-- example day-section shape, replaced by real data in Stage 4+:
@@ -888,8 +922,8 @@
        wire() list below: Portal.techCheck (portal-engine.js) owns
        close/scrim/Escape itself so it can stop the camera/mic stream
        on every close path, not just the X button. -->
-  <div class="modal-scrim" id="techScrim"></div>
-  <div class="modal" id="techModal" role="dialog" aria-modal="true">
+  <div class="pmodal-scrim" id="techScrim"></div>
+  <div class="pmodal" id="techModal" role="dialog" aria-modal="true">
     <div class="mhead"><div><div class="eyebrow">Tech Check</div><h3 id="techTitle">Test your camera &amp; microphone</h3></div><button class="mclose" id="techClose" aria-label="Close">&times;</button></div>
     <div class="mbody">
       <div class="tc-dots"><span class="tc-dot" data-dot="1"></span><span class="tc-dot" data-dot="2"></span><span class="tc-dot" data-dot="3"></span></div>
@@ -981,6 +1015,26 @@
       document.addEventListener('keydown', function(e){ if(e.key==='Escape') sh(); });
       return { open:op, shut:sh };
     }
+
+    // Reparent every modal + its scrim to be a direct child of <body>
+    // (2026-08-09 fix — "scrim darkens, modal never appears, zero JS
+    // errors" reported live). These elements are only "top-level"
+    // relative to this file's own markup: once pasted into Ontraport's
+    // Custom HTML element, the whole block still sits several levels
+    // deep inside Ontraport's own block/element page-builder wrapper
+    // divs. If any of those ancestors sets transform/filter/perspective/
+    // contain (common in page-builder chrome), position:fixed children
+    // stop centering on the true viewport and get silently trapped
+    // inside that ancestor's box instead — opacity still flips to 1
+    // (so it's technically "open"), it's just rendered off-screen or
+    // clipped. Moving these to be direct children of <body> sidesteps the
+    // problem regardless of which specific Ontraport wrapper causes it.
+    ['hrModal','hrScrim','fbModal','fbScrim','acctModal','acctScrim',
+     'resModal','resScrim','supportModal','supportScrim','pgModal','pgScrim',
+     'certModal','certScrim','techModal','techScrim'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) document.body.appendChild(el);
+    });
 
     // Every modal here opens from phase-rendered content (nav links,
     // contact-section buttons, program-grid cards) that doesn't exist in
@@ -1117,35 +1171,44 @@
       'Subscription': 'Subscription',
       'Other': 'Other'
     };
-    var rawCourseType = '[Course Type]';
+    var rawCourseType = '[Page//Course Type]';
     var courseType = COURSE_TYPE_MAP[rawCourseType] || 'Forum';
 
     // Todays Session (Day) (events.f3025) is still a Day-1/2/3-only
     // dropdown as of 2026-08-07 (punchlist Gap 1 — the "Final" option
     // for Graduation hasn't been added to the field's option set yet).
     // Renders as its label ("Day 1"), not a bare number.
-    var rawSessionDay = '[Events//Todays Session (Day)]';
+    var rawSessionDay = '[Page//Event//Todays Session (Day)]';
     var sessionDayMatch = /^Day (\d+)$/.exec(rawSessionDay);
     var currentReleasedSession = sessionDayMatch ? +sessionDayMatch[1] : null;
 
     window.PORTAL_DATA = {
       // ---- contacts (cross-object) ----
-      firstName: '[Contacts//First Name]',
-      lastName: '[Contacts//Last Name]',
+      firstName: '[Page//Contact//First Name]',
+      lastName: '[Page//Contact//Last Name]',
       // Name Likes (contacts.f2792) wins for greetings per the
       // 2026-08-07 decision — see Portal.render's own firstName
       // resolution (data.nameLikes || data.firstName).
-      nameLikes: '[Contacts//Name Likes]',
+      nameLikes: '[Page//Contact//Name Likes]',
       // Display Name (contacts.f2620) — My Account's editable "how you'd
       // like to be addressed" field (2026-08-08 decision), separate from
       // Name Likes: this is self-service portal-only, Name Likes is the
       // original intake-form preference and stays what greetings use.
-      displayName: '[Contacts//Display Name]',
-      email: '[Contacts//Email]',
-      phone: '[Contacts//SMS Number]', // not Office Phone — this is what the SMS-consent fields are already keyed to
-      profileImageUrl: '[Contacts//Profile Image]',
+      displayName: '[Page//Contact//Display Name]',
+      // Explicit Contact// segment matters here: Registrations has its
+      // own, different "Email" field (f2674) — an unprefixed tag would
+      // silently resolve to that one instead.
+      email: '[Page//Contact//Email]',
+      // SMS Number, not Office Phone — this is what the SMS-consent
+      // fields are already keyed to.
+      phone: '[Page//Contact//SMS Number]',
+      // Explicit Contact// segment matters here too: "Profile Image" is
+      // a generic field alias that also exists on Registrations and
+      // Events — this must stay pinned to the Contact's own upload.
+      profileImageUrl: '[Page//Contact//Profile Image]',
 
-      // ---- this registration (own object, no prefix) ----
+      // ---- this registration (own object — Page// only, no object
+      // name segment, since this Page is based on Registrations) ----
       courseType: courseType,
       // Zoom Join URL (registrations.f2795) is a real PER-REGISTRANT
       // unique join link (written by the n8n/Zoom automation at
@@ -1153,52 +1216,58 @@
       // earlier assumption that this was the shared events.f2469
       // link. That shared field is real too but isn't what the
       // "Join Your Forum" CTA should point at.
-      zoomJoin: '[Zoom Join URL]',
-      infoFormCompleted: '[Information Form Completed##checkediftrue]' === 'true',
+      zoomJoin: '[Page//Zoom Join URL]',
+      infoFormCompleted: '[Page//Information Form Completed##checkediftrue]' === 'true',
       post: {
-        hasSeminarReg: '[Registered for Seminar##checkediftrue]' === 'true',
-        hasACReg: '[Registered for Advanced Course##checkediftrue]' === 'true'
+        hasSeminarReg: '[Page//Registered for Seminar##checkediftrue]' === 'true',
+        hasACReg: '[Page//Registered for Advanced Course##checkediftrue]' === 'true'
       },
       // Seminar/AC "registration open" announcement triggers — added
       // 2026-08-08. Client created events.f3104/f3105 (Seminar Reg Open /
       // AC Reg Open) plus registrations.f3106/f3107 as related_data live
       // mirrors, same pattern as graduation's f3099/f3100 — read directly
-      // off this registration, no Events// prefix needed.
-      seminarRegOpen: '[Trigger Seminar Announcement: DURING EVENT##checkediftrue]' === 'true',
-      acRegOpen: '[Trigger AC Announcement: DURING EVENT##checkediftrue]' === 'true',
+      // off this registration, no Event// object-name segment needed
+      // (still needs the Page// prefix though — this is a Page, not a
+      // Dynamic Template).
+      seminarRegOpen: '[Page//Trigger Seminar Announcement: DURING EVENT##checkediftrue]' === 'true',
+      acRegOpen: '[Page//Trigger AC Announcement: DURING EVENT##checkediftrue]' === 'true',
 
       // ---- the event (cross-object) ----
       // Format (events.f2234) renders as its label directly
       // ("Online" / "In Person" / "Hybrid") — no normalization
       // needed, these already read naturally as-is.
-      format: '[Events//Format (in person, online, Hybrid)]',
+      format: '[Page//Event//Format (in person, online, Hybrid)]',
       // Calendar Time Zone (IANA) (events.f2757) — its dropdown
       // label is already in the exact
       // "US Pacific · PST/PDT · GMT-8/-7 (America/Los_Angeles)"
       // shape Portal.dateUtil.ianaOf() parses the IANA id out of.
       // Do NOT use the older "Event Time Zone" (f2318) — that one
       // is explicitly display-only per its own field description.
-      tz: '[Events//Calendar Time Zone (IANA)]',
+      tz: '[Page//Event//Calendar Time Zone (IANA)]',
       // Countdown Timer Starting Reference (registrations.f3086) is
       // a precomputed UTC instant purpose-built for exactly this —
       // "UTC time code for an event start time to use countdowns for
       // dynamic pages" per its own field description.
-      eventStartUTC: '[Countdown Timer Starting Reference]',
+      eventStartUTC: '[Page//Countdown Timer Starting Reference]',
       // Event End Date (events.f2395) is a real fulldate field, so
       // requesting it in ISO shape via the %Y-%m-%d format modifier
       // avoids any date-parsing ambiguity (confirmed via Ontraport's
       // merge-field-formatting docs — PHP date() tokens, same
-      // pattern as their own %F j, Y g:i a example).
-      eventEnd: { date: '[Events//Event End Date%Y-%m-%d]', time: '[Events//Session End Time]' },
+      // pattern as their own %F j, Y g:i a example). Registrations
+      // has no mirrored "Event End Date" field (only Event Start
+      // Date is mirrored), so this genuinely has to cross to Event//.
+      eventEnd: { date: '[Page//Event//Event End Date%Y-%m-%d]', time: '[Page//Event//Session End Time]' },
       // Graduation Day and Date / Start Time (registrations.f3099/
       // f3100) — registration-side mirrors of the Event's own
       // Graduation fields, purpose-built so a registration-based
-      // template like this one doesn't need a cross-object prefix.
+      // template like this one doesn't need an Event// object-name
+      // segment (Page// prefix still required, same as every other
+      // field on this Page).
       // These are TEXT fields, not fulldate, so no %-format modifier
       // applies — staff-entered shape is documented as e.g.
       // "Tues, Aug 18, 2026"; Portal.dateUtil.parseDate() now strips
       // a leading weekday prefix specifically for this format.
-      graduation: { date: '[Graduation Day and Date]', time: '[Graduation Start Time]' },
+      graduation: { date: '[Page//Graduation Day and Date]', time: '[Page//Graduation Start Time]' },
 
       // ---- known-blocked, not yet wireable — see
       // ontraport-setup-punchlist.md for the underlying gaps ----
@@ -1226,19 +1295,21 @@
       materials: {
         sessions: [
           { index: 1, label: 'Day 1', items: [
-            { name: 'Day 1 Assignments', url: '[Events//LM-Day 1 Assignments]', released: '[Day 1 Assignments Visible?##checkediftrue]' === 'true' },
-            { name: 'Day 1 Agreements',  url: '[Events//Day 1 Agreements]',      released: '[Day 1 Agreements Visible?##checkediftrue]' === 'true' },
-            { name: 'Day 1 Letter',      url: '[Events//LM-Day 1 Letter]',       released: '[Day 1 Letter Visible?##checkediftrue]' === 'true' }
+            { name: 'Day 1 Assignments', url: '[Page//Event//LM-Day 1 Assignments]', released: '[Page//Day 1 Assignments Visible?##checkediftrue]' === 'true' },
+            { name: 'Day 1 Agreements',  url: '[Page//Event//Day 1 Agreements]',      released: '[Page//Day 1 Agreements Visible?##checkediftrue]' === 'true' },
+            { name: 'Day 1 Letter',      url: '[Page//Event//LM-Day 1 Letter]',       released: '[Page//Day 1 Letter Visible?##checkediftrue]' === 'true' }
           ]},
           { index: 2, label: 'Day 2', items: [
-            { name: 'Day 2 Assignments', url: '[Events//LM-Day 2 Assignment]',   released: '[Day 2 Assignments##checkediftrue]' === 'true' },
-            { name: 'Day 2 Letter',      url: '[Events//LM-Day 2 Letter]',       released: '[Day 2 Letter Visible?##checkediftrue]' === 'true' }
+            { name: 'Day 2 Assignments', url: '[Page//Event//LM-Day 2 Assignment]',   released: '[Page//Day 2 Assignments##checkediftrue]' === 'true' },
+            { name: 'Day 2 Letter',      url: '[Page//Event//LM-Day 2 Letter]',       released: '[Page//Day 2 Letter Visible?##checkediftrue]' === 'true' }
           ]},
           { index: 3, label: 'Day 3', items: [
-            { name: 'Day 3 Follow-Through', url: '[Events//LM-Day 3 Follow Through]', released: '[Day 3 Follow Through Visible?##checkediftrue]' === 'true' }
+            { name: 'Day 3 Follow-Through', url: '[Page//Event//LM-Day 3 Follow Through]', released: '[Page//Day 3 Follow Through Visible?##checkediftrue]' === 'true' }
           ]}
         ],
-        graduation: [] // no toggle exists — renderer already has a real empty-state
+        // Graduation: no toggle exists — renderer already has a real
+        // empty-state.
+        graduation: []
       }
       // seminarNext, acNext, graduationGuests: still blocked on
       // Ontraport-side setup that doesn't exist yet (punchlist items
