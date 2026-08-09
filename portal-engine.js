@@ -92,6 +92,20 @@ Portal.dateUtil = (function(){
     return wall - zoneOffset(ts, zone);
   }
 
+  /* Midnight (00:00) of the calendar day containing ts, in zone —
+     DST-correct, reusing the same Intl.DateTimeFormat extraction as
+     zoneOffset() and the same zonedToUTC() reconstruction. Added
+     2026-08-09 for Portal.phase.compute's pre->during boundary: a
+     participant checking the page in the early hours of event day
+     should already see During-event content, not stale Pre-event
+     framing, regardless of the exact scheduled start clock-time. */
+  function startOfDay(ts, zone){
+    var f = new Intl.DateTimeFormat("en-US",{timeZone:zone,
+      year:"numeric",month:"2-digit",day:"2-digit"});
+    var q = {}; f.formatToParts(new Date(ts)).forEach(function(x){ q[x.type] = x.value; });
+    return zonedToUTC(+q.year, +q.month, +q.day, 0, 0, zone);
+  }
+
   /* "2026-08-14T16:00:00Z" | 1786723200 | 1786723200000 -> ms */
   function parseInstant(s){
     if(/^\d{13}$/.test(s)) return +s;              /* epoch millis  */
@@ -126,15 +140,26 @@ Portal.dateUtil = (function(){
       if(srcs[i]){ var t = parseInstant(srcs[i]); if(!isNaN(t)) return t; }
     }
     var ds = val(config.date), ts_ = val(config.time), zs = val(config.timeZone);
-    if(!ds || !ts_ || !zs) return NaN;
-    var dp = parseDate(ds), tp = parseTime(ts_), z = ianaOf(zs);
+    if(!ds || !zs) return NaN;
+    // A missing time is fine when the caller only needs date-level
+    // precision (e.g. eventEnd — there isn't really a meaningful
+    // "session end time" per direct instruction 2026-08-09, only the
+    // end DATE matters for the date-range chip). Default to local noon
+    // rather than failing outright — noon avoids any DST/midnight-
+    // boundary edge case that could shift the resolved instant onto the
+    // wrong calendar day. Callers that need real time-of-day precision
+    // (session start, countdowns) should keep supplying config.time —
+    // this only fills the gap, it doesn't mask an actually-missing time
+    // for those callers, since eventStartUTC's own `reference` resolves
+    // first and this fallback path is rarely reached for start times.
+    var dp = parseDate(ds), tp = ts_ ? parseTime(ts_) : [12, 0], z = ianaOf(zs);
     if(!dp || !tp || !z) return NaN;
     return zonedToUTC(dp[0], dp[1], dp[2], tp[0], tp[1], z);
   }
 
   return { val:val, ianaOf:ianaOf, parseDate:parseDate, parseTime:parseTime,
-    zoneOffset:zoneOffset, zonedToUTC:zonedToUTC, parseInstant:parseInstant,
-    resolveStart:resolveStart };
+    zoneOffset:zoneOffset, zonedToUTC:zonedToUTC, startOfDay:startOfDay,
+    parseInstant:parseInstant, resolveStart:resolveStart };
 })();
 
 /* =========================================================
@@ -643,9 +668,12 @@ Portal.confetti = (function(){
 Portal.account = (function(){
   var DEFAULT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
 
-  // TODO: real n8n webhook URL once the workflow in
-  // ontraport-setup-punchlist.md §5 is actually built.
-  var ACCOUNT_UPDATE_WEBHOOK_URL = '';
+  // Production webhook, built and verified per
+  // Workflows/Landmark_My_Account_Write_Back_Workflow_Handoff (1).md
+  // (2026-08-09) — use this exact UUID-based URL, not the shorter form
+  // that was floated earlier; the handoff doc explicitly warns they're
+  // not equivalent.
+  var ACCOUNT_UPDATE_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/482b78d7-0e00-4a20-ad2f-0d851c865574/portal-account-update';
 
   function escapeAttr(s){
     return String(s).replace(/[&<>"\']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', '\'':'&#39;' }[c]; });
@@ -931,10 +959,25 @@ Portal.render = Portal.render || {};
    every shared path" rule.
    ========================================================= */
 Portal.render._sec = {
-  prepare: function(courseType, infoFormDone){
+  // data is optional (only prepare() needs it, for the Information Form
+  // link's query params) — callers that don't have it yet can omit it,
+  // same tolerance every other renderer already has for partial data.
+  prepare: function(courseType, infoFormDone, data){
+    data = data || {};
+    function escapeHtml(s){
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+        return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', '\'':'&#39;' }[c];
+      });
+    }
+    // Real destination added 2026-08-09, per direct instruction —
+    // previously just an inert <span>, no href at all.
+    var infoFormUrl = 'https://lm.landmarkworldwide.com/registration-confirmed' +
+      '?cuid=' + encodeURIComponent(data.contactUniqueId || '') +
+      '&cemail=' + encodeURIComponent(data.email || '') +
+      '&cfirstname=' + encodeURIComponent(data.firstName || '');
     var infoCardHtml = infoFormDone ?
       '<div class="pcard done"><div class="ph"><span class="pill pr pill-done">Completed</span><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-prepare-form.jpg" alt="Complete your information form"></div><div class="pbody"><div class="ptag serif-it">a few minutes.</div><h3>Complete Your Information Form</h3><p>Thanks — we have everything we need from you.</p></div></div>' :
-      '<div class="pcard"><div class="ph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-prepare-form.jpg" alt="Complete your information form"></div><div class="pbody"><div class="ptag serif-it">a few minutes.</div><h3>Complete Your Information Form</h3><p>We still need a few details from you before the weekend. It only takes a few minutes.</p><span class="go">Finish now &rarr;</span></div></div>';
+      '<div class="pcard"><div class="ph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-prepare-form.jpg" alt="Complete your information form"></div><div class="pbody"><div class="ptag serif-it">a few minutes.</div><h3>Complete Your Information Form</h3><p>We still need a few details from you before the weekend. It only takes a few minutes.</p><a class="go" href="' + escapeHtml(infoFormUrl) + '" target="_blank" rel="noopener">Finish now &rarr;</a></div></div>';
     return '<section class="block paper" id="prepare"><div class="wrap">' +
       '<div class="sec-head"><div class="eyebrow">Get Ready</div><h2>Prepare for your ' + courseType + '</h2><p>A few simple things to take care of before your course begins. Each takes just a couple of minutes.</p></div>' +
       '<div class="pcards">' +
@@ -1133,7 +1176,7 @@ Portal.render.pre = function(data){
   // ---- prepare / guide / agreements / be-present / faq ----
   // Ported to Portal.render._sec above (Stage 5) since Post-event's
   // "next course" view needs the identical content, re-parameterized.
-  var prepareHtml = Portal.render._sec.prepare(courseType, infoFormDone);
+  var prepareHtml = Portal.render._sec.prepare(courseType, infoFormDone, data);
   var guideHtml = Portal.render._sec.guide(courseType);
   var rulesHtml = Portal.render._sec.rules(courseType);
   var bepresentHtml = Portal.render._sec.bepresent();
@@ -1323,6 +1366,11 @@ Portal.render.during = function(data){
     });
   }
 
+  // Real destination added 2026-08-09, per direct instruction — both
+  // "Invite another guest" and "Invite your guests" used to be either a
+  // local placeholder path or a fully inert button with no href at all.
+  var inviteHubUrl = 'https://lm.landmarkworldwide.com/invite/' + encodeURIComponent(data.contactUniqueId || '');
+
   var startTs = Portal.dateUtil.resolveStart({
     reference: data.eventStartUTC, date: data.eventStartDate, time: data.sessionStartTime, timeZone: tz
   });
@@ -1341,15 +1389,39 @@ Portal.render.during = function(data){
   function joinHref(){ return data.zoomJoin ? escapeHtml(data.zoomJoin) : ''; }
   function joinLabel(){ return 'Join Your ' + courseType; }
 
+  // Real join link becomes available 30 minutes before session start
+  // (roomOpenTs, below) rather than purely on data.zoomJoin being set —
+  // per direct instruction 2026-08-09. Nav (.nav-join, compact) and hero
+  // (.btn-join, larger) both render off this ONE shared boolean rather
+  // than independently duplicating the same check, so they can never
+  // disagree — each keeps its own existing markup/CSS class, only the
+  // underlying availability decision is unified. renderJoinCta() runs
+  // once immediately and then on a timer, so the button flips live for
+  // anyone already on the page when the 30-minute mark passes — no
+  // reload required.
+  function linkAvailable(){ return !!(data.zoomJoin && hasStart && Date.now() >= roomOpenTs); }
+  function navJoinHtml(avail){
+    return avail ?
+      '<a class="nav-join" href="' + joinHref() + '" target="_blank" rel="noopener"><span class="dot"></span><span class="jt">' + joinLabel() + '</span></a>' :
+      '<span class="nav-join" aria-disabled="true"><span class="jt">Link available soon</span></span>';
+  }
+  function heroJoinHtml(avail){
+    return avail ?
+      '<a class="btn-join" href="' + joinHref() + '" target="_blank" rel="noopener">' + joinLabel() + ' <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></a>' :
+      '<span class="btn-join" aria-disabled="true">Link available soon</span>';
+  }
+  function renderJoinCta(){
+    var avail = linkAvailable();
+    var navCtaSlot = document.getElementById('navCtaSlot');
+    if(navCtaSlot) navCtaSlot.innerHTML = navJoinHtml(avail);
+    var heroJoinCta = document.getElementById('heroJoinCta');
+    if(heroJoinCta) heroJoinCta.innerHTML = heroJoinHtml(avail);
+  }
+
   // ---- nav ----
   var navLinks = document.getElementById('navLinks');
   if(navLinks) navLinks.innerHTML =
     '<a href="#today">Today</a><a href="#programs">Programs</a><a href="#graduation">Graduation</a><a href="#contact">Contact</a>';
-
-  var navCtaSlot = document.getElementById('navCtaSlot');
-  if(navCtaSlot) navCtaSlot.innerHTML = data.zoomJoin ?
-    '<a class="nav-join" href="' + joinHref() + '" target="_blank" rel="noopener"><span class="dot"></span><span class="jt">' + joinLabel() + '</span></a>' :
-    '<span class="nav-join" aria-disabled="true"><span class="jt">Link available soon</span></span>';
 
   // ---- hero ----
   var heroName = firstName ? escapeHtml(firstName) + ', welcome to' : 'Welcome to';
@@ -1368,9 +1440,7 @@ Portal.render.during = function(data){
         '<div class="pc-fine">' + format + ' &middot; Full-day experience &middot; Starts ' + (hasStart ? Portal.format.time(startTs, ianaId) + ' ' + Portal.format.zoneLabel(ianaId) : 'time TBD') + '</div>' +
         '<div class="pc-cta">' +
           '<img class="pc-logo" src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-lmf-logo.png" alt="The Landmark ' + courseType + '">' +
-          (data.zoomJoin ?
-            '<a class="btn-join" href="' + joinHref() + '" target="_blank" rel="noopener">' + joinLabel() + ' <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></a>' :
-            '<span class="btn-join" aria-disabled="true">Link available soon</span>') +
+          '<span id="heroJoinCta">' + heroJoinHtml(linkAvailable()) + '</span>' +
         '</div>' +
         (hasStart ? '<div class="pc-note">Please arrive at least 15 minutes before the ' + Portal.format.time(startTs, ianaId) + ' start time. The room opens at <b>' + Portal.format.time(roomOpenTs, ianaId) + '</b> each morning, in the time zone of your ' + courseType + ' — we’ll see you there.</div>' : '') +
       '</aside>' +
@@ -1389,7 +1459,7 @@ Portal.render.during = function(data){
         '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-invite.jpg" alt=""></div><div class="abody"><div class="aeye">Graduation</div><h4>Invite Friends &amp; Family</h4><p>Tuesday evening is a celebration of what you’ve created. Invite the people who matter most to be there.</p><a href="#graduation" class="go">Invite guests &rarr;</a></div></div>' +
         '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-seminar.jpg" alt=""><span class="abadge">Free</span></div><div class="abody"><div class="aeye">On Us</div><h4>Claim Your Complimentary Seminar</h4><p>Your next seminar is on us. Reserve your spot and keep exploring what’s possible.</p><span class="go">Claim your seminar &rarr;</span></div></div>' +
         '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-ac.jpg" alt=""><span class="abadge">Save $300</span></div><div class="abody"><div class="aeye">Keep Going</div><h4>Advanced Course &mdash; Reserve Your Spot</h4><p>Continue your momentum into the Advanced Course. Register before Friday to save $300.</p><span class="go">Reserve your spot &rarr;</span></div></div>' +
-        '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-gift.jpg" alt=""></div><div class="abody"><div class="aeye serif-it" style="text-transform:none;letter-spacing:.02em;font-size:14px;">Give transformation.</div><h4 class="serif-it" style="color:var(--green);font-weight:300;font-size:20px;">Gift someone their ' + courseType + '.</h4><p>Many people are here this weekend because of the generosity of someone who came before them. If you feel moved, here’s an opportunity to make it possible for someone else.</p><span class="go serif-it" style="font-style:italic;font-weight:300;font-size:14px;">Contribute &rarr;</span></div></div>' +
+        '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-gift.jpg" alt=""></div><div class="abody"><div class="aeye serif-it" style="text-transform:none;letter-spacing:.02em;font-size:14px;">Give transformation.</div><h4 class="serif-it" style="color:var(--green);font-weight:300;font-size:20px;">Gift someone their ' + courseType + '.</h4><p>Many people are here this weekend because of the generosity of someone who came before them. If you feel moved, here’s an opportunity to make it possible for someone else.</p><a class="go serif-it" style="font-style:italic;font-weight:300;font-size:14px;" href="https://transformationfoundation.org/" target="_blank" rel="noopener">Contribute &rarr;</a></div></div>' +
       '</div>' +
     '</div></section>';
 
@@ -1497,7 +1567,7 @@ Portal.render.during = function(data){
   // the pager even though its own content is static; harmless.
   function guestFooterHtml(){
     return '<div class="inv-footer">' +
-      '<a class="inv-more" href="invite-hub.html" target="_blank" rel="noopener">Invite another guest <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>' +
+      '<a class="inv-more" href="' + escapeHtml(inviteHubUrl) + '" target="_blank" rel="noopener">Invite another guest <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>' +
       guestPagerHtml() +
     '</div>';
   }
@@ -1527,7 +1597,7 @@ Portal.render.during = function(data){
           (!isNaN(gradTs) ? '<div class="gmeta">' + Portal.format.weekdayMonthDay(gradTs, ianaId) + ' &middot; Starts ' + Portal.format.time(gradTs, ianaId) + ' ' + Portal.format.zoneLabel(ianaId) + ' &middot; All guests are welcome</div>' : '') +
           '<p>For many participants, Graduation is the most memorable part of the ' + courseType + '. You’ll come back together with the people you’ve shared this time alongside — and with the family, friends, and colleagues you choose to invite — for an evening of celebration, acknowledgment, and possibility.</p>' +
           '<p>It’s a chance to celebrate what you’ve created — and to share that moment with the people who matter most to you.</p>' +
-          '<div class="ginvite"><div class="gq">Who would you love to have there?</div><button class="gbtn">Invite your guests <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>' +
+          '<div class="ginvite"><div class="gq">Who would you love to have there?</div><a class="gbtn" href="' + escapeHtml(inviteHubUrl) + '" target="_blank" rel="noopener">Invite your guests <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>' +
         '</div>' +
       '</div>' +
       inviteesHtml +
@@ -1587,6 +1657,16 @@ Portal.render.during = function(data){
 
   var root = document.getElementById('portal-root');
   if(root) root.innerHTML = heroHtml + actionsHtml + assignmentsHtml + graduationHtml + rulesHtml + faqHtml + lmfBandHtml + contactHtml;
+
+  // Sets #navCtaSlot's initial content (heroJoinCta's own initial state
+  // was already baked into heroHtml above) and starts the live 30-
+  // second re-check so the join CTA flips from "Link available soon" to
+  // the real link without a reload once the 30-minute mark passes.
+  // Cleared/reset defensively in case render.during is ever invoked more
+  // than once in a page's lifetime (shouldn't normally happen).
+  renderJoinCta();
+  if(Portal.render._joinCtaTimer) clearInterval(Portal.render._joinCtaTimer);
+  Portal.render._joinCtaTimer = setInterval(renderJoinCta, 30000);
 
   // ---- Current Program / All Programs tabs + the shared grid ----
   var progTabs = document.getElementById('progTabs');
@@ -1798,7 +1878,7 @@ Portal.render.post = function(data){
         '</aside>' +
       '</div></header>';
 
-    midSectionsHtml = Portal.render._sec.prepare(nextCourseType, infoFormDone) +
+    midSectionsHtml = Portal.render._sec.prepare(nextCourseType, infoFormDone, data) +
       Portal.render._sec.guide(nextCourseType) +
       Portal.render._sec.rules(nextCourseType) +
       Portal.render._sec.bepresent() +
@@ -2010,6 +2090,14 @@ Portal.phase = (function(){
     });
     if(isNaN(startTs)) return 'pre';
 
+    // Pre -> During at midnight of the event's own start date, in the
+    // event's own timezone — not the exact scheduled start clock-time —
+    // per direct instruction 2026-08-09, so a participant checking the
+    // page in the early hours of event day already sees During-event
+    // content instead of stale Pre-event framing.
+    var duringBoundary = Portal.dateUtil.startOfDay(startTs, Portal.dateUtil.ianaOf(tz) || 'America/Los_Angeles');
+    if(now < duringBoundary) return 'pre';
+
     var endTs = Portal.dateUtil.resolveStart({ reference: data.eventEnd && data.eventEnd.reference, date: data.eventEnd && data.eventEnd.date, time: data.eventEnd && data.eventEnd.time, timeZone: tz });
     if(isNaN(endTs)) endTs = startTs + 2 * 86400000; // same 3-day fallback every renderer already uses
     var gradTs = data.graduation ? Portal.dateUtil.resolveStart({
@@ -2017,7 +2105,6 @@ Portal.phase = (function(){
     }) : NaN;
     var postBoundary = !isNaN(gradTs) ? Math.max(endTs, gradTs) : endTs;
 
-    if(now < startTs) return 'pre';
     if(now >= postBoundary) return 'post';
     return 'during';
   }
@@ -2035,15 +2122,6 @@ Portal.phase = (function(){
    real photo too, not just During).
    ========================================================= */
 Portal.init = function(){
-  // Drive .progtabs' sticky offset from the nav's REAL rendered height
-  // rather than a hardcoded top:78px that has to coincidentally match
-  // .topnav's actual height (78px row + 1px border-bottom = 79px — the
-  // 1px the hardcoded value missed is exactly the "gap under the nav"
-  // reported live 2026-08-09). Measuring once here means the two can
-  // never drift out of sync again, regardless of future nav edits.
-  var navEl = document.querySelector('.topnav');
-  if(navEl) document.documentElement.style.setProperty('--nav-h', navEl.offsetHeight + 'px');
-
   var data = window.PORTAL_DATA || {};
   Portal.account.setAvatar(data.profileImageUrl);
   Portal.account.populateForm(data);
