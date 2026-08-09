@@ -677,7 +677,19 @@ Portal.account = (function(){
     return String(s).replace(/[&<>"\']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', '\'':'&#39;' }[c]; });
   }
 
+  // Ontraport's [Contact//Profile Image] merge tag renders a full
+  // `<img src='...' />` tag once the field is populated, not a bare URL
+  // (see member-portal.html's PORTAL_DATA comment on profileImageUrl) —
+  // pull the real URL back out of that wrapper if present. Bare URLs
+  // (e.g. the webhook's own JSON response) pass through unchanged.
+  function extractImgUrl(raw){
+    if(!raw) return '';
+    var m = /src=['"]([^'"]+)['"]/.exec(raw);
+    return m ? m[1] : raw;
+  }
+
   function setAvatar(url){
+    url = extractImgUrl(url);
     var icon = document.getElementById('fabAccountIcon');
     if(icon) icon.innerHTML = url ? '<img class="fab-account__avatar" src="' + escapeAttr(url) + '" alt="">' : DEFAULT_ICON;
     var preview = document.getElementById('acctPhotoPreview');

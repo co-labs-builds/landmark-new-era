@@ -1238,7 +1238,13 @@
       // Explicit Contact// segment matters here too: "Profile Image" is
       // a generic field alias that also exists on Registrations and
       // Events — this must stay pinned to the Contact's own upload.
-      profileImageUrl: '[Page//Contact//Profile Image]',
+      // Double-quoted deliberately: once this field is actually populated,
+      // Ontraport's merge tag renders a full `<img src='...' />` tag (not
+      // a bare URL) whose src attribute is single-quoted — wrapping it in
+      // a single-quoted JS string breaks the string open at that inner
+      // quote and throws a page-wide syntax error. portal-engine.js's
+      // Portal.account extracts the real URL back out of this wrapper.
+      profileImageUrl: "[Page//Contact//Profile Image]",
 
       // ---- this registration (own object — Page// only, no object
       // name segment, since this Page is based on Registrations) ----
