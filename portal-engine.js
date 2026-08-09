@@ -627,15 +627,25 @@ Portal.confetti = (function(){
    from Portal.init() (Stage 6), same as setAvatar — My Account
    is static shell markup (not phase-rendered), so it only needs
    wiring/filling once per page load, not per-renderer. Exact
-   crop/fit is a later polish pass; this just wires the
-   capability to show *something* now — actual persistence to
-   Ontraport is out of this plan's scope, same boundary kept
-   everywhere else in this file (the existing acctSave/acctPayBtn
-   stubs in member-portal.html's shell script already reflect
-   that; this doesn't change it).
+   crop/fit is a later polish pass.
+
+   wireSave() (added 2026-08-09) is real write-back, not a stub —
+   POSTs to the webhook spec'd in ontraport-setup-punchlist.md §5
+   (an n8n workflow: uploads the photo to Cloudinary server-side if
+   present, then writes everything to Ontraport in one call).
+   ACCOUNT_UPDATE_WEBHOOK_URL is empty until that workflow actually
+   exists — Save reports a clear "not connected yet" instead of
+   silently pretending to work when it's unset, so this never
+   regresses back into looking-done-but-isn't the way the old stub
+   did (reported live 2026-08-09: photo/fields appeared to save but
+   reverted on refresh — nothing was ever actually sent anywhere).
    ========================================================= */
 Portal.account = (function(){
   var DEFAULT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+
+  // TODO: real n8n webhook URL once the workflow in
+  // ontraport-setup-punchlist.md §5 is actually built.
+  var ACCOUNT_UPDATE_WEBHOOK_URL = '';
 
   function escapeAttr(s){
     return String(s).replace(/[&<>"\']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', '\'':'&#39;' }[c]; });
@@ -660,6 +670,7 @@ Portal.account = (function(){
     set('acctTz', data.tz);
   }
 
+  var pendingPhotoFile = null;
   var photoUploadWired = false;
   function wirePhotoUpload(){
     if(photoUploadWired) return; photoUploadWired = true;
@@ -670,14 +681,70 @@ Portal.account = (function(){
     input.addEventListener('change', function(){
       var file = input.files && input.files[0];
       if(!file) return;
-      // Local preview only (URL.createObjectURL) — actual upload/hosting
-      // is an Ontraport-side integration out of this plan's scope, same
-      // as every other not-yet-wired persistence path in this file.
+      // Instant local preview only (URL.createObjectURL) — the real
+      // upload happens on Save, alongside the other fields, so picking
+      // a photo without hitting Save doesn't half-persist anything.
+      pendingPhotoFile = file;
       setAvatar(URL.createObjectURL(file));
     });
   }
 
-  return { setAvatar: setAvatar, populateForm: populateForm, wirePhotoUpload: wirePhotoUpload };
+  var saveWired = false;
+  function wireSave(){
+    if(saveWired) return; saveWired = true;
+    var btn = document.getElementById('acctSave');
+    if(!btn) return;
+    btn.addEventListener('click', function(){
+      if(!ACCOUNT_UPDATE_WEBHOOK_URL){
+        btn.textContent = 'Not connected yet';
+        setTimeout(function(){ btn.textContent = 'Save Changes'; }, 2400);
+        return;
+      }
+      var get = function(id){ var el = document.getElementById(id); return el ? el.value : ''; };
+      // contact_id comes from Ontraport's own dcParam (embedded on every
+      // membership-site page for session identification) — trusted as-is
+      // per direct instruction 2026-08-09, NOT cryptographically verified
+      // (Ontraport's signing scheme/secret is unknown). Accepted risk for
+      // this pilot's small, known participant group — see
+      // ontraport-setup-punchlist.md §5 before hardening this later.
+      var contactId = (window.dcParam && window.dcParam.contact_id) || '';
+      var fd = new FormData();
+      fd.append('contactId', contactId);
+      fd.append('displayName', get('acctDisplay'));
+      fd.append('lastName', get('acctLast'));
+      fd.append('email', get('acctEmail'));
+      fd.append('phone', get('acctPhone'));
+      if(pendingPhotoFile) fd.append('photo', pendingPhotoFile);
+
+      btn.textContent = 'Saving…'; btn.disabled = true;
+      fetch(ACCOUNT_UPDATE_WEBHOOK_URL, { method: 'POST', body: fd }).then(function(res){
+        if(!res.ok) throw new Error('Request failed');
+        return res.json();
+      }).then(function(result){
+        if(!result || result.success !== true) throw new Error((result && result.error) || 'Unknown error');
+        if(result.profileImageUrl){
+          setAvatar(result.profileImageUrl);
+          pendingPhotoFile = null;
+          if(window.PORTAL_DATA) window.PORTAL_DATA.profileImageUrl = result.profileImageUrl;
+        }
+        if(window.PORTAL_DATA){
+          window.PORTAL_DATA.displayName = fd.get('displayName');
+          window.PORTAL_DATA.lastName = fd.get('lastName');
+          window.PORTAL_DATA.email = fd.get('email');
+          window.PORTAL_DATA.phone = fd.get('phone');
+        }
+        btn.textContent = 'Saved ✓';
+        btn.disabled = false;
+        setTimeout(function(){ btn.textContent = 'Save Changes'; }, 2400);
+      }).catch(function(){
+        btn.textContent = 'Save failed — try again';
+        btn.disabled = false;
+        setTimeout(function(){ btn.textContent = 'Save Changes'; }, 2600);
+      });
+    });
+  }
+
+  return { setAvatar: setAvatar, populateForm: populateForm, wirePhotoUpload: wirePhotoUpload, wireSave: wireSave };
 })();
 
 Portal.techCheck = (function(){
@@ -1981,6 +2048,7 @@ Portal.init = function(){
   Portal.account.setAvatar(data.profileImageUrl);
   Portal.account.populateForm(data);
   Portal.account.wirePhotoUpload();
+  Portal.account.wireSave();
   var phase = Portal.phase.compute(data, Date.now());
   if(phase === 'pre') Portal.render.pre(data);
   else if(phase === 'during') Portal.render.during(data);

@@ -88,6 +88,20 @@ The My Account modal's "Save Changes" (currently a UI-only stub — see `member-
 
 **Display-Name-defaults-from-First-Name assumption — resolved 2026-08-08, and the assumption was wrong.** Queried the real `contacts` data directly: only **2 of 183** contacts have `f2620` "Display Name" populated at all (`count_objects`, confirmed), and both are synthetic `ZoomTest Alice`/`ZoomTest Bob` records where it was manually set to the full "First Last" name — not just First Name, and not an automatic default in either case. **There is no auto-population from First Name happening** — Display Name is effectively an unused, empty field across the real contact base. Doesn't change anything already decided (the portal never wrote to it and still won't), but the earlier "believed" is now a confirmed no, not a guess.
 
+**Proxy architecture — decided 2026-08-09, ready to build, not yet built.** Live bug report confirmed the stub was never wired: photo upload previews locally via `URL.createObjectURL` (never persisted anywhere) and "Save Changes" only flashes button text — neither survives a refresh. Client decisions this round:
+- **Host: n8n**, reusing the same instance already running the Zoom/registration automation, rather than standing up a new platform.
+- **Identity check: trust the client-submitted `contact_id` as-is for now**, explicit accepted-risk decision — this is a small, known pilot group, not a public-internet-scale concern. `dcParam.contact_id`/`.hash` (Ontraport's own membership-site session params, visible in page source) is the source value, but the workflow does NOT cryptographically verify the hash (Ontraport's signing scheme/secret isn't known) — anyone with devtools access could in principle submit a different contact_id. Revisit if this ever needs to harden (ask Ontraport support for the hash verification method, or find a documented "verify session" API call).
+- **Consolidated into ONE webhook**, not two separate integrations — the earlier "Cloudinary client-side, then proxy separately" sketch above is superseded by this: browser POSTs text fields + the raw photo file together; the n8n workflow uploads the photo to Cloudinary server-side (signed, safe — no preset/client-side Cloudinary integration needed) if present, then writes everything to Ontraport in the same run.
+
+**n8n workflow spec (to build):**
+1. **Webhook node** — `POST`, multipart/form-data. Fields: `contactId`, `displayName`, `lastName`, `email`, `phone`, `photo` (optional file).
+2. **IF `photo` present** → HTTP Request node → Cloudinary Upload API (`https://api.cloudinary.com/v1_1/<cloud_name>/image/upload`), authenticated via Cloudinary credentials stored in n8n (never touches the browser) → take `secure_url` from the response as `profileImageUrl`.
+3. **HTTP Request node** → Ontraport `update_object` (or `saveorupdate_object`) on `contacts` (objectID 0), `id: contactId`, fields: `{ f2620: displayName, lastname: lastName, email: email, sms_number: phone, profile_image: profileImageUrl }` (only include `profile_image` if step 2 ran). Ontraport API key stored in n8n credentials.
+   - **Open question, not yet empirically confirmed:** whether Ontraport's `image`-type `profile_image` field actually accepts a plain URL string via the API the same way a `url`-type field would, or requires an actual file upload through Ontraport's own upload mechanism. The "Photo specifically" note above flags this as an assumption, not a tested fact — test with a real value when building this step, don't assume it'll just work.
+4. **Respond** to the browser: `{success: true, profileImageUrl}` or `{success: false, error}`.
+
+**Frontend is wired and ready** (`portal-engine.js` `Portal.account`, 2026-08-09) to call this webhook the moment it exists — see the `ACCOUNT_UPDATE_WEBHOOK_URL` placeholder constant at the top of that module. Someone needs to either build this n8n workflow by hand from the spec above, or authorize the "claude.ai LMN8N" connector (claude.ai connector settings) so Claude can build/wire it directly in a future interactive session — non-interactive sessions can't complete the OAuth step.
+
 ---
 
 ## Nice-to-have, not a gap

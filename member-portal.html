@@ -1057,15 +1057,12 @@
       this.textContent='Thank you — we hear you.'; this.disabled=true;
     });
 
-    // Still a UI-only stub — real write-back is a server-side proxy (design
-    // lead ruled out native Ontraport form elements, 2026-08-08), not yet
-    // built. When wired, the Display Name field targets contacts.f2620
-    // "Display Name" specifically — never firstname, which stays untouched
-    // so the participant's real name on file is never overwritten by this.
-    document.getElementById('acctSave').addEventListener('click', function(){
-      var b=this; b.textContent='Saved ✓'; b.disabled=true;
-      setTimeout(function(){ b.textContent='Save Changes'; b.disabled=false; }, 2200);
-    });
+    // acctSave's real click handler lives in Portal.account.wireSave()
+    // (portal-engine.js) — real write-back now, not a UI-only stub. See
+    // ontraport-setup-punchlist.md §5 for the webhook architecture. The
+    // Display Name field targets contacts.f2620 "Display Name"
+    // specifically — never firstname, which stays untouched so the
+    // participant's real name on file is never overwritten by this.
     var payBtn=document.getElementById('acctPayBtn');
     if(payBtn) payBtn.addEventListener('click', function(){ payBtn.textContent='Our team will reach out to update it securely.'; });
 
