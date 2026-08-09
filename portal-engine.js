@@ -668,12 +668,10 @@ Portal.confetti = (function(){
 Portal.account = (function(){
   var DEFAULT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
 
-  // Production webhook, built and verified per
-  // Workflows/Landmark_My_Account_Write_Back_Workflow_Handoff (1).md
-  // (2026-08-09) — use this exact UUID-based URL, not the shorter form
-  // that was floated earlier; the handoff doc explicitly warns they're
-  // not equivalent.
-  var ACCOUNT_UPDATE_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/482b78d7-0e00-4a20-ad2f-0d851c865574/portal-account-update';
+  // Production webhook, corrected 2026-08-09 per direct client
+  // correction — the UUID-based form previously wired here (per the
+  // handoff doc) was actually wrong; this shorter form is the real one.
+  var ACCOUNT_UPDATE_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/portal-account-update';
 
   function escapeAttr(s){
     return String(s).replace(/[&<>"\']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', '\'':'&#39;' }[c]; });
