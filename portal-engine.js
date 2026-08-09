@@ -969,6 +969,23 @@ Portal.render = Portal.render || {};
    every shared path" rule.
    ========================================================= */
 Portal.render._sec = {
+  // Hoisted out of Portal.render.pre 2026-08-09 (was defined and called
+  // there only) — .rules li / #bepresent start at opacity:0 by design
+  // (see member-portal.html's "AGREEMENTS — staggered reveal + hover"
+  // CSS) and only ever become visible once this adds the 'in' class.
+  // During's own #rules and Post's shared _sec.rules/_sec.bepresent were
+  // rendering permanently invisible with no JS bug of their own to find
+  // — the reveal wiring itself just never existed for them. Now shared
+  // so every phase that renders these sections also reveals them.
+  reveal: function(el, cls, th){
+    if(!el) return;
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(es){
+        es.forEach(function(e){ if(e.isIntersecting){ el.classList.add(cls); io.unobserve(el); } });
+      }, { threshold: th });
+      io.observe(el);
+    } else { el.classList.add(cls); }
+  },
   // data is optional (only prepare() needs it, for the Information Form
   // link's query params) — callers that don't have it yet can omit it,
   // same tolerance every other renderer already has for partial data.
@@ -1176,7 +1193,7 @@ Portal.render.pre = function(data){
         '<div class="k">Your ' + courseType + ' begins</div>' +
         (hasStart ?
           '<div class="when">' + Portal.format.weekdayMonthDay(startTs, ianaId) + ' <span class="serif-it">&middot; ' + Portal.format.time(startTs, ianaId) + ' ' + Portal.format.zoneLabel(ianaId) + '</span></div>' +
-          '<div class="countdown"><div class="cd-cell"><div class="cd-num" id="cd-d">–</div><div class="cd-lab">Days</div></div><div class="cd-cell"><div class="cd-num" id="cd-h">–</div><div class="cd-lab">Hours</div></div><div class="cd-cell"><div class="cd-num" id="cd-m">–</div><div class="cd-lab">Min</div></div></div>' +
+          '<div class="countdown"><div class="cd-cell"><div class="cd-num" id="cd-d">–</div><div class="cd-lab">Days</div></div><div class="cd-cell"><div class="cd-num" id="cd-h">–</div><div class="cd-lab">Hours</div></div><div class="cd-cell"><div class="cd-num" id="cd-m">–</div><div class="cd-lab">Min</div></div><div class="cd-cell"><div class="cd-num" id="cd-s">–</div><div class="cd-lab">Sec</div></div></div>' +
           '<p class="note">The room will open at <b>' + Portal.format.time(roomOpenTs, ianaId) + ' ' + Portal.format.zoneLabel(ianaId) + '</b> — please arrive at least 15 minutes early to make sure your technology is all set. We\'ll see you soon.</p>'
           : '<p class="note">Your start time will appear here as soon as it\'s confirmed.</p>') +
         '<button class="pbtn pbtn-lg" id="heroAddCal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg> Add to Calendar</button>' +
@@ -1225,28 +1242,23 @@ Portal.render.pre = function(data){
     f.addEventListener('click', function(){ f.classList.toggle('flipped'); });
   });
 
-  function reveal(el, cls, th){
-    if(!el) return;
-    if('IntersectionObserver' in window){
-      var io = new IntersectionObserver(function(es){
-        es.forEach(function(e){ if(e.isIntersecting){ el.classList.add(cls); io.unobserve(el); } });
-      }, { threshold: th });
-      io.observe(el);
-    } else { el.classList.add(cls); }
-  }
-  reveal(document.getElementById('bepresent'), 'in', .35);
-  reveal(document.getElementById('rules'), 'in', .35);
+  Portal.render._sec.reveal(document.getElementById('bepresent'), 'in', .35);
+  Portal.render._sec.reveal(document.getElementById('rules'), 'in', .35);
 
   if(hasStart){
-    var cdD = document.getElementById('cd-d'), cdH = document.getElementById('cd-h'), cdM = document.getElementById('cd-m');
+    var cdD = document.getElementById('cd-d'), cdH = document.getElementById('cd-h'), cdM = document.getElementById('cd-m'), cdS = document.getElementById('cd-s');
+    // Seconds box added + interval dropped to 1s (was 30s) 2026-08-09 —
+    // a countdown with no visible second-to-second movement reads as
+    // stuck/broken even though the minutes were updating correctly.
     var tick = function(){
       var d = startTs - Date.now(); if(d < 0) d = 0;
       cdD.textContent = Math.floor(d / 86400000);
       cdH.textContent = Math.floor((d % 86400000) / 3600000);
       cdM.textContent = Math.floor((d % 3600000) / 60000);
+      if(cdS) cdS.textContent = Math.floor((d % 60000) / 1000);
     };
     tick();
-    window.setInterval(tick, 30000);
+    window.setInterval(tick, 1000);
 
     var calEvents = [{
       start: startTs, end: !isNaN(endTs) ? endTs : startTs + 3 * 3600000,
@@ -1746,6 +1758,7 @@ Portal.render.during = function(data){
   if(hrLink) hrLink.addEventListener('click', function(e){ e.preventDefault(); Portal.modal.open('hrModal', 'hrScrim'); });
   var fbLink = document.getElementById('fbLink');
   if(fbLink) fbLink.addEventListener('click', function(e){ e.preventDefault(); Portal.modal.open('fbModal', 'fbScrim'); });
+  Portal.render._sec.reveal(document.getElementById('rules'), 'in', .35);
 
   // Re-callable (not one-shot): the guest list re-renders per page, so
   // copy buttons need to be re-wired every time, not just once against
@@ -1889,7 +1902,7 @@ Portal.render.post = function(data){
           (!isNaN(nextGradTs) ? '<div class="grad"><span>Final Session</span> &middot; ' + Portal.format.weekdayShort(nextGradTs, nextIana) + ' ' + Portal.format.dayPeriodLabel(nextGradTs, nextIana) + ', ' + Portal.format.weekdayMonthDay(nextGradTs, nextIana).split(', ')[1] + '</div>' : '') +
           '<div class="fine">' + nextFormat + ' &middot; ' + (winner.next.formatLabel || 'Details available soon') + '</div>' +
           '<div class="cd-cap">Until we begin</div>' +
-          '<div class="countdown"><div class="cd-cell"><div class="cd-num" id="cd-d">–</div><div class="cd-lab">Days</div></div><div class="cd-cell"><div class="cd-num" id="cd-h">–</div><div class="cd-lab">Hours</div></div><div class="cd-cell"><div class="cd-num" id="cd-m">–</div><div class="cd-lab">Min</div></div></div>' +
+          '<div class="countdown"><div class="cd-cell"><div class="cd-num" id="cd-d">–</div><div class="cd-lab">Days</div></div><div class="cd-cell"><div class="cd-num" id="cd-h">–</div><div class="cd-lab">Hours</div></div><div class="cd-cell"><div class="cd-num" id="cd-m">–</div><div class="cd-lab">Min</div></div><div class="cd-cell"><div class="cd-num" id="cd-s">–</div><div class="cd-lab">Sec</div></div></div>' +
           '<p class="note">Please arrive at least 15 minutes before the ' + Portal.format.time(nextStartTs, nextIana) + ' start time. The room opens at <b>' + Portal.format.time(roomOpenTs, nextIana) + '</b> — we’ll see you there.</p>' +
           '<button class="pbtn pbtn-lg" id="heroAddCal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg> Add to Calendar</button>' +
         '</aside>' +
@@ -2039,15 +2052,18 @@ Portal.render.post = function(data){
     document.querySelectorAll('.flip').forEach(function(f){
       f.addEventListener('click', function(){ f.classList.toggle('flipped'); });
     });
-    var cdD = document.getElementById('cd-d'), cdH = document.getElementById('cd-h'), cdM = document.getElementById('cd-m');
+    Portal.render._sec.reveal(document.getElementById('bepresent'), 'in', .35);
+    Portal.render._sec.reveal(document.getElementById('rules'), 'in', .35);
+    var cdD = document.getElementById('cd-d'), cdH = document.getElementById('cd-h'), cdM = document.getElementById('cd-m'), cdS = document.getElementById('cd-s');
     var tick = function(){
       var d = winner.startTs - Date.now(); if(d < 0) d = 0;
       cdD.textContent = Math.floor(d / 86400000);
       cdH.textContent = Math.floor((d % 86400000) / 3600000);
       cdM.textContent = Math.floor((d % 3600000) / 60000);
+      if(cdS) cdS.textContent = Math.floor((d % 60000) / 1000);
     };
     tick();
-    window.setInterval(tick, 30000);
+    window.setInterval(tick, 1000);
 
     var nextCourseTypeForCal = winner.next.title || Portal.pdata[winner.key].title;
     var calEvents = [{
