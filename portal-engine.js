@@ -1256,7 +1256,14 @@ Portal.render.pre = function(data){
     if(!isNaN(gradTs)){
       calEvents.push({ start: gradTs, end: gradTs + 2 * 3600000, summary: 'The Landmark ' + courseType + ' — Graduation', location: format });
     }
-    var addCal = function(){ Portal.calendar.download(courseType.toLowerCase() + '.ics', calEvents); };
+    // Pre-event only, per direct instruction 2026-08-09: also open the
+    // client's AddEvent.com page alongside our own .ics download, rather
+    // than replacing it.
+    var ADD_EVENT_URL = 'https://www.addevent.com/calendar/05z6s5wm4wmc';
+    var addCal = function(){
+      Portal.calendar.download(courseType.toLowerCase() + '.ics', calEvents);
+      window.open(ADD_EVENT_URL, '_blank', 'noopener');
+    };
     var heroAddCal = document.getElementById('heroAddCal'); if(heroAddCal) heroAddCal.addEventListener('click', addCal);
     var prepAddCal = document.getElementById('prepAddCal'); if(prepAddCal) prepAddCal.addEventListener('click', addCal);
   }
