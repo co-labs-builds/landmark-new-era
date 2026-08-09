@@ -1026,14 +1026,14 @@ Portal.render.pre = function(data){
   // ---- program tabs ----
   // Added 2026-08-09 per direct instruction — the pilot has exactly one
   // program (this Forum), so there's no "Prior/All Programs" content to
-  // switch to yet; a single always-active "Upcoming Programs" button
-  // matches the reference mockup's own label and .progtabs styling
-  // without inventing a second tab/view that has nothing behind it.
+  // switch to yet; a single always-active "Upcoming" button, using the
+  // exact same .progtabs button markup/classes as During/Post so the
+  // font/treatment stays identical across every phase.
   var progTabs = document.getElementById('progTabs');
   if(progTabs){
     progTabs.style.display = '';
     progTabs.querySelector('.wrap').innerHTML =
-      '<button class="active" type="button">Upcoming Programs</button>';
+      '<button class="active" type="button">Upcoming</button>';
   }
 
   // ---- hero ----
@@ -1968,6 +1968,15 @@ Portal.phase = (function(){
    real photo too, not just During).
    ========================================================= */
 Portal.init = function(){
+  // Drive .progtabs' sticky offset from the nav's REAL rendered height
+  // rather than a hardcoded top:78px that has to coincidentally match
+  // .topnav's actual height (78px row + 1px border-bottom = 79px — the
+  // 1px the hardcoded value missed is exactly the "gap under the nav"
+  // reported live 2026-08-09). Measuring once here means the two can
+  // never drift out of sync again, regardless of future nav edits.
+  var navEl = document.querySelector('.topnav');
+  if(navEl) document.documentElement.style.setProperty('--nav-h', navEl.offsetHeight + 'px');
+
   var data = window.PORTAL_DATA || {};
   Portal.account.setAvatar(data.profileImageUrl);
   Portal.account.populateForm(data);
