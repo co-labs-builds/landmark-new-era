@@ -1295,14 +1295,25 @@
       // "UTC time code for an event start time to use countdowns for
       // dynamic pages" per its own field description.
       eventStartUTC: '[Page//Countdown Timer Starting Reference]',
-      // Event End Date (events.f2395) is a real fulldate field, so
-      // requesting it in ISO shape via the %Y-%m-%d format modifier
-      // avoids any date-parsing ambiguity (confirmed via Ontraport's
-      // merge-field-formatting docs — PHP date() tokens, same
-      // pattern as their own %F j, Y g:i a example). Registrations
-      // has no mirrored "Event End Date" field (only Event Start
-      // Date is mirrored), so this genuinely has to cross to Event//.
-      eventEnd: { date: '[Page//Event//Event End Date%Y-%m-%d]', time: '[Page//Event//Session End Time]' },
+      // Event End Date (events.f2395) is a real fulldate field.
+      // 2026-08-10: the %Y-%m-%d format modifier (confirmed valid in
+      // Ontraport's general merge-field-formatting docs) does NOT
+      // resolve here — live-checked via window.PORTAL_DATA.eventEnd in
+      // the browser, the tag came through as literal unsubstituted
+      // bracket text. Same "works in Dynamic Templates, not
+      // necessarily in Pages" pattern already hit for the base [Field]
+      // vs [Page//Field] prefix — the modifier is presumably a
+      // Dynamic-Template-only feature. Dropped the modifier entirely
+      // rather than guess at a Page-compatible one; parseDate()'s own
+      // Date.parse fallback already handles Ontraport's default
+      // fulldate rendering regardless of exact format, so the plain
+      // tag needs no other code change. This is what silently produced
+      // the "Sun-Sun, Aug 9-9" duplicate-date bug (isNaN(endTs)
+      // fell back to startTs for both ends of the range).
+      // Registrations has no mirrored "Event End Date" field (only
+      // Event Start Date is mirrored), so this genuinely has to cross
+      // to Event//.
+      eventEnd: { date: '[Page//Event//Event End Date]', time: '[Page//Event//Session End Time]' },
       // Graduation Day and Date / Start Time (registrations.f3099/
       // f3100) — registration-side mirrors of the Event's own
       // Graduation fields, purpose-built so a registration-based
