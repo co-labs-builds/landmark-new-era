@@ -1517,6 +1517,12 @@ Portal.render.during = function(data){
     }).join('');
   }
   var DOC_ICON = '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h4"/>';
+  // 2026-08-10: dropped the card's own "Day N Assignments" <h3> — with
+  // the session's day already shown in the .teye row above it, the
+  // title was pure redundancy. The released item links now carry that
+  // same bold/18px treatment directly (.alinks a), so the assignment's
+  // own name is what reads as the card's heading instead of a generic
+  // label, per direct feedback with an annotated screenshot.
   function sessionCardHtml(session, currentIdx){
     var isFinal = currentIdx === 'Final';
     var isCurrent = !isFinal && session.index === currentIdx;
@@ -1529,7 +1535,7 @@ Portal.render.during = function(data){
     var pillHtml = isCurrent ? '<span class="pill pill-current">Today</span> &middot; ' : '';
     return '<div class="' + cardClass + '"><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + DOC_ICON + '</svg></div>' +
       '<div class="tbody"><div class="teye">' + pillHtml + escapeHtml(session.label) + '</div>' +
-      '<h3>' + escapeHtml(session.label) + ' Assignments</h3>' + body + '</div></div>';
+      body + '</div></div>';
   }
 
   var sessionsToShow = sessions.slice().sort(function(a, b){ return a.index - b.index; });
