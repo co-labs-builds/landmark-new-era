@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Member Portal — Landmark Worldwide</title>
+<!-- Preload both @font-face files (added 2026-08-10) so the fetch starts
+     immediately in parallel with HTML/CSS parsing, instead of only
+     starting once the browser reaches the @font-face rule during
+     render — paired with font-display:block below (was swap) so the
+     page shows briefly-invisible text and then the real font, rather
+     than visibly flashing the fallback font first. crossorigin is
+     required for font preloads even though these are already
+     cross-origin URLs, or the browser silently double-fetches. -->
+<link rel="preload" href="https://res.cloudinary.com/mynd/raw/upload/v1785641322/AvenirNext_Variable_wmaeay.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="https://file.ontraport.com/media/3fdc22625d3b4f91a262f71fd5245252.phpbg4i9h?Expires=4938729250&amp;Signature=Wvo5HyxM78OtwV1Aw20xmzg-5wImCXP2O53Xc145Vi6pnfp9s-kQ0AWfhrTTzaclT8zRkOMX4s40oW5WzqOP8Dhl1BZch6CSIM0BVXN97093tElhZwKi2wMHLeMMZf4RTPsY~AVlQX91LjkCDbXsBrkCI4MyOgFlaqoLz1qfzW5jfjiSqO-snsWVEpsagiAZD2JGwajiulMP76uSuTXrrI8FWxZBQrAD9-7Mcy-MXF2EHjSSFR3R4xFaWYVZ6PCrvJ3pngv5WuZvI-ry6TZqh0ICgeKn6B0dqYdYx3MZ53YrSwWKqeFy3Tdc30-tz~idjr5bJU13K23F46pyCuODtw__&amp;Key-Pair-Id=APKAJVAAMVW6XQYWSTNA" as="font" type="font/woff2" crossorigin>
 <style>
   /* =========================================================
      FONTS
@@ -23,14 +33,14 @@
         url("https://res.cloudinary.com/mynd/raw/upload/v1785641322/AvenirNext_Variable_wmaeay.woff2") format("woff2");
     font-weight:100 900;
     font-style:normal;
-    font-display:swap;
+    font-display:block;
   }
   @font-face{
     font-family:"Tiempos Headline";
     src:url("https://file.ontraport.com/media/3fdc22625d3b4f91a262f71fd5245252.phpbg4i9h?Expires=4938729250&Signature=Wvo5HyxM78OtwV1Aw20xmzg-5wImCXP2O53Xc145Vi6pnfp9s-kQ0AWfhrTTzaclT8zRkOMX4s40oW5WzqOP8Dhl1BZch6CSIM0BVXN97093tElhZwKi2wMHLeMMZf4RTPsY~AVlQX91LjkCDbXsBrkCI4MyOgFlaqoLz1qfzW5jfjiSqO-snsWVEpsagiAZD2JGwajiulMP76uSuTXrrI8FWxZBQrAD9-7Mcy-MXF2EHjSSFR3R4xFaWYVZ6PCrvJ3pngv5WuZvI-ry6TZqh0ICgeKn6B0dqYdYx3MZ53YrSwWKqeFy3Tdc30-tz~idjr5bJU13K23F46pyCuODtw__&Key-Pair-Id=APKAJVAAMVW6XQYWSTNA") format("woff2");
     font-weight:300;
     font-style:italic;
-    font-display:swap;
+    font-display:block;
   }
 
   /* =========================================================
@@ -88,27 +98,26 @@
      centered on the row's full width, independent of how wide the logo
      or nav-cta-slot are on either side (2026-08-09, all phases — the
      old margin-left:auto only centered them in the space left over
-     after the logo, not the row as a whole). nav-cta-slot picks up its
-     own margin-left:auto below to stay pinned right, since it no longer
-     gets pushed there as a side effect of nav-links occupying flex flow
-     space. */
+     after the logo, not the row as a whole). nav-cta-slot is
+     position:fixed below (2026-08-10), so it's out of this row's flex
+     flow entirely now — doesn't affect this centering either way. */
   .nav-links{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:30px;}
   .nav-links a{color:var(--green-bright);font-size:14.5px;font-weight:400;}
   .nav-links a:hover{color:var(--ink);}
-  /* margin-left:auto pushes this to the row's right edge — the ONLY
-     normal-flow item now doing that job, since .nav-links moved to
-     position:absolute for true centering (2026-08-09) and no longer
-     occupies flex-flow space itself. (Earlier history: this rule used
-     to compete with .nav-links' own margin-left:auto for the same free
-     space, splitting it into an unwanted gap — confirmed live
-     2026-08-08/09, the recurring "nav gap" bug. That's moot now that
-     .nav-links isn't a flex-flow sibling at all.) margin-right still
-     reserves room for .fab-account, which floats fixed over this corner
-     independent of the nav row's own flex layout — without it, the CTA
-     slot's content (e.g. During-event's Join button) runs flush to
-     .wrap's edge and visually collides with the avatar sitting on top
-     of it. */
-  .nav-cta-slot{margin-left:auto;margin-right:60px;display:flex;align-items:center;gap:16px;}
+  /* position:fixed as of 2026-08-10, replacing the old margin-left:auto
+     flex-flow approach — .fab-account (the avatar) is ALSO
+     position:fixed, top:18px;right:52px, 44x44px, so the two live in
+     the same viewport-relative coordinate system now instead of one
+     being flex-flow and the other fixed (the old margin-right:60px was
+     only ever an approximate "don't overlap" guess across two
+     different positioning schemes, not a real controlled gap). right
+     is calculated directly from the avatar's own geometry: its left
+     edge sits at 52+44=96px from the viewport edge, plus a normal
+     16px gap = 112px. height:44px matches the avatar's own height so
+     align-items:center vertically centers the button on the exact
+     same line as the avatar regardless of the button's own computed
+     height. */
+  .nav-cta-slot{position:fixed;top:18px;right:112px;height:44px;z-index:80;display:flex;align-items:center;gap:16px;}
 
   /* Floating logout control — fixed top-right, one item only. Right
      inset matches .wrap's own side padding (52px desktop, 22px
