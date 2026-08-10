@@ -1221,6 +1221,10 @@
       // instruction). Same identifier the My Account write-back webhook
       // uses for its Cloudinary cuid-<unique_id> folder naming.
       contactUniqueId: '[Page//Contact//Unique ID]',
+      // Event's own raw numeric ID — added 2026-08-10 for Portal.realtime's
+      // Ably channel name (event:{eventId}). events.id is a real readonly
+      // field (confirmed via get_object_meta), not a guess.
+      eventId: '[Page//Event//ID]',
       lastName: '[Page//Contact//Last Name]',
       // Name Likes (contacts.f2792) wins for greetings per the
       // 2026-08-07 decision — see Portal.render's own firstName

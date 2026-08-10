@@ -2145,6 +2145,106 @@ Portal.phase = (function(){
 })();
 
 /* =========================================================
+   Portal.realtime — During-event live updates via Ably (added
+   2026-08-10, per the "Real-time design (Ably)" section of
+   ok-great-so-the-parallel-pizza.md). One Ably channel per Event
+   (`event:{eventId}`), three message types (material.changed,
+   day.advanced, announcement.changed). Subscribe-only: the
+   publish side is the write service (n8n, Track 2a's CS
+   Dashboard work), not built here.
+
+   Auth: the client never sees a publish-capable key. It requests
+   a short-lived (1hr), channel-restricted, subscribe-only token
+   from the "PORTAL : Ably Token Auth" n8n webhook, which verifies
+   server-side that contactId actually has a real Ontraport
+   Registration for eventId before minting anything — the same
+   accepted-risk contactId source as Portal.account.wireSave()
+   (window.dcParam.contact_id), but this endpoint does real
+   per-request authorization, not just blind trust, since a leak
+   here would expose a whole Event's live data, not just one
+   person's own profile fields.
+
+   Init happens exactly once, from Portal.init() — NOT from
+   inside render.during() itself, since render.during() is what
+   the message handlers below call on every update; connecting
+   again on each of those calls would pile up duplicate Ably
+   connections. Confirmed safe to call render.during() repeatedly
+   on the render side: it fully replaces #portal-root's innerHTML
+   each time, so old element listeners are discarded with their
+   nodes rather than double-binding, the one timer that survives
+   a re-render (the join-CTA interval) already guards itself via
+   Portal.render._joinCtaTimer, and open modals live outside
+   #portal-root (reparented to document.body on load), so a
+   re-render can't close one out from under someone.
+
+   Real-time is an enhancement, not a requirement — any failure
+   here (SDK fails to load, token request fails, no eventId on
+   the page) degrades silently to the page's normal load-time
+   data with no live updates, never a broken page.
+   ========================================================= */
+Portal.realtime = (function(){
+  var TOKEN_AUTH_URL = 'https://landmarkworldwide.awesomate.io/webhook/ably-token-auth';
+  var SDK_URL = 'https://cdn.ably.com/lib/ably.min-2.js';
+
+  function loadSdk(cb){
+    if(window.Ably){ cb(); return; }
+    var s = document.createElement('script');
+    s.src = SDK_URL;
+    s.onload = cb;
+    s.onerror = function(){};
+    document.head.appendChild(s);
+  }
+
+  // Materials don't have a stable numeric ID yet (Course Materials is
+  // still a fixed set of per-day checkboxes, not its own object — see
+  // the punchlist), so matching is by sessionIndex + name, the same
+  // pair PORTAL_DATA.materials.sessions[] is already keyed by.
+  function applyMaterialChanged(data, msg){
+    data.materials = data.materials || { sessions: [], graduation: [] };
+    var bucket = null;
+    if(msg && msg.sessionIndex != null){
+      bucket = (data.materials.sessions || []).filter(function(s){ return s.index === msg.sessionIndex; })[0];
+    }
+    var items = bucket ? bucket.items : (data.materials.graduation = data.materials.graduation || []);
+    var existing = (items || []).filter(function(it){ return it.name === msg.name; })[0];
+    if(existing){
+      existing.url = msg.url != null ? msg.url : existing.url;
+      existing.released = !!msg.visible;
+    } else if(items){
+      items.push({ name: msg.name, url: msg.url || '', released: !!msg.visible });
+    }
+  }
+
+  function applyDayAdvanced(data, msg){
+    data.currentReleasedSession = msg.day;
+  }
+
+  function applyAnnouncementChanged(data, msg){
+    if(msg.program === 'seminar') data.seminarRegOpen = true;
+    if(msg.program === 'ac') data.acRegOpen = true;
+  }
+
+  function init(data){
+    if(!data || !data.eventId) return;
+    var contactId = (window.dcParam && window.dcParam.contact_id) || '';
+    if(!contactId) return;
+    loadSdk(function(){
+      if(!window.Ably) return;
+      var client = new Ably.Realtime({
+        authUrl: TOKEN_AUTH_URL,
+        authParams: { contactId: String(contactId), eventId: String(data.eventId) }
+      });
+      var channel = client.channels.get('event:' + data.eventId);
+      channel.subscribe('material.changed', function(msg){ applyMaterialChanged(data, msg.data); Portal.render.during(data); });
+      channel.subscribe('day.advanced', function(msg){ applyDayAdvanced(data, msg.data); Portal.render.during(data); });
+      channel.subscribe('announcement.changed', function(msg){ applyAnnouncementChanged(data, msg.data); Portal.render.during(data); });
+    });
+  }
+
+  return { init: init };
+})();
+
+/* =========================================================
    Portal.init() — Stage 6. Reads window.PORTAL_DATA, computes
    the phase, and dispatches to the one matching renderer. Modal
    close/scrim/Escape wiring is already handled unconditionally
@@ -2162,6 +2262,6 @@ Portal.init = function(){
   Portal.account.wireSave();
   var phase = Portal.phase.compute(data, Date.now());
   if(phase === 'pre') Portal.render.pre(data);
-  else if(phase === 'during') Portal.render.during(data);
+  else if(phase === 'during') { Portal.render.during(data); Portal.realtime.init(data); }
   else Portal.render.post(data);
 };
