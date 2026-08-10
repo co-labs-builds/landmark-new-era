@@ -251,7 +251,15 @@
   .acct-card .cc span{color:var(--gray);font-weight:400;font-size:13px;display:block;}
   .acct-link{font-size:13px;font-weight:600;color:var(--green);cursor:pointer;border-bottom:1.5px solid rgba(45,174,14,.35);}
   .acct-check{display:flex;align-items:center;gap:10px;font-size:14.5px;color:var(--ink);margin-bottom:9px;}
-  .acct-check input{width:17px;height:17px;accent-color:var(--green-bright);}
+  /* Ontraport's page-builder ships Materialize CSS, which hides every
+     bare [type="checkbox"] (opacity:0, position:absolute, appearance:none)
+     and expects its own custom-drawn replacement via a companion
+     span:not(.lever) sibling — a structure we don't use. Without that
+     companion span, Materialize's rule just hides the checkbox with
+     nothing drawn in its place. Re-assert every property it touches so
+     our plain native checkbox actually renders, same fix pattern as the
+     .pmodal/.pbtn collisions elsewhere in this file. */
+  .acct-check input[type="checkbox"]{width:17px;height:17px;accent-color:var(--green-bright);opacity:1!important;position:static!important;-webkit-appearance:checkbox!important;appearance:checkbox!important;pointer-events:auto!important;margin:0;flex-shrink:0;}
   .acct-save{margin-top:22px;background:var(--green-bright);color:#fff;border:none;border-radius:5px;padding:14px 26px;font-family:var(--sans);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;}
   .acct-save:hover{background:var(--green);}
   .acct-fine{font-size:12.5px;color:var(--gray);margin-top:14px;}
