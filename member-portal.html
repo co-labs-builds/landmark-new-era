@@ -576,7 +576,15 @@
      is structurally impossible. Font weights capped at 650 per
      the build rule (the source mockup used 700/800 throughout).
      ========================================================= */
-  .nav-join{background:var(--green-bright);color:#fff;border:none;padding:11px 20px;border-radius:5px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;display:inline-flex;align-items:center;gap:8px;cursor:pointer;transition:background .15s;text-decoration:none;}
+  /* line-height:1 added 2026-08-10 — Ontraport's Materialize nav{}
+     rule sets line-height:64px on the ancestor <nav> at >=601px
+     viewport width; line-height inherits by default and this element
+     never set its own, so it was inheriting 64px straight through,
+     inflating this flex container to 86px tall (64 + the 22px vertical
+     padding below) — confirmed via getComputedStyle in DevTools, not a
+     guess. Plain <a> nav-links text sitting next to it doesn't show
+     the same inflation since it isn't a flex formatting context. */
+  .nav-join{background:var(--green-bright);color:#fff;border:none;padding:11px 20px;border-radius:5px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;line-height:1;display:inline-flex;align-items:center;gap:8px;cursor:pointer;transition:background .15s;text-decoration:none;}
   .nav-join:hover{background:var(--green);}
   .nav-join .dot{width:8px;height:8px;border-radius:50%;background:#fff;animation:pulse 1.6s infinite;}
   .nav-join[aria-disabled="true"]{background:var(--muted);cursor:default;}
