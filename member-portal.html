@@ -1392,15 +1392,12 @@
     };
   })();
   </script>
-  <!-- Pinned to a commit SHA rather than @main — 2026-08-09: jsDelivr's
-       @main branch cache got stuck ~20+ min behind after several purges
-       in quick succession and stopped responding to further purge
-       requests. A commit-pinned URL is a cache key jsDelivr has never
-       served before, so it bypasses the stuck cache entirely rather than
-       depending on it clearing. Trade-off: this URL will NOT pick up
-       future portal-engine.js pushes automatically — update the SHA here
-       (or switch back to @main) the next time portal-engine.js changes. -->
-  <script src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@9d9ad9c15261bde30ebe3fdfcf3b2c4dfdc7fbe9/portal-engine.js"></script>
+  <!-- Switched back to @main 2026-08-10 — jsDelivr's branch cache had
+       gotten stuck stale on 2026-08-09 (see git history for the pinned-SHA
+       era), confirmed recovered and byte-identical to raw GitHub before
+       this switch. If @main ever goes stale again, re-pin to the latest
+       commit SHA rather than waiting on it. -->
+  <script src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/portal-engine.js"></script>
   <script>Portal.init();</script>
 
 </body>

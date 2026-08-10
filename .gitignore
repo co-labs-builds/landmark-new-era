@@ -5,3 +5,6 @@
 # rather than trusting a committed copy.
 INSTALL-header-code.html
 INSTALL-body-block.html
+
+# n8n Public API key — S2S credential, never commit
+.env
