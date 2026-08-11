@@ -1763,7 +1763,7 @@ Portal.render.during = function(data){
       detailRows: [
         { label: 'Dates', value: hasStart ? Portal.format.dateRange(startTs, isNaN(endTs) ? startTs : endTs, ianaId) : 'TBD' },
         { label: 'Graduation', value: !isNaN(gradTs) ? Portal.format.weekdayMonthDay(gradTs, ianaId) + ', ' + Portal.format.time(gradTs, ianaId) : 'TBD' },
-        { label: 'Format', value: format + (hasStart ? ' &middot; ' + Portal.format.time(startTs, ianaId) + ' ' + Portal.format.zoneLabel(ianaId) : '') }
+        { label: 'Format', value: format + (hasStart ? ' · ' + Portal.format.time(startTs, ianaId) + ' ' + Portal.format.zoneLabel(ianaId) : '') }
       ],
       cta: { label: 'Continue', variant: 'solid' },
       onCta: function(){ Portal.modal.shut('pgModal', 'pgScrim'); activateTab('current'); } },
