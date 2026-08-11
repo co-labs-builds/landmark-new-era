@@ -1158,26 +1158,19 @@
       Portal.modal.open('acctModal', 'acctScrim');
     });
     document.getElementById('logoutBtn').addEventListener('click', function(){
-      // No documented public API exists for a custom-page logout link —
-      // checked Ontraport's own support/university docs (login redirects,
-      // access redirects, and PilotPress/WordPress shortcodes are all
-      // documented; a plain "log out" link for a Custom HTML page isn't).
-      // Confirmed the real mechanism instead by reading Ontraport's own
-      // live membership_site.js bundle (loaded on Ontraport's native
-      // /login page, not currently on this custom page): session state
-      // lives entirely in an OPWSESS_* cookie, and Ontraport's own
-      // auto-logout-on-inactivity code expires that exact cookie
-      // client-side before redirecting to /login — this replicates that
-      // same code path on demand instead of waiting for the inactivity
-      // timer. Deliberately NOT using the hash-signed logout form found
-      // on the native /login page (?logout=true&id=...&hash=...) — that
-      // hash is a signed token, not something safe to hand-construct.
-      var match = document.cookie.match(/OPWSESS_[^;]+/);
-      if(match){
-        var expired = new Date(Date.now() - 86400000).toUTCString();
-        document.cookie = match[0] + '; expires=' + expired + '; path=/; SameSite=Lax; domain=.' + window.location.hostname + '; secure=false';
-      }
-      window.location.href = window.location.origin + '/login';
+      // No documented public API exists for a custom-page logout link.
+      // First attempt read/expired the OPWSESS_* session cookie directly
+      // client-side (mirroring Ontraport's own auto-logout-on-inactivity
+      // code) — Ontraport's Custom HTML editor rejected that as
+      // "suspicious" on save, almost certainly its own scanner catching
+      // the read-cookie-by-regex-then-reassign-with-widened-domain shape,
+      // which is exactly what a session-hijacking script looks like.
+      // Not fighting that scanner — instead letting Ontraport's own
+      // server handle it: logout=true is a real, server-recognized
+      // signal (found live in Ontraport's own generated "already logged
+      // in" form on /login), used here without the form's id/hash pair
+      // since those aren't safe to hand-construct.
+      window.location.href = window.location.origin + '/login?logout=true';
     });
 
     // Print-only certificate. Ported from the live post-event template —
