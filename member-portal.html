@@ -1158,7 +1158,26 @@
       Portal.modal.open('acctModal', 'acctScrim');
     });
     document.getElementById('logoutBtn').addEventListener('click', function(){
-      // Wired to Ontraport's native membership logout in Stage 8 hand-off.
+      // No documented public API exists for a custom-page logout link —
+      // checked Ontraport's own support/university docs (login redirects,
+      // access redirects, and PilotPress/WordPress shortcodes are all
+      // documented; a plain "log out" link for a Custom HTML page isn't).
+      // Confirmed the real mechanism instead by reading Ontraport's own
+      // live membership_site.js bundle (loaded on Ontraport's native
+      // /login page, not currently on this custom page): session state
+      // lives entirely in an OPWSESS_* cookie, and Ontraport's own
+      // auto-logout-on-inactivity code expires that exact cookie
+      // client-side before redirecting to /login — this replicates that
+      // same code path on demand instead of waiting for the inactivity
+      // timer. Deliberately NOT using the hash-signed logout form found
+      // on the native /login page (?logout=true&id=...&hash=...) — that
+      // hash is a signed token, not something safe to hand-construct.
+      var match = document.cookie.match(/OPWSESS_[^;]+/);
+      if(match){
+        var expired = new Date(Date.now() - 86400000).toUTCString();
+        document.cookie = match[0] + '; expires=' + expired + '; path=/; SameSite=Lax; domain=.' + window.location.hostname + '; secure=false';
+      }
+      window.location.href = window.location.origin + '/login';
     });
 
     // Print-only certificate. Ported from the live post-event template —
