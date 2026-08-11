@@ -63,9 +63,9 @@ The full custom object below was never built. Instead, the client added **6 fixe
 
 Built exactly per the recommended placement: `events.f3104` "Seminar Reg Open" / `events.f3105` "AC Reg Open" (checkboxes), each with a `registrations`-side `related_data` mirror — `f3106` "Trigger Seminar Announcement: DURING EVENT" / `f3107` "Trigger AC Announcement: DURING EVENT". This resolves the fan-out concern this item originally flagged: each registration has its own live-mirrored trigger field to condition on, no separate fan-out automation needed to get from "event-level toggle" to "per-registrant visibility."
 
-Still to confirm/build: the actual Ontraport automation sending the participant email/SMS on `true` (not yet verified as built — the fields exist, the automation wiring is a separate check). Wired into `member-portal.html`'s `PORTAL_DATA` as `seminarRegOpen`/`acRegOpen`, read directly off `registrations` (no prefix).
+Still to confirm/build: the actual Ontraport automation sending the participant email/SMS on `true` (not yet verified as built — the fields exist, the automation wiring is a separate check).
 
-**Portal-side note, still accurate:** not surfaced in the Member Portal UI — CS-side notification only, confirmed 2026-08-07. No grid/pill/copy change needed unless that changes later.
+**Portal-side note, updated 2026-08-11: explicitly out of scope, removed.** `member-portal.html`'s `PORTAL_DATA.seminarRegOpen`/`acRegOpen` fields and `portal-engine.js`'s `Portal.realtime` `announcement.changed` handler (`applyAnnouncementChanged`) were dead code — no UI ever read either field — and have been deleted rather than built out further. CS-side notification (this section's checkboxes/automation) is unaffected; only the never-built participant-facing announcement banner is cut.
 
 ## 5. My Account write-back — narrowed 2026-08-08, real architecture decision needed
 

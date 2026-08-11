@@ -1325,16 +1325,6 @@
         hasSeminarReg: '[Page//Registered for Seminar##checkediftrue]' === 'true',
         hasACReg: '[Page//Registered for Advanced Course##checkediftrue]' === 'true'
       },
-      // Seminar/AC "registration open" announcement triggers — added
-      // 2026-08-08. Client created events.f3104/f3105 (Seminar Reg Open /
-      // AC Reg Open) plus registrations.f3106/f3107 as related_data live
-      // mirrors, same pattern as graduation's f3099/f3100 — read directly
-      // off this registration, no Event// object-name segment needed
-      // (still needs the Page// prefix though — this is a Page, not a
-      // Dynamic Template).
-      seminarRegOpen: '[Page//Trigger Seminar Announcement: DURING EVENT##checkediftrue]' === 'true',
-      acRegOpen: '[Page//Trigger AC Announcement: DURING EVENT##checkediftrue]' === 'true',
-
       // ---- the event (cross-object) ----
       // Format (events.f2234) renders as its label directly
       // ("Online" / "In Person" / "Hybrid") — no normalization

@@ -2171,10 +2171,9 @@ Portal.phase = (function(){
    Portal.realtime — During-event live updates via Ably (added
    2026-08-10, per the "Real-time design (Ably)" section of
    ok-great-so-the-parallel-pizza.md). One Ably channel per Event
-   (`event:{eventId}`), three message types (material.changed,
-   day.advanced, announcement.changed). Subscribe-only: the
-   publish side is the write service (n8n, Track 2a's CS
-   Dashboard work), not built here.
+   (`event:{eventId}`), two message types (material.changed,
+   day.advanced). Subscribe-only: the publish side is the write
+   service (n8n, Track 2a's CS Dashboard work), not built here.
 
    Auth: the client never sees a publish-capable key. It requests
    a short-lived (1hr), channel-restricted, subscribe-only token
@@ -2242,11 +2241,6 @@ Portal.realtime = (function(){
     data.currentReleasedSession = msg.day;
   }
 
-  function applyAnnouncementChanged(data, msg){
-    if(msg.program === 'seminar') data.seminarRegOpen = true;
-    if(msg.program === 'ac') data.acRegOpen = true;
-  }
-
   function init(data){
     if(!data || !data.eventId) return;
     var contactId = (window.dcParam && window.dcParam.contact_id) || '';
@@ -2260,7 +2254,6 @@ Portal.realtime = (function(){
       var channel = client.channels.get('event:' + data.eventId);
       channel.subscribe('material.changed', function(msg){ applyMaterialChanged(data, msg.data); Portal.render.during(data); });
       channel.subscribe('day.advanced', function(msg){ applyDayAdvanced(data, msg.data); Portal.render.during(data); });
-      channel.subscribe('announcement.changed', function(msg){ applyAnnouncementChanged(data, msg.data); Portal.render.during(data); });
     });
   }
 
