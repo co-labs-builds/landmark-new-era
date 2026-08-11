@@ -631,7 +631,7 @@
      rgba() values below rather than inventing new ones. Never a
      fixed 3-slot shape: item count and session count both come from
      array length (Data Contract, 2026-08-07 corrections). */
-  .today-row{display:flex;flex-direction:column;gap:18px;}
+  .today-row{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
   .today{display:flex;gap:16px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);width:100%;align-items:flex-start;padding:22px 24px;transition:background .2s,border-color .2s;}
   .today .ti{width:46px;height:46px;border-radius:13px;background:rgba(33,122,0,.10);color:var(--green);display:flex;align-items:center;justify-content:center;flex:none;transition:background .2s,color .2s;}
   .today .ti svg{width:23px;height:23px;}
@@ -739,12 +739,18 @@
     .contact-grid{grid-template-columns:1fr;gap:30px;}
     section.block{padding:52px 0;}
     .actions{grid-template-columns:1fr;}
+    .today-row{grid-template-columns:1fr;}
     .gradfeat{grid-template-columns:1fr;} .gradfeat .gph{height:240px;min-height:0;}
     /* Logo stacked above the button (DOM order is already logo-then-
        button) instead of squeezing them side by side, which wrapped
        "Join Your Forum" onto 3 lines at narrow widths. */
     .pc-cta{flex-direction:column;align-items:stretch;gap:14px;}
-    .pc-logo{margin:0;top:0;}
+    /* .pc-cta's align-items:stretch (needed so .btn-join fills the
+       column width below) would otherwise also stretch this <img> to
+       full width while its height stays locked at 60px, distorting the
+       logo — align-self opts it out of that stretch so height:60px/
+       width:auto (base rule) keeps governing its own aspect ratio. */
+    .pc-logo{margin:0;top:0;align-self:center;}
     .btn-join{width:100%;justify-content:center;}
   }
 </style>
