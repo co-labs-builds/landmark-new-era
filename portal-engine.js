@@ -699,6 +699,7 @@ Portal.account = (function(){
   function populateForm(data){
     data = data || {};
     var set = function(id, val){ var el = document.getElementById(id); if(el) el.value = val || ''; };
+    var setChecked = function(id, val){ var el = document.getElementById(id); if(el) el.checked = !!val; };
     // acctDisplay pulls from Display Name (contacts.f2620), not First
     // Name — 2026-08-08 decision, keeps the real contact record intact.
     set('acctDisplay', data.displayName);
@@ -706,6 +707,9 @@ Portal.account = (function(){
     set('acctEmail', data.email);
     set('acctPhone', data.phone);
     set('acctTz', data.tz);
+    setChecked('acctNotifyProgram', data.programUpdateNotifications);
+    setChecked('acctNotifyJoin', data.joinNotifications);
+    setChecked('acctNotifyMarketing', data.marketingAccepted);
   }
 
   var pendingPhotoFile = null;
@@ -746,12 +750,22 @@ Portal.account = (function(){
       // this pilot's small, known participant group — see
       // ontraport-setup-punchlist.md §5 before hardening this later.
       var contactId = (window.dcParam && window.dcParam.contact_id) || '';
+      var getChecked = function(id){ var el = document.getElementById(id); return el ? el.checked : false; };
       var fd = new FormData();
       fd.append('contactId', contactId);
+      // registrationId (window.PORTAL_DATA.registrationId, [Page//ID]) —
+      // needed so the write-back webhook knows which Registration record
+      // to update for the two notification checkboxes below; contactId
+      // alone isn't enough since those two fields live on registrations,
+      // not contacts.
+      fd.append('registrationId', (window.PORTAL_DATA && window.PORTAL_DATA.registrationId) || '');
       fd.append('displayName', get('acctDisplay'));
       fd.append('lastName', get('acctLast'));
       fd.append('email', get('acctEmail'));
       fd.append('phone', get('acctPhone'));
+      fd.append('programUpdateNotifications', getChecked('acctNotifyProgram') ? '1' : '0');
+      fd.append('joinNotifications', getChecked('acctNotifyJoin') ? '1' : '0');
+      fd.append('marketingAccepted', getChecked('acctNotifyMarketing') ? '1' : '0');
       if(pendingPhotoFile) fd.append('photo', pendingPhotoFile);
 
       btn.textContent = 'Saving…'; btn.disabled = true;
@@ -770,6 +784,9 @@ Portal.account = (function(){
           window.PORTAL_DATA.lastName = fd.get('lastName');
           window.PORTAL_DATA.email = fd.get('email');
           window.PORTAL_DATA.phone = fd.get('phone');
+          window.PORTAL_DATA.programUpdateNotifications = fd.get('programUpdateNotifications') === '1';
+          window.PORTAL_DATA.joinNotifications = fd.get('joinNotifications') === '1';
+          window.PORTAL_DATA.marketingAccepted = fd.get('marketingAccepted') === '1';
         }
         btn.textContent = 'Saved ✓';
         btn.disabled = false;

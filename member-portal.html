@@ -896,9 +896,9 @@
       </div>
       <div class="acct-sec">
         <div class="sec-t">Communication Preferences</div>
-        <label class="acct-check"><input type="checkbox" checked> Email me program updates and reminders</label>
-        <label class="acct-check"><input type="checkbox" checked> Text me day-of reminders and my Zoom link</label>
-        <label class="acct-check"><input type="checkbox"> Share occasional news about upcoming Landmark programs</label>
+        <label class="acct-check"><input type="checkbox" id="acctNotifyProgram"> Email me program updates and reminders</label>
+        <label class="acct-check"><input type="checkbox" id="acctNotifyJoin"> Text me day-of reminders and my Zoom link</label>
+        <label class="acct-check"><input type="checkbox" id="acctNotifyMarketing"> Share occasional news about upcoming Landmark programs</label>
       </div>
       <button class="acct-save" id="acctSave">Save Changes</button>
       <div class="acct-fine">Need help with your account? Reply to any email from us, or call <a href="tel:+13124403464">+1 (312) 440-3464</a> — we're happy to help.</div>
@@ -1250,6 +1250,20 @@
       // Ably channel name (event:{eventId}). events.id is a real readonly
       // field (confirmed via get_object_meta), not a guess.
       eventId: '[Page//Event//ID]',
+      // This Registration's own raw numeric ID — added 2026-08-10 for the
+      // My Account communication-preference checkboxes' write-back, same
+      // bare-Page// pattern already proven for the Course Materials
+      // checkbox fields below (this page's default/primary object is the
+      // Registration, not the Contact — Contact-side fields need the
+      // explicit Contact// prefix, Registration-side fields don't).
+      registrationId: '[Page//ID]',
+      // Communication preference checkboxes (My Account modal) — the two
+      // "Enabled" fields live on registrations (f3158/f3159, added
+      // 2026-08-10), the marketing one lives on contacts (f3160, same
+      // date) since it's an account-level opt-in, not per-registration.
+      programUpdateNotifications: '[Page//Program Update Notifications Enabled##checkediftrue]' === 'true',
+      joinNotifications: '[Page//Join Notifications Enabled##checkediftrue]' === 'true',
+      marketingAccepted: '[Page//Contact//Marketing Communication Accepted##checkediftrue]' === 'true',
       lastName: '[Page//Contact//Last Name]',
       // Name Likes (contacts.f2792) wins for greetings per the
       // 2026-08-07 decision — see Portal.render's own firstName
