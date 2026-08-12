@@ -259,14 +259,18 @@ main{padding:22px 0 60px;flex:1 0 auto;}
    ============================================================ */
 
 /* Participation (per-day attendance) + Completion (per-checkpoint) ticks.
-   Attendance has no "late" state yet (§0l) — not-attended only renders
-   once that day's window has closed; tk-pending covers "in progress". */
+   tk-ldp added post-prototype (CS Dashboard build, 2026-08-12) to carry
+   the canonical Green=attended/Red=absent/Yellow=LDP rule from the
+   Attendance Architecture spec — the prototype only had 4 states and no
+   yellow, since it predates that 3-layer design being locked in.
+   tk-pending still covers "day hasn't happened yet / in progress". */
 .ticks{display:inline-flex;gap:3px;flex-wrap:wrap;}
 .tick{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:20px;padding:0 5px;border-radius:4px;font-family:var(--mono);font-size:10px;font-weight:700;border:1px solid transparent;cursor:pointer;}
 .tick.tk-attended{background:var(--green-bg);color:var(--green);}
 .tick.tk-absent{background:#f0eee9;color:#7a746c;}
 .tick.tk-pending{background:#f6f5f1;color:#a9a49a;border-color:#eae7de;}
 .tick.tk-review{background:var(--coral-bg);color:var(--coral-ink);}
+.tick.tk-ldp{background:var(--amber-bg);color:var(--amber);}
 .tick-complete{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--green);}
 .tick-exception{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:var(--coral-bg);color:var(--coral-ink);border-radius:4px;padding:3px 7px;}
 
@@ -591,14 +595,14 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
 
   <div class="evt-sel" onclick="openModal('mEvents')" title="Switch event">
     <div>
-      <div class="en">North America Forum — August</div>
-      <div class="ct">The Landmark Forum · Online</div>
+      <div class="en" id="evtSelName">North America Forum — August</div>
+      <div class="ct" id="evtSelCourseFormat">The Landmark Forum · Online</div>
     </div>
     <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4.5 6 7.5 9 4.5"/></svg>
   </div>
 
   <div class="evt-meta">
-    <span>Event Leader: Erin Snyder</span>
+    <span>Event Leader: <span id="evtLeaderName">—</span></span>
   </div>
 
   <div class="top-right">
@@ -608,7 +612,7 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
     <div style="position:relative;">
       <div class="profile-chip" id="profileChip" onclick="toggleProfileMenu(event)">
         <div class="av">CS</div>
-        <div class="lbl"><b>Kris Feldmanis</b><span>Course Supervisor</span></div>
+        <div class="lbl"><b id="pcName">Kris</b><span id="pcRole">Course Supervisor</span></div>
       </div>
       <div class="profile-menu" id="profileMenu">
         <button class="profile-menu-item" onclick="toast('Logging out…')">Log out</button>
@@ -617,19 +621,18 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
   </div>
 </div></div>
 
-<!-- Day X of Y is a direct merge of "Todays Session Day" (out of total days) —
-     not computed here. The dot/pill state below IS computed: Not Started
-     until now >= {Session Start Time} in {Event Timezone}, In Session after.
-     data-session-start carries what should be a precomputed absolute instant
-     (see script + field dictionary note on why). -->
+<!-- Day X of Y is a direct merge of events.f3025 "Todays Session (Day)" —
+     only ever advanced by confirming End Session, no separate Day-advance
+     control (CS Dashboard discovery, Session strip section). The former
+     Not Started/In Session live pill next to the Day indicator is cut per
+     client decision (Ably live-push makes it redundant) — see esDot/
+     esState removed below, not just hidden. -->
 <div class="evtstrip"><div class="wrap row">
-  <div class="es-day" id="esDay" data-session-start="">
-    <i class="livedot" id="esDot"></i>
-    <span>Day 2 of 3</span>
+  <div class="es-day" id="esDay">
+    <span id="esDayLabel">Day 2 of 3</span>
   </div>
-  <span class="es-state" id="esState">In session</span>
   <div class="es-right">
-    <button class="btn-session" id="btnSession" onclick="openModal('mEndSession')">End session</button>
+    <button class="btn-session" id="btnSession" onclick="openEndSessionModal()">End session</button>
   </div>
 </div></div>
 
@@ -658,30 +661,32 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
      ============================================================ -->
 <section class="view active" id="v-home">
   <div class="sechd">
-    <h2>Welcome back, Kris</h2>
+    <h2>Welcome back, <span id="homeGreetName">Kris</span></h2>
     <div class="lede">Here's what's on for you today.</div>
   </div>
   <div class="home-events">
   <h3 style="font-size:13px;font-weight:800;letter-spacing:-.01em;margin:26px 0 14px;text-align:center;">Events</h3>
   <div class="home-cards">
     <!-- LOOP: repeat: events for this Contact (oEventTeam, §2) — one
-         card per Event; this pilot demos a single authorized Event. -->
-    <div class="evt-card" data-reg-id="EVT-NAF-AUG26">
+         card per Event; this pilot demos a single authorized Event, so
+         data-reg-id is set from DASHBOARD_DATA.eventId directly rather
+         than a real loop (see dashboardActiveEventId in the script). -->
+    <div class="evt-card" data-reg-id="">
       <div class="evt-card-bd">
         <div class="evt-card-top">
           <div>
-            <div class="evt-card-title">The Landmark Forum - Online</div>
-            <div class="evt-card-dates">Fri, Aug 14 - Sun, Aug 16th 2026</div>
+            <div class="evt-card-title" id="evtCardTitle">The Landmark Forum - Online</div>
+            <div class="evt-card-dates" id="evtCardDates">Fri, Aug 14 - Sun, Aug 16th 2026</div>
           </div>
           <div class="evt-card-right">
             <span class="pill p-inprogress" id="evtStatusPill" style="display:none;">In Progress</span>
             <button class="kebab-btn" onclick="openEventCardMenu(this)" aria-label="Event actions"><svg viewBox="0 0 4 16" fill="currentColor"><circle cx="2" cy="2" r="1.6"/><circle cx="2" cy="8" r="1.6"/><circle cx="2" cy="14" r="1.6"/></svg></button>
           </div>
         </div>
-        <div class="evt-card-caption"><span class="mf">188</span> Participants&nbsp;|&nbsp;<span class="mf">18</span> Not Ready</div>
+        <div class="evt-card-caption"><span class="mf" id="evtCardParticipants">—</span> Participants&nbsp;|&nbsp;<span class="mf" id="evtCardNotReady">—</span> Not Ready</div>
       </div>
       <div class="evt-card-ft">
-        <button class="btn btn-primary" onclick="startEvent()">Start Event</button>
+        <button class="btn btn-primary" onclick="startEvent(this)">Start Event</button>
       </div>
     </div>
   </div>
@@ -714,45 +719,43 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
   <div class="card msec" id="ms-snapshot">
     <div class="card-hd">
       <h3>Course snapshot</h3>
-      <div class="r"><span style="font-size:11.5px;color:var(--gray);">As of <span class="mf">7:44 pm</span> · Day 2 of 3</span></div>
+      <div class="r"><span style="font-size:11.5px;color:var(--gray);">Live</span></div>
     </div>
     <div class="stats">
-      <div class="stat"><div class="l">Starts (Day 1)</div><div class="n"><span class="mf-lg">181</span></div><div class="sub">of 188 enrolled</div></div>
-      <div class="stat"><div class="l">Current</div><div class="n"><span class="mf-lg">176</span></div><div class="sub">still participating</div></div>
-      <div class="stat"><div class="l">LDP</div><div class="n"><span class="mf-lg">5</span></div><div class="sub">since Day 1 start</div></div>
-      <div class="stat"><div class="l">WBO</div><div class="n"><span class="mf-lg">2</span></div><div class="sub">of the 5 who left</div></div>
-      <div class="stat"><div class="l">Completions</div><div class="n"><span class="v-na">—</span></div><div class="sub">not started</div></div>
-      <div class="stat big"><div class="l">Attendance now</div><div class="n"><span class="mf-lg">91%</span></div><div class="sub" style="color:rgba(255,255,255,.55);">167 / 184</div></div>
-      <div class="stat"><div class="l">Seminar confirmed</div><div class="n"><span class="mf-lg">42%</span></div><div class="sub">60 of 143 potential</div></div>
-      <div class="stat"><div class="l">AC registered</div><div class="n"><span class="mf-lg">39%</span></div><div class="sub">47 of 121 potential</div></div>
-      <div class="stat"><div class="l">Invitations sent</div><div class="n"><span class="mf-lg">512</span></div><div class="sub">96 participants invited</div></div>
-      <div class="stat"><div class="l">Final Session expected</div><div class="n"><span class="mf-lg">172</span></div><div class="sub">+ 141 guests</div></div>
-      <div class="stat"><div class="l">Material released</div><div class="n"><span class="mf-lg">4 / 5</span></div><div class="sub">Day 2 · today</div></div>
-      <div class="stat"><div class="l">Reviewer / SE</div><div class="n"><span class="mf-lg">4 / 5</span></div><div class="sub">flagged this event</div></div>
+      <div class="stat"><div class="l">Starts (Day 1)</div><div class="n"><span class="v-na" data-stat="starts">—</span></div><div class="sub" data-stat-sub="starts">pending Day 1 lock mechanism</div></div>
+      <div class="stat"><div class="l">Current</div><div class="n"><span class="mf-lg" data-stat="current">—</span></div><div class="sub" data-stat-sub="current">still participating</div></div>
+      <div class="stat"><div class="l">LDP</div><div class="n"><span class="mf-lg" data-stat="ldp">—</span></div><div class="sub">left for any reason</div></div>
+      <div class="stat"><div class="l">WBO</div><div class="n"><span class="mf-lg" data-stat="wbo">—</span></div><div class="sub" data-stat-sub="wbo">of those who left</div></div>
+      <div class="stat"><div class="l">Completions</div><div class="n"><span class="mf-lg" data-stat="completions">—</span></div><div class="sub">Forum Completed</div></div>
+      <div class="stat big"><div class="l">Attendance now</div><div class="n"><span class="mf-lg" data-stat="attendanceNow">—</span></div><div class="sub" style="color:rgba(255,255,255,.55);" data-stat-sub="attendanceNow">—</div></div>
+      <div class="stat"><div class="l">Seminar registered</div><div class="n"><span class="mf-lg" data-stat="seminarPct">—</span></div><div class="sub" data-stat-sub="seminarPct">of potential</div></div>
+      <div class="stat"><div class="l">AC registered</div><div class="n"><span class="mf-lg" data-stat="acPct">—</span></div><div class="sub" data-stat-sub="acPct">of potential</div></div>
+      <div class="stat"><div class="l">Invitations sent</div><div class="n"><span class="mf-lg" data-stat="invitationsSent">—</span></div><div class="sub" data-stat-sub="invitationsSent">by participants</div></div>
+      <div class="stat"><div class="l">Final Session expected</div><div class="n"><span class="v-na" data-stat="finalSession">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+      <div class="stat"><div class="l">Reviewer</div><div class="n"><span class="mf-lg" data-stat="reviewer">—</span></div><div class="sub">flagged this event</div></div>
+      <div class="stat"><div class="l">SE</div><div class="n"><span class="mf-lg" data-stat="se">—</span></div><div class="sub">flagged this event</div></div>
     </div>
   </div>
 
-  <!-- Device & Zoom reconciliation — Event-level aggregate, derived (eventually)
-       from Registration-level device exceptions, not entered independently.
-       Shared-device / Duplicate-device adjustments should roll up from the
-       passive .device-flag state on individual roster records — NOT from the
-       elevated "Needs Review" (.zoom-flag) signal, which is a separate
-       data-quality condition and does not belong in this arithmetic (see
-       field dictionary §0n). Static numbers for the pilot. -->
+  <!-- Device & Zoom reconciliation — Event-level aggregate, computed 2026-08-12
+       from real roster/staff data (Roster Fetch webhook): Participants = total
+       registrants no exclusions; Staff = oEventTeam Currently Present WHERE
+       Staff Access; Shared/Duplicate adjustments from f3207/f3208; Observed
+       reuses the same Currently-Present fields, no separate Zoom API call. -->
   <div class="card msec" id="ms-devicerecon">
     <div class="card-hd">
       <h3>Device &amp; Zoom reconciliation</h3>
-      <span class="sub">Derived from roster device exceptions (assumed, unconfirmed — see field dictionary §0n)</span>
-      <div class="r"><span style="font-size:11.5px;color:var(--gray);">As of <span class="mf">7:44 pm</span> · Day 2 of 3</span></div>
+      <span class="sub">Derived from roster device exceptions and live Zoom presence</span>
+      <div class="r"><span style="font-size:11.5px;color:var(--gray);">Live</span></div>
     </div>
     <div class="stats stats-7">
-      <div class="stat"><div class="l">Participants</div><div class="n"><span class="mf-lg">188</span></div><div class="sub">enrolled this Event</div></div>
-      <div class="stat"><div class="l">Staff</div><div class="n"><span class="mf-lg">6</span></div><div class="sub">Zoom-connected</div></div>
-      <div class="stat"><div class="l">Shared-device adj.</div><div class="n"><span class="mf-lg">−2</span></div><div class="sub">known shared devices</div></div>
-      <div class="stat"><div class="l">Duplicate-device adj.</div><div class="n"><span class="mf-lg">−1</span></div><div class="sub">known duplicate devices</div></div>
-      <div class="stat"><div class="l">Expected Zoom devices</div><div class="n"><span class="mf-lg">191</span></div><div class="sub">participants + staff, adjusted</div></div>
-      <div class="stat"><div class="l">Observed</div><div class="n"><span class="mf-lg">191</span></div><div class="sub">connected now</div></div>
-      <div class="stat big"><div class="l">Reconciled</div><div class="n"><span class="mf-lg">✓</span></div><div class="sub" style="color:rgba(255,255,255,.55);">191 / 191 · 0 unresolved matches</div></div>
+      <div class="stat"><div class="l">Participants</div><div class="n"><span class="mf-lg" data-stat="drParticipants">—</span></div><div class="sub">enrolled this Event</div></div>
+      <div class="stat"><div class="l">Staff</div><div class="n"><span class="mf-lg" data-stat="drStaff">—</span></div><div class="sub">Zoom-connected now</div></div>
+      <div class="stat"><div class="l">Shared-device adj.</div><div class="n"><span class="mf-lg" data-stat="drSharedAdj">—</span></div><div class="sub">known shared devices</div></div>
+      <div class="stat"><div class="l">Duplicate-device adj.</div><div class="n"><span class="mf-lg" data-stat="drDupAdj">—</span></div><div class="sub">known duplicate devices</div></div>
+      <div class="stat"><div class="l">Expected Zoom devices</div><div class="n"><span class="mf-lg" data-stat="drExpected">—</span></div><div class="sub">participants + staff, adjusted</div></div>
+      <div class="stat"><div class="l">Observed</div><div class="n"><span class="mf-lg" data-stat="drObserved">—</span></div><div class="sub">connected now</div></div>
+      <div class="stat big"><div class="l">Reconciled</div><div class="n"><span class="mf-lg" data-stat="drReconciled">—</span></div><div class="sub" style="color:rgba(255,255,255,.55);" data-stat-sub="drReconciled">—</div></div>
     </div>
   </div>
 
@@ -788,18 +791,18 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
       <div class="r"><span style="font-size:11.5px;color:var(--gray);">As of <span class="mf">7:44 pm</span> · Day 2 of 3</span></div>
     </div>
     <div class="stats">
-      <div class="stat stat-filterable" onclick="applyStatFilter('starts', this)" title="Show only records that started Day 1"><div class="l">Starts (Day 1)</div><div class="n"><span class="mf-lg">181</span></div><div class="sub">of 188 enrolled</div></div>
-      <div class="stat stat-filterable" onclick="applyStatFilter('current', this)" title="Show only records still participating"><div class="l">Current</div><div class="n"><span class="mf-lg">176</span></div><div class="sub">still participating</div></div>
-      <div class="stat stat-filterable" onclick="applyStatFilter('ldp', this)" title="Show only LDP records"><div class="l">LDP</div><div class="n"><span class="mf-lg">5</span></div><div class="sub">since Day 1 start</div></div>
-      <div class="stat stat-filterable" onclick="applyStatFilter('wbo', this)" title="Show only WBO records"><div class="l">WBO</div><div class="n"><span class="mf-lg">2</span></div><div class="sub">of the 5 who left</div></div>
-      <div class="stat stat-filterable" onclick="applyStatFilter('completions', this)" title="Show only records with a completed checkpoint"><div class="l">Completions</div><div class="n"><span class="v-na">—</span></div><div class="sub">not started</div></div>
-      <div class="stat big stat-filterable" onclick="applyStatFilter('attendanceNow', this)" title="Show only records attending today"><div class="l">Attendance now</div><div class="n"><span class="mf-lg">91%</span></div><div class="sub" style="color:rgba(255,255,255,.55);">167 / 184</div></div>
-      <div class="stat stat-filterable" onclick="applyStatFilter('seminar', this)" title="Show only Seminar-registered records"><div class="l">Seminar registered</div><div class="n"><span class="mf-lg">42%</span></div><div class="sub">60 of 143 potential</div></div>
-      <div class="stat stat-filterable" onclick="applyStatFilter('ac', this)" title="Show only AC-registered records"><div class="l">AC registered</div><div class="n"><span class="mf-lg">39%</span></div><div class="sub">47 of 121 potential</div></div>
-      <div class="stat"><div class="l">Invitations sent</div><div class="n"><span class="mf-lg">512</span></div><div class="sub">96 participants invited</div></div>
-      <div class="stat"><div class="l">Final Session expected</div><div class="n"><span class="mf-lg">172</span></div><div class="sub">+ 141 guests</div></div>
-      <div class="stat"><div class="l">Material released</div><div class="n"><span class="mf-lg">4 / 5</span></div><div class="sub">Day 2 · today</div></div>
-      <div class="stat stat-filterable" onclick="applyStatFilter('reviewerSe', this)" title="Show only Reviewer/SE-flagged records"><div class="l">Reviewer / SE</div><div class="n"><span class="mf-lg">4 / 5</span></div><div class="sub">flagged this event</div></div>
+      <div class="stat" title="Pending Day 1 lock mechanism"><div class="l">Starts (Day 1)</div><div class="n"><span class="v-na" data-stat="starts">—</span></div><div class="sub" data-stat-sub="starts">pending Day 1 lock mechanism</div></div>
+      <div class="stat stat-filterable" onclick="applyStatFilter('current', this)" title="Show only records still participating"><div class="l">Current</div><div class="n"><span class="mf-lg" data-stat="current">—</span></div><div class="sub" data-stat-sub="current">still participating</div></div>
+      <div class="stat stat-filterable" onclick="applyStatFilter('ldp', this)" title="Show only LDP records"><div class="l">LDP</div><div class="n"><span class="mf-lg" data-stat="ldp">—</span></div><div class="sub">left for any reason</div></div>
+      <div class="stat stat-filterable" onclick="applyStatFilter('wbo', this)" title="Show only WBO records"><div class="l">WBO</div><div class="n"><span class="mf-lg" data-stat="wbo">—</span></div><div class="sub" data-stat-sub="wbo">of those who left</div></div>
+      <div class="stat stat-filterable" onclick="applyStatFilter('completions', this)" title="Show only records with a completed checkpoint"><div class="l">Completions</div><div class="n"><span class="mf-lg" data-stat="completions">—</span></div><div class="sub">Forum Completed</div></div>
+      <div class="stat big stat-filterable" onclick="applyStatFilter('attendanceNow', this)" title="Show only records attending today"><div class="l">Attendance now</div><div class="n"><span class="mf-lg" data-stat="attendanceNow">—</span></div><div class="sub" style="color:rgba(255,255,255,.55);" data-stat-sub="attendanceNow">—</div></div>
+      <div class="stat stat-filterable" onclick="applyStatFilter('seminar', this)" title="Show only Seminar-registered records"><div class="l">Seminar registered</div><div class="n"><span class="mf-lg" data-stat="seminarPct">—</span></div><div class="sub" data-stat-sub="seminarPct">of potential</div></div>
+      <div class="stat stat-filterable" onclick="applyStatFilter('ac', this)" title="Show only AC-registered records"><div class="l">AC registered</div><div class="n"><span class="mf-lg" data-stat="acPct">—</span></div><div class="sub" data-stat-sub="acPct">of potential</div></div>
+      <div class="stat"><div class="l">Invitations sent</div><div class="n"><span class="mf-lg" data-stat="invitationsSent">—</span></div><div class="sub" data-stat-sub="invitationsSent">by participants</div></div>
+      <div class="stat"><div class="l">Final Session expected</div><div class="n"><span class="v-na" data-stat="finalSession">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+      <div class="stat stat-filterable" onclick="applyStatFilter('reviewer', this)" title="Show only Reviewer-flagged records"><div class="l">Reviewer</div><div class="n"><span class="mf-lg" data-stat="reviewer">—</span></div><div class="sub">flagged this event</div></div>
+      <div class="stat stat-filterable" onclick="applyStatFilter('se', this)" title="Show only SE-flagged records"><div class="l">SE</div><div class="n"><span class="mf-lg" data-stat="se">—</span></div><div class="sub">flagged this event</div></div>
     </div>
   </div>
   <!-- 4.2 Roster and classification — the current Event's oRegistrations,
@@ -824,12 +827,18 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
         <div class="search" style="position:relative;">
           <input type="text" id="rosterSearch" oninput="filterList('roster')" placeholder="Search preferred name, legal name, PID…" style="border:1px solid var(--line);border-radius:7px;padding:8px 12px;font-size:12.5px;width:240px;">
         </div>
-        <!-- Event-level checkpoint actions (§0m) — these run a Zoom poll for
-             the whole Event and return an aggregate result; the browser
-             never sets an individual participant's completion flag
-             directly. See runCheckpointPoll(). -->
-        <button class="btn btn-sm" onclick="runCheckpointPoll('s3')">Checkpoint Attendance</button>
-        <button class="btn btn-sm" onclick="runCheckpointPoll('s4')">Attendance Check</button>
+        <!-- Take Attendance — REAL BUILD 2026-08-12. Attendance Architecture
+             Layer 2. Replaces the old separate "Checkpoint Attendance" /
+             "Attendance Check" buttons (formerly runCheckpointPoll(), a
+             prototype stub that only toasted a fake aggregate — no real
+             webhook existed). CS picks Session (S1-S4) from a floating menu;
+             Day is never client-supplied — the server resolves it from
+             events.f3025. The browser never sets an individual participant's
+             attendance flag directly; a fresh Zoom Live Dashboard poll runs
+             server-side at click-time and the aggregate result is toasted,
+             then the roster is refetched from server truth. See
+             openTakeAttendanceMenu()/confirmTakeAttendance(). -->
+        <button class="btn btn-sm" id="takeAttendanceBtn" onclick="openTakeAttendanceMenu(this)">Take Attendance</button>
         <button class="btn btn-sm" onclick="toast('Export queued — audit entry recorded.')">Export</button>
       </div>
     </div>
@@ -1412,17 +1421,17 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
     <div class="relview" id="rel-day1">
       <h4 class="daysec-hd">Day 1</h4>
       <div class="res-row">
-        <div><button class="tog on" disabled></button></div>
+        <div><button class="tog on" data-key="day1-assignments" data-toggle="materials" data-title="Day 1 Assignments" data-kind="Assignment" data-notified="1" data-notifat="Sat 2:14 pm" disabled></button></div>
         <div class="res-t"><div class="nm">Day 1 Assignments</div><div class="mt"><span>Assignment</span></div></div>
         <div class="res-time">First shown <b>Sat 2:14 pm</b></div>
       </div>
       <div class="res-row">
-        <div><button class="tog on" disabled></button></div>
+        <div><button class="tog on" data-key="day1-agreements" data-toggle="materials" data-title="Day 1 Agreements" data-kind="Agreement" data-notified="1" data-notifat="Sat 2:14 pm" disabled></button></div>
         <div class="res-t"><div class="nm">Day 1 Agreements</div><div class="mt"><span>Agreement</span></div></div>
         <div class="res-time">First shown <b>Sat 2:14 pm</b></div>
       </div>
       <div class="res-row">
-        <div><button class="tog on" disabled></button></div>
+        <div><button class="tog on" data-key="day1-letter" data-toggle="materials" data-title="Day 1 Letter" data-kind="Letter" data-notified="1" data-notifat="Sat 2:14 pm" disabled></button></div>
         <div class="res-t"><div class="nm">Day 1 Letter</div><div class="mt"><span>Letter</span></div></div>
         <div class="res-time">First shown <b>Sat 2:14 pm</b></div>
       </div>
@@ -1433,7 +1442,12 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
       <h4 class="daysec-hd">Day 2 (today)</h4>
       <!-- LOOP: repeat: content.subjects (Day 2) — each resource carries its own release state -->
       <div class="res-row">
-        <div><button class="tog on" data-title="Day 2 Letter" data-kind="Letter" data-notified="1" data-notifat="6:58 pm" onclick="relToggle(this)"></button></div>
+        <div><button class="tog on" data-key="day2-assignments" data-toggle="materials" data-title="Day 2 Assignments" data-kind="Assignment" data-notified="1" data-notifat="6:58 pm" onclick="relToggle(this)"></button></div>
+        <div class="res-t"><div class="nm">Day 2 Assignments</div><div class="mt"><span>Assignment</span></div></div>
+        <div class="res-time">First shown <b>6:58 pm</b></div>
+      </div>
+      <div class="res-row">
+        <div><button class="tog on" data-key="day2-letter" data-toggle="materials" data-title="Day 2 Letter" data-kind="Letter" data-notified="1" data-notifat="6:58 pm" onclick="relToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Day 2 Letter</div><div class="mt"><span>Letter</span></div></div>
         <div class="res-time">First shown <b>6:58 pm</b></div>
       </div>
@@ -1443,7 +1457,7 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
     <div class="relview" id="rel-day3">
       <h4 class="daysec-hd">Day 3</h4>
       <div class="res-row">
-        <div><button class="tog" disabled title="Day 3 has not started"></button></div>
+        <div><button class="tog" data-key="day3-follow-through" data-toggle="materials" data-title="Day 3 Follow-Through" data-kind="Assignment" data-notified="0" disabled title="Day 3 has not started"></button></div>
         <div class="res-t"><div class="nm">Day 3 Follow-Through</div><div class="mt"><span>Assignment</span></div></div>
         <div class="res-time">—</div>
       </div>
@@ -1459,11 +1473,14 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
     </div>
   </div>
 
-  <!-- Announcements — a much smaller surface than Course Materials: two
-       manual toggles, one per program, for announcing that Seminar /
-       Advanced Course registration is open. Reuses the same release toggle
-       pattern (relToggle()/confirm/re-hide/re-show flow) rather than a new
-       component. -->
+  <!-- Announcements — a much smaller surface than Course Materials: three
+       manual toggles, one per program (Seminar/AC/Gift a Forum), for
+       announcing that registration/gifting is open. Reuses the same
+       release toggle pattern (relToggle()/confirm/re-hide/re-show flow)
+       rather than a new component. Real spec-vs-prototype gap found and
+       fixed 2026-08-12: this card only had 2 rows (Seminar/AC) — the
+       "Gift a Forum" toggle (events.f3167) was missing entirely, added
+       as a 3rd row to match the 3-field spec. -->
   <div class="card msec" id="ms-announcements">
     <div class="card-hd">
       <h3>Announcements</h3>
@@ -1471,13 +1488,18 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
     </div>
     <div class="relview">
       <div class="res-row">
-        <div><button class="tog" data-title="Seminar announcement" data-kind="Announcement" data-notified="0" onclick="relToggle(this)"></button></div>
+        <div><button class="tog" data-key="seminar-open" data-toggle="announcements" data-title="Seminar announcement" data-kind="Announcement" data-notified="0" onclick="relToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Seminar</div><div class="mt"><span>Registration announcement</span></div></div>
         <div class="res-time">—</div>
       </div>
       <div class="res-row">
-        <div><button class="tog" data-title="Advanced Course announcement" data-kind="Announcement" data-notified="0" onclick="relToggle(this)"></button></div>
+        <div><button class="tog" data-key="AC-open" data-toggle="announcements" data-title="Advanced Course announcement" data-kind="Announcement" data-notified="0" onclick="relToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Advanced Course</div><div class="mt"><span>Registration announcement</span></div></div>
+        <div class="res-time">—</div>
+      </div>
+      <div class="res-row">
+        <div><button class="tog" data-key="gift-open" data-toggle="announcements" data-title="Gift a Forum announcement" data-kind="Announcement" data-notified="0" onclick="relToggle(this)"></button></div>
+        <div class="res-t"><div class="nm">Gift a Forum</div><div class="mt"><span>Gifting announcement</span></div></div>
         <div class="res-time">—</div>
       </div>
     </div>
@@ -1496,17 +1518,17 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
   <div class="card msec" id="em-guest-snapshot">
     <div class="card-hd">
       <h3>Guest snapshot</h3>
-      <div class="r"><span style="font-size:11.5px;color:var(--gray);">As of <span class="mf">7:44 pm</span> · Day 2 of 3</span></div>
+      <div class="r"><span style="font-size:11.5px;color:var(--gray);">Live</span></div>
     </div>
     <div class="stats stats-4">
-      <div class="stat"><div class="l">Invitations sent</div><div class="n"><span class="mf-lg">512</span></div><div class="sub">2.7 per participant</div></div>
-      <div class="stat"><div class="l">Total guests</div><div class="n"><span class="mf-lg">141</span></div><div class="sub">28% of invitations</div></div>
-      <div class="stat"><div class="l">GP100</div><div class="n"><span class="mf-lg">75</span></div><div class="sub">per 100 participants</div></div>
-      <div class="stat big"><div class="l">Forum reg. effectiveness</div><div class="n"><span class="mf-lg">35%</span></div><div class="sub" style="color:rgba(255,255,255,.55);">34 ÷ 98 non-graduate guests</div></div>
-      <div class="stat"><div class="l">RPH — Friday</div><div class="n"><span class="mf-lg">11</span></div><div class="sub">21 registrations</div></div>
-      <div class="stat"><div class="l">RPH — Final Session</div><div class="n"><span class="v-na">—</span></div><div class="sub">not started · available Tuesday</div></div>
-      <div class="stat"><div class="l">Grad guests</div><div class="n"><span class="mf-lg">43</span></div><div class="sub">prior programme on record</div></div>
-      <div class="stat"><div class="l">Non-grad guests</div><div class="n"><span class="mf-lg">98</span></div><div class="sub">no prior programme</div></div>
+      <div class="stat"><div class="l">Invitations sent</div><div class="n"><span class="mf-lg" data-stat="gsInvitationsSent">—</span></div><div class="sub" data-stat-sub="gsInvitationsSent">—</div></div>
+      <div class="stat"><div class="l">Total guests</div><div class="n"><span class="mf-lg" data-stat="gsTotalGuests">—</span></div><div class="sub" data-stat-sub="gsTotalGuests">—</div></div>
+      <div class="stat"><div class="l">GPH</div><div class="n"><span class="mf-lg" data-stat="gsGph">—</span></div><div class="sub">per 100 participants</div></div>
+      <div class="stat"><div class="l">GGPH</div><div class="n"><span class="mf-lg" data-stat="gsGgph">—</span></div><div class="sub">graduate guests per 100</div></div>
+      <div class="stat big"><div class="l">Forum reg. effectiveness</div><div class="n"><span class="mf-lg" data-stat="gsForumRegEff">—</span></div><div class="sub" style="color:rgba(255,255,255,.55);" data-stat-sub="gsForumRegEff">—</div></div>
+      <div class="stat"><div class="l">RPH</div><div class="n"><span class="mf-lg" data-stat="gsRph">—</span></div><div class="sub">registrations per 100 participants</div></div>
+      <div class="stat"><div class="l">Grad guests</div><div class="n"><span class="mf-lg" data-stat="gsGradGuests">—</span></div><div class="sub">prior programme on record</div></div>
+      <div class="stat"><div class="l">Non-grad guests</div><div class="n"><span class="mf-lg" data-stat="gsNonGradGuests">—</span></div><div class="sub">no prior programme</div></div>
     </div>
   </div>
   <!-- Guest attendance / registration / inviter association → oInvitation
@@ -1526,243 +1548,17 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
     </div>
     <div class="card-bd flush">
       <div class="ev-list" id="guestList">
-      <!-- LOOP: repeat: guest.rows (from oInvitations). Same two-row pattern
-           as the roster: row 1 (name + every metric) always visible, the
-           classification pills collapse behind the chevron. ADV. CRS is
-           derived the same way as on the roster — grey NP/POT from the POT
-           pill, green REG from the backend once registered. -->
-      <div class="ev-card" data-search="michael boateng gabe shamash">
-        <div class="ev-row1">
-          <div class="ev-name"><b>Michael Boateng</b><div class="participant-combo"><input class="iedit participant-input" placeholder="Not associated" value="Gabe Shamash" data-action="set_guest_participant" oninput="participantFilter(this)" onfocus="participantFilter(this)" onblur="participantBlur(this)"><div class="combo-list"></div></div></div>
-          <div class="ev-field"><div class="ev-l">After 7:30pm</div><button class="togchip chip-check" data-action="set_guest_after730" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">Attend</div><button class="togchip chip-check" data-action="set_guest_attend" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">IA / OOA / ONL</div><select class="selectchip" data-action="set_guest_locale" onchange="inlineSave(this)"><option>In-Area</option><option>Out-of-Area</option><option selected>Online</option></select></div>
-          <div class="ev-field"><div class="ev-l">FS #</div><span class="mf">4</span></div>
-          <div class="ev-field"><div class="ev-l">LF Grad?</div><button class="togchip chip-check" data-action="set_guest_lf_grad" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">REG</div><button class="togchip chip-check" data-action="mark_guest_registered" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">ADV. CRS</div><span class="pill p-pot prog-ac" data-reg="1">REG</span></div>
-          <div class="ev-field"><div class="ev-l">Notes</div><button class="ev-notesbtn" onclick="openNotes(this)" title="Operational note" aria-label="Operational note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button></div>
-          <div class="ev-field"><div class="ev-l">&nbsp;</div><button class="ev-chevron" onclick="toggleCardExpand(this)" title="Classification" aria-label="Toggle classification"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 4.5 6 7.5 9 4.5"/></svg></button></div>
-        </div>
-        <div class="ev-pills">
-          <button class="togchip" data-action="set_guest_potential" onclick="toggleChip(this)"><span class="dot"></span>POT</button>
-          <button class="togchip" data-action="set_guest_se" onclick="toggleChip(this,true)"><span class="dot"></span>SE</button>
-          <button class="togchip on" data-action="set_guest_18_plus" onclick="toggleChip(this)"><span class="dot"></span>18+</button>
-          <button class="togchip" data-action="set_guest_tos" onclick="toggleChip(this)"><span class="dot"></span>TOS</button>
-          <button class="togchip on" data-action="set_guest_english" onclick="toggleChip(this)"><span class="dot"></span>ENG</button>
-        </div>
-      </div>
-      <div class="ev-card" data-search="hannah kim not associated">
-        <div class="ev-row1">
-          <div class="ev-name"><b>Hannah Kim</b><div class="participant-combo"><input class="iedit participant-input" placeholder="Not associated" data-action="set_guest_participant" oninput="participantFilter(this)" onfocus="participantFilter(this)" onblur="participantBlur(this)"><div class="combo-list"></div></div></div>
-          <div class="ev-field"><div class="ev-l">After 7:30pm</div><button class="togchip chip-check" disabled><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">Attend</div><button class="togchip chip-check" disabled><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">IA / OOA / ONL</div><span class="v-na">—</span></div>
-          <div class="ev-field"><div class="ev-l">FS #</div><span class="v-na">—</span></div>
-          <div class="ev-field"><div class="ev-l">LF Grad?</div><button class="togchip chip-check" disabled><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">REG</div><button class="togchip chip-check" disabled><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">ADV. CRS</div><span class="v-na">—</span></div>
-          <div class="ev-field"><div class="ev-l">Notes</div><button class="ev-notesbtn" onclick="openNotes(this)" title="Operational note" aria-label="Operational note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button></div>
-          <div class="ev-field"><div class="ev-l">&nbsp;</div><button class="ev-chevron" onclick="toggleCardExpand(this)" title="Classification" aria-label="Toggle classification"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 4.5 6 7.5 9 4.5"/></svg></button></div>
-        </div>
-        <div class="ev-pills">
-          <button class="togchip" data-action="set_guest_potential" onclick="toggleChip(this)"><span class="dot"></span>POT</button>
-          <button class="togchip" data-action="set_guest_se" onclick="toggleChip(this,true)"><span class="dot"></span>SE</button>
-          <button class="togchip" data-action="set_guest_18_plus" onclick="toggleChip(this)"><span class="dot"></span>18+</button>
-          <button class="togchip" data-action="set_guest_tos" onclick="toggleChip(this)"><span class="dot"></span>TOS</button>
-          <button class="togchip" data-action="set_guest_english" onclick="toggleChip(this)"><span class="dot"></span>ENG</button>
-        </div>
-      </div>
-      <div class="ev-card" data-search="robert osei sofia marchetti">
-        <div class="ev-row1">
-          <div class="ev-name"><b>Robert Osei</b><div class="participant-combo"><input class="iedit participant-input" placeholder="Not associated" value="Sofia Marchetti" data-action="set_guest_participant" oninput="participantFilter(this)" onfocus="participantFilter(this)" onblur="participantBlur(this)"><div class="combo-list"></div></div></div>
-          <div class="ev-field"><div class="ev-l">After 7:30pm</div><button class="togchip chip-check on" data-action="set_guest_after730" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">Attend</div><button class="togchip chip-check on" data-action="set_guest_attend" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">IA / OOA / ONL</div><select class="selectchip" data-action="set_guest_locale" onchange="inlineSave(this)"><option>In-Area</option><option selected>Out-of-Area</option><option>Online</option></select></div>
-          <div class="ev-field"><div class="ev-l">FS #</div><span class="mf">1</span></div>
-          <div class="ev-field"><div class="ev-l">LF Grad?</div><button class="togchip chip-check on" data-action="set_guest_lf_grad" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">REG</div><button class="togchip chip-check on" data-action="mark_guest_registered" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">ADV. CRS</div><span class="pill p-pot prog-ac" data-reg="1">REG</span></div>
-          <div class="ev-field"><div class="ev-l">Notes</div><button class="ev-notesbtn" onclick="openNotes(this)" title="Operational note" aria-label="Operational note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button></div>
-          <div class="ev-field"><div class="ev-l">&nbsp;</div><button class="ev-chevron" onclick="toggleCardExpand(this)" title="Classification" aria-label="Toggle classification"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 4.5 6 7.5 9 4.5"/></svg></button></div>
-        </div>
-        <div class="ev-pills">
-          <button class="togchip on" data-action="set_guest_potential" onclick="toggleChip(this)"><span class="dot"></span>POT</button>
-          <button class="togchip" data-action="set_guest_se" onclick="toggleChip(this,true)"><span class="dot"></span>SE</button>
-          <button class="togchip on" data-action="set_guest_18_plus" onclick="toggleChip(this)"><span class="dot"></span>18+</button>
-          <button class="togchip" data-action="set_guest_tos" onclick="toggleChip(this)"><span class="dot"></span>TOS</button>
-          <button class="togchip on" data-action="set_guest_english" onclick="toggleChip(this)"><span class="dot"></span>ENG</button>
-        </div>
-      </div>
-      <div class="ev-card" data-search="elena vasquez daniel okafor">
-        <div class="ev-row1">
-          <div class="ev-name"><b>Elena Vasquez</b><div class="participant-combo"><input class="iedit participant-input" placeholder="Not associated" value="Daniel Okafor" data-action="set_guest_participant" oninput="participantFilter(this)" onfocus="participantFilter(this)" onblur="participantBlur(this)"><div class="combo-list"></div></div></div>
-          <div class="ev-field"><div class="ev-l">After 7:30pm</div><button class="togchip chip-check" data-action="set_guest_after730" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">Attend</div><button class="togchip chip-check" data-action="set_guest_attend" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">IA / OOA / ONL</div><select class="selectchip" data-action="set_guest_locale" onchange="inlineSave(this)"><option selected>In-Area</option><option>Out-of-Area</option><option>Online</option></select></div>
-          <div class="ev-field"><div class="ev-l">FS #</div><span class="mf">2</span></div>
-          <div class="ev-field"><div class="ev-l">LF Grad?</div><button class="togchip chip-check" data-action="set_guest_lf_grad" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">REG</div><button class="togchip chip-check" data-action="mark_guest_registered" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">ADV. CRS</div><span class="pill p-neutral prog-ac" data-reg="0">POT</span></div>
-          <div class="ev-field"><div class="ev-l">Notes</div><button class="ev-notesbtn" onclick="openNotes(this)" title="Operational note" aria-label="Operational note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button></div>
-          <div class="ev-field"><div class="ev-l">&nbsp;</div><button class="ev-chevron" onclick="toggleCardExpand(this)" title="Classification" aria-label="Toggle classification"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 4.5 6 7.5 9 4.5"/></svg></button></div>
-        </div>
-        <div class="ev-pills">
-          <button class="togchip on" data-action="set_guest_potential" onclick="toggleChip(this)"><span class="dot"></span>POT</button>
-          <button class="togchip" data-action="set_guest_se" onclick="toggleChip(this,true)"><span class="dot"></span>SE</button>
-          <button class="togchip on" data-action="set_guest_18_plus" onclick="toggleChip(this)"><span class="dot"></span>18+</button>
-          <button class="togchip" data-action="set_guest_tos" onclick="toggleChip(this)"><span class="dot"></span>TOS</button>
-          <button class="togchip on" data-action="set_guest_english" onclick="toggleChip(this)"><span class="dot"></span>ENG</button>
-        </div>
-      </div>
-      <div class="ev-card" data-search="sofia lindgren theo andersen">
-        <div class="ev-row1">
-          <div class="ev-name"><b>Sofia Lindgren</b><div class="participant-combo"><input class="iedit participant-input" placeholder="Not associated" value="Theo Andersen" data-action="set_guest_participant" oninput="participantFilter(this)" onfocus="participantFilter(this)" onblur="participantBlur(this)"><div class="combo-list"></div></div></div>
-          <div class="ev-field"><div class="ev-l">After 7:30pm</div><button class="togchip chip-check" data-action="set_guest_after730" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">Attend</div><button class="togchip chip-check" data-action="set_guest_attend" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">IA / OOA / ONL</div><select class="selectchip" data-action="set_guest_locale" onchange="inlineSave(this)"><option>In-Area</option><option>Out-of-Area</option><option selected>Online</option></select></div>
-          <div class="ev-field"><div class="ev-l">FS #</div><span class="mf">3</span></div>
-          <div class="ev-field"><div class="ev-l">LF Grad?</div><button class="togchip chip-check on" data-action="set_guest_lf_grad" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">REG</div><button class="togchip chip-check" data-action="mark_guest_registered" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">ADV. CRS</div><span class="pill p-neutral prog-ac" data-reg="0">NP</span></div>
-          <div class="ev-field"><div class="ev-l">Notes</div><button class="ev-notesbtn" onclick="openNotes(this)" title="Operational note" aria-label="Operational note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button></div>
-          <div class="ev-field"><div class="ev-l">&nbsp;</div><button class="ev-chevron" onclick="toggleCardExpand(this)" title="Classification" aria-label="Toggle classification"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 4.5 6 7.5 9 4.5"/></svg></button></div>
-        </div>
-        <div class="ev-pills">
-          <button class="togchip" data-action="set_guest_potential" onclick="toggleChip(this)"><span class="dot"></span>POT</button>
-          <button class="togchip" data-action="set_guest_se" onclick="toggleChip(this,true)"><span class="dot"></span>SE</button>
-          <button class="togchip on" data-action="set_guest_18_plus" onclick="toggleChip(this)"><span class="dot"></span>18+</button>
-          <button class="togchip" data-action="set_guest_tos" onclick="toggleChip(this)"><span class="dot"></span>TOS</button>
-          <button class="togchip on" data-action="set_guest_english" onclick="toggleChip(this)"><span class="dot"></span>ENG</button>
-        </div>
-      </div>
-      <div class="ev-card" data-search="omar haddad michael mankowski">
-        <div class="ev-row1">
-          <div class="ev-name"><b>Omar Haddad</b><div class="participant-combo"><input class="iedit participant-input" placeholder="Not associated" value="Michael Mankowski" data-action="set_guest_participant" oninput="participantFilter(this)" onfocus="participantFilter(this)" onblur="participantBlur(this)"><div class="combo-list"></div></div></div>
-          <div class="ev-field"><div class="ev-l">After 7:30pm</div><button class="togchip chip-check on" data-action="set_guest_after730" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">Attend</div><button class="togchip chip-check" data-action="set_guest_attend" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">IA / OOA / ONL</div><select class="selectchip" data-action="set_guest_locale" onchange="inlineSave(this)"><option selected>In-Area</option><option>Out-of-Area</option><option>Online</option></select></div>
-          <div class="ev-field"><div class="ev-l">FS #</div><span class="mf">3</span></div>
-          <div class="ev-field"><div class="ev-l">LF Grad?</div><button class="togchip chip-check" data-action="set_guest_lf_grad" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">REG</div><button class="togchip chip-check" data-action="mark_guest_registered" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">ADV. CRS</div><span class="pill p-neutral prog-ac" data-reg="0">POT</span></div>
-          <div class="ev-field"><div class="ev-l">Notes</div><button class="ev-notesbtn" onclick="openNotes(this)" title="Operational note" aria-label="Operational note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button></div>
-          <div class="ev-field"><div class="ev-l">&nbsp;</div><button class="ev-chevron" onclick="toggleCardExpand(this)" title="Classification" aria-label="Toggle classification"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 4.5 6 7.5 9 4.5"/></svg></button></div>
-        </div>
-        <div class="ev-pills">
-          <button class="togchip on" data-action="set_guest_potential" onclick="toggleChip(this)"><span class="dot"></span>POT</button>
-          <button class="togchip" data-action="set_guest_se" onclick="toggleChip(this,true)"><span class="dot"></span>SE</button>
-          <button class="togchip on" data-action="set_guest_18_plus" onclick="toggleChip(this)"><span class="dot"></span>18+</button>
-          <button class="togchip" data-action="set_guest_tos" onclick="toggleChip(this)"><span class="dot"></span>TOS</button>
-          <button class="togchip on" data-action="set_guest_english" onclick="toggleChip(this)"><span class="dot"></span>ENG</button>
-        </div>
-      </div>
-      <div class="ev-card" data-search="priya sharma henry kay">
-        <div class="ev-row1">
-          <div class="ev-name"><b>Priya Sharma</b><div class="participant-combo"><input class="iedit participant-input" placeholder="Not associated" value="Henry Kay" data-action="set_guest_participant" oninput="participantFilter(this)" onfocus="participantFilter(this)" onblur="participantBlur(this)"><div class="combo-list"></div></div></div>
-          <div class="ev-field"><div class="ev-l">After 7:30pm</div><button class="togchip chip-check" data-action="set_guest_after730" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">Attend</div><button class="togchip chip-check" data-action="set_guest_attend" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">IA / OOA / ONL</div><select class="selectchip" data-action="set_guest_locale" onchange="inlineSave(this)"><option>In-Area</option><option>Out-of-Area</option><option selected>Online</option></select></div>
-          <div class="ev-field"><div class="ev-l">FS #</div><span class="mf">1</span></div>
-          <div class="ev-field"><div class="ev-l">LF Grad?</div><button class="togchip chip-check" data-action="set_guest_lf_grad" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">REG</div><button class="togchip chip-check" data-action="mark_guest_registered" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">ADV. CRS</div><span class="pill p-neutral prog-ac" data-reg="0">POT</span></div>
-          <div class="ev-field"><div class="ev-l">Notes</div><button class="ev-notesbtn" onclick="openNotes(this)" title="Operational note" aria-label="Operational note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button></div>
-          <div class="ev-field"><div class="ev-l">&nbsp;</div><button class="ev-chevron" onclick="toggleCardExpand(this)" title="Classification" aria-label="Toggle classification"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 4.5 6 7.5 9 4.5"/></svg></button></div>
-        </div>
-        <div class="ev-pills">
-          <button class="togchip on" data-action="set_guest_potential" onclick="toggleChip(this)"><span class="dot"></span>POT</button>
-          <button class="togchip" data-action="set_guest_se" onclick="toggleChip(this,true)"><span class="dot"></span>SE</button>
-          <button class="togchip on" data-action="set_guest_18_plus" onclick="toggleChip(this)"><span class="dot"></span>18+</button>
-          <button class="togchip" data-action="set_guest_tos" onclick="toggleChip(this)"><span class="dot"></span>TOS</button>
-          <button class="togchip on" data-action="set_guest_english" onclick="toggleChip(this)"><span class="dot"></span>ENG</button>
-        </div>
-      </div>
-      <div class="ev-card" data-search="marcus webb lisa moreno">
-        <div class="ev-row1">
-          <div class="ev-name"><b>Marcus Webb</b><div class="participant-combo"><input class="iedit participant-input" placeholder="Not associated" value="Lisa Moreno" data-action="set_guest_participant" oninput="participantFilter(this)" onfocus="participantFilter(this)" onblur="participantBlur(this)"><div class="combo-list"></div></div></div>
-          <div class="ev-field"><div class="ev-l">After 7:30pm</div><button class="togchip chip-check" data-action="set_guest_after730" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">Attend</div><button class="togchip chip-check" data-action="set_guest_attend" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">IA / OOA / ONL</div><select class="selectchip" data-action="set_guest_locale" onchange="inlineSave(this)"><option>In-Area</option><option>Out-of-Area</option><option selected>Online</option></select></div>
-          <div class="ev-field"><div class="ev-l">FS #</div><span class="mf">2</span></div>
-          <div class="ev-field"><div class="ev-l">LF Grad?</div><button class="togchip chip-check" data-action="set_guest_lf_grad" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">REG</div><button class="togchip chip-check" data-action="mark_guest_registered" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">ADV. CRS</div><span class="pill p-neutral prog-ac" data-reg="0">NP</span></div>
-          <div class="ev-field"><div class="ev-l">Notes</div><button class="ev-notesbtn" onclick="openNotes(this)" title="Operational note" aria-label="Operational note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button></div>
-          <div class="ev-field"><div class="ev-l">&nbsp;</div><button class="ev-chevron" onclick="toggleCardExpand(this)" title="Classification" aria-label="Toggle classification"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 4.5 6 7.5 9 4.5"/></svg></button></div>
-        </div>
-        <div class="ev-pills">
-          <button class="togchip" data-action="set_guest_potential" onclick="toggleChip(this)"><span class="dot"></span>POT</button>
-          <button class="togchip" data-action="set_guest_se" onclick="toggleChip(this,true)"><span class="dot"></span>SE</button>
-          <button class="togchip on" data-action="set_guest_18_plus" onclick="toggleChip(this)"><span class="dot"></span>18+</button>
-          <button class="togchip" data-action="set_guest_tos" onclick="toggleChip(this)"><span class="dot"></span>TOS</button>
-          <button class="togchip on" data-action="set_guest_english" onclick="toggleChip(this)"><span class="dot"></span>ENG</button>
-        </div>
-      </div>
-      <div class="ev-card" data-search="ines duarte annamarie phillips">
-        <div class="ev-row1">
-          <div class="ev-name"><b>Ines Duarte</b><div class="participant-combo"><input class="iedit participant-input" placeholder="Not associated" value="Annamarie Phillips" data-action="set_guest_participant" oninput="participantFilter(this)" onfocus="participantFilter(this)" onblur="participantBlur(this)"><div class="combo-list"></div></div></div>
-          <div class="ev-field"><div class="ev-l">After 7:30pm</div><button class="togchip chip-check" data-action="set_guest_after730" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">Attend</div><button class="togchip chip-check" data-action="set_guest_attend" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">IA / OOA / ONL</div><select class="selectchip" data-action="set_guest_locale" onchange="inlineSave(this)"><option>In-Area</option><option>Out-of-Area</option><option selected>Online</option></select></div>
-          <div class="ev-field"><div class="ev-l">FS #</div><span class="mf">1</span></div>
-          <div class="ev-field"><div class="ev-l">LF Grad?</div><button class="togchip chip-check" data-action="set_guest_lf_grad" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">REG</div><button class="togchip chip-check" data-action="mark_guest_registered" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">ADV. CRS</div><span class="pill p-pot prog-ac" data-reg="1">REG</span></div>
-          <div class="ev-field"><div class="ev-l">Notes</div><button class="ev-notesbtn" onclick="openNotes(this)" title="Operational note" aria-label="Operational note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button></div>
-          <div class="ev-field"><div class="ev-l">&nbsp;</div><button class="ev-chevron" onclick="toggleCardExpand(this)" title="Classification" aria-label="Toggle classification"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 4.5 6 7.5 9 4.5"/></svg></button></div>
-        </div>
-        <div class="ev-pills">
-          <button class="togchip on" data-action="set_guest_potential" onclick="toggleChip(this)"><span class="dot"></span>POT</button>
-          <button class="togchip" data-action="set_guest_se" onclick="toggleChip(this,true)"><span class="dot"></span>SE</button>
-          <button class="togchip on" data-action="set_guest_18_plus" onclick="toggleChip(this)"><span class="dot"></span>18+</button>
-          <button class="togchip" data-action="set_guest_tos" onclick="toggleChip(this)"><span class="dot"></span>TOS</button>
-          <button class="togchip on" data-action="set_guest_english" onclick="toggleChip(this)"><span class="dot"></span>ENG</button>
-        </div>
-      </div>
-      <div class="ev-card" data-search="tariq hassan paul schurch">
-        <div class="ev-row1">
-          <div class="ev-name"><b>Tariq Hassan</b><div class="participant-combo"><input class="iedit participant-input" placeholder="Not associated" value="Paul Schürch" data-action="set_guest_participant" oninput="participantFilter(this)" onfocus="participantFilter(this)" onblur="participantBlur(this)"><div class="combo-list"></div></div></div>
-          <div class="ev-field"><div class="ev-l">After 7:30pm</div><button class="togchip chip-check" data-action="set_guest_after730" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">Attend</div><button class="togchip chip-check" data-action="set_guest_attend" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">IA / OOA / ONL</div><select class="selectchip" data-action="set_guest_locale" onchange="inlineSave(this)"><option>In-Area</option><option>Out-of-Area</option><option selected>Online</option></select></div>
-          <div class="ev-field"><div class="ev-l">FS #</div><span class="mf">1</span></div>
-          <div class="ev-field"><div class="ev-l">LF Grad?</div><button class="togchip chip-check" data-action="set_guest_lf_grad" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">REG</div><button class="togchip chip-check" data-action="mark_guest_registered" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">ADV. CRS</div><span class="pill p-neutral prog-ac" data-reg="0">NP</span></div>
-          <div class="ev-field"><div class="ev-l">Notes</div><button class="ev-notesbtn" onclick="openNotes(this)" title="Operational note" aria-label="Operational note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button></div>
-          <div class="ev-field"><div class="ev-l">&nbsp;</div><button class="ev-chevron" onclick="toggleCardExpand(this)" title="Classification" aria-label="Toggle classification"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 4.5 6 7.5 9 4.5"/></svg></button></div>
-        </div>
-        <div class="ev-pills">
-          <button class="togchip" data-action="set_guest_potential" onclick="toggleChip(this)"><span class="dot"></span>POT</button>
-          <button class="togchip" data-action="set_guest_se" onclick="toggleChip(this,true)"><span class="dot"></span>SE</button>
-          <button class="togchip on" data-action="set_guest_18_plus" onclick="toggleChip(this)"><span class="dot"></span>18+</button>
-          <button class="togchip" data-action="set_guest_tos" onclick="toggleChip(this)"><span class="dot"></span>TOS</button>
-          <button class="togchip on" data-action="set_guest_english" onclick="toggleChip(this)"><span class="dot"></span>ENG</button>
-        </div>
-      </div>
-      <div class="ev-card" data-search="zara ahmed gretchen leaton">
-        <div class="ev-row1">
-          <div class="ev-name"><b>Zara Ahmed</b><div class="participant-combo"><input class="iedit participant-input" placeholder="Not associated" value="Gretchen Leaton" data-action="set_guest_participant" oninput="participantFilter(this)" onfocus="participantFilter(this)" onblur="participantBlur(this)"><div class="combo-list"></div></div></div>
-          <div class="ev-field"><div class="ev-l">After 7:30pm</div><button class="togchip chip-check" data-action="set_guest_after730" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">Attend</div><button class="togchip chip-check" data-action="set_guest_attend" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">IA / OOA / ONL</div><select class="selectchip" data-action="set_guest_locale" onchange="inlineSave(this)"><option>In-Area</option><option>Out-of-Area</option><option selected>Online</option></select></div>
-          <div class="ev-field"><div class="ev-l">FS #</div><span class="mf">1</span></div>
-          <div class="ev-field"><div class="ev-l">LF Grad?</div><button class="togchip chip-check" data-action="set_guest_lf_grad" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">REG</div><button class="togchip chip-check" data-action="mark_guest_registered" onclick="toggleChip(this)"><span class="dot"></span></button></div>
-          <div class="ev-field"><div class="ev-l">ADV. CRS</div><span class="pill p-neutral prog-ac" data-reg="0">POT</span></div>
-          <div class="ev-field"><div class="ev-l">Notes</div><button class="ev-notesbtn" onclick="openNotes(this)" title="Operational note" aria-label="Operational note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button></div>
-          <div class="ev-field"><div class="ev-l">&nbsp;</div><button class="ev-chevron" onclick="toggleCardExpand(this)" title="Classification" aria-label="Toggle classification"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 4.5 6 7.5 9 4.5"/></svg></button></div>
-        </div>
-        <div class="ev-pills">
-          <button class="togchip on" data-action="set_guest_potential" onclick="toggleChip(this)"><span class="dot"></span>POT</button>
-          <button class="togchip" data-action="set_guest_se" onclick="toggleChip(this,true)"><span class="dot"></span>SE</button>
-          <button class="togchip on" data-action="set_guest_18_plus" onclick="toggleChip(this)"><span class="dot"></span>18+</button>
-          <button class="togchip" data-action="set_guest_tos" onclick="toggleChip(this)"><span class="dot"></span>TOS</button>
-          <button class="togchip on" data-action="set_guest_english" onclick="toggleChip(this)"><span class="dot"></span>ENG</button>
-        </div>
-      </div>
-      <!-- end repeat -->
+      <!-- LOOP: repeat: guest.rows (from oInvitations, via dashboard-guests webhook).
+           Real spec (2026-08-12): Name = the linked Guest Contact's name (f2259//
+           firstname/lastname — invitations.f2959/f2960 are blank in practice, confirmed
+           via real event 218 data). Invited by = f2257 Participant, read-only display
+           for this pass (no write-back yet). Format = same event-level value as the main
+           roster (not per-guest). FS # column cut entirely. LF Grad? = f2292. REG (Forum)
+           and ADV. CRS both use the roster's NP/POT/REG pill styling: REG (green) once
+           registered (f2299/f2298), POT (grey) if flagged Potential (f3211/f3212) but not
+           yet registered, NP (grey, hover reason f3050/f3213) otherwise. SE Exception/
+           Under-18/TOS/ENG chips dropped — no confirmed in-scope field mapping for this
+           pass (see CS Dashboard memory). -->
       </div>
       <div class="pager" id="guestPager">
         <button class="btn btn-sm" onclick="pagerGo('guest',-1)">Prev</button>
@@ -1795,10 +1591,6 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
   <div class="sechd">
     <h2>KPI Dashboard</h2>
     <div class="lede">Read current course performance in card form. Read-only by construction.</div>
-    <div class="r">
-      <span style="font-size:12px;color:var(--gray);">As of <span class="mf">7:44 pm</span> · Day 2 of 3</span>
-      <button class="btn btn-sm" onclick="toast('Recalculating every card from source…')">Recalculate</button>
-    </div>
   </div>
 
   <div class="kpi-note">
@@ -1809,62 +1601,49 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
   <div class="kpi-band">
     <div class="kpi-hd"><span class="eyebrow">Course stats</span><span class="kpi-src">Source · roster and Zoom attendance</span></div>
     <div class="kpi-grid">
-      <div class="kpi"><div class="l">Participants in course</div><div class="n"><span class="mf-lg">188</span></div><div class="sub">roster total</div></div>
-      <div class="kpi"><div class="l">Still participating</div><div class="n"><span class="mf-lg">176</span></div><div class="sub">of 181 who started Day 1</div></div>
-      <div class="kpi"><div class="l">Lost during Forum</div><div class="n"><span class="mf-lg">5</span></div><div class="sub">stopped after Day 1 start</div></div>
-      <div class="kpi"><div class="l">Completed the Forum</div><div class="n"><span class="v-na">—</span></div><div class="sub">not started · available after Day 3</div></div>
-      <div class="kpi term"><div class="l">Attendance rate</div><div class="n"><span class="mf-lg">91%</span></div><div class="sub">167 of 184 right now</div></div>
+      <div class="kpi"><div class="l">Participants in course</div><div class="n"><span class="mf-lg" data-stat="drParticipants">—</span></div><div class="sub">roster total</div></div>
+      <div class="kpi"><div class="l">Still participating</div><div class="n"><span class="mf-lg" data-stat="current">—</span></div><div class="sub">still participating</div></div>
+      <div class="kpi"><div class="l">Lost during Forum</div><div class="n"><span class="mf-lg" data-stat="ldp">—</span></div><div class="sub">left for any reason</div></div>
+      <div class="kpi"><div class="l">Completed the Forum</div><div class="n"><span class="mf-lg" data-stat="completions">—</span></div><div class="sub">Forum Completed</div></div>
+      <div class="kpi term"><div class="l">Attendance rate</div><div class="n"><span class="mf-lg" data-stat="attendanceNow">—</span></div><div class="sub" data-stat-sub="attendanceNow">—</div></div>
     </div>
   </div>
 
   <div class="kpi-band">
     <div class="kpi-hd"><span class="eyebrow">Seminar</span><span class="badge-optin">Enabled for this pilot</span><span class="kpi-src">Source · Seminar registration records</span></div>
     <div class="kpi-grid">
-      <div class="kpi"><div class="l">Potential</div><div class="n"><span class="mf-lg">143</span></div><div class="sub">138 invited</div></div>
-      <div class="kpi"><div class="l">Confirmed</div><div class="n"><span class="mf-lg">60</span></div><div class="sub">57 verified</div></div>
-      <div class="kpi term"><div class="l">Confirmation rate</div><div class="n"><span class="mf-lg">42%</span></div><div class="sub">60 ÷ 143</div></div>
-      <div class="kpi"><div class="l">Unresolved classifications</div><div class="n"><span class="mf-lg">3</span></div><div class="sub">affecting this rate</div></div>
+      <div class="kpi"><div class="l">Potential</div><div class="n"><span class="mf-lg" data-stat="seminarPotentialCount">—</span></div><div class="sub" data-stat-sub="seminarPotentialCount">—</div></div>
+      <div class="kpi"><div class="l">Confirmed</div><div class="n"><span class="mf-lg" data-stat="seminarRegCount">—</span></div><div class="sub">registered</div></div>
+      <div class="kpi term"><div class="l">Confirmation rate</div><div class="n"><span class="mf-lg" data-stat="seminarPct">—</span></div><div class="sub" data-stat-sub="seminarPct">—</div></div>
     </div>
   </div>
 
   <div class="kpi-band">
     <div class="kpi-hd"><span class="eyebrow">Advanced Course</span><span class="kpi-src">Source · Advanced Course registration records</span></div>
     <div class="kpi-grid">
-      <div class="kpi"><div class="l">Potential</div><div class="n"><span class="mf-lg">121</span></div><div class="sub">118 invited</div></div>
-      <div class="kpi"><div class="l">Registered</div><div class="n"><span class="mf-lg">47</span></div><div class="sub">44 verified</div></div>
-      <div class="kpi term"><div class="l">Registration rate</div><div class="n"><span class="mf-lg">39%</span></div><div class="sub">47 ÷ 121</div></div>
-      <div class="kpi"><div class="l">Unresolved classifications</div><div class="n"><span class="mf-lg">3</span></div><div class="sub">affecting this rate</div></div>
+      <div class="kpi"><div class="l">Potential</div><div class="n"><span class="mf-lg" data-stat="acPotentialCount">—</span></div><div class="sub" data-stat-sub="acPotentialCount">—</div></div>
+      <div class="kpi"><div class="l">Registered</div><div class="n"><span class="mf-lg" data-stat="acRegCount">—</span></div><div class="sub">registered</div></div>
+      <div class="kpi term"><div class="l">Registration rate</div><div class="n"><span class="mf-lg" data-stat="acPct">—</span></div><div class="sub" data-stat-sub="acPct">—</div></div>
     </div>
   </div>
 
   <div class="kpi-band">
     <div class="kpi-hd"><span class="eyebrow">Landmark Forum / guests</span><span class="kpi-src">Source · guest team records</span></div>
     <div class="kpi-grid">
-      <div class="kpi"><div class="l">Invitations sent</div><div class="n"><span class="mf-lg">512</span></div><div class="sub">2.7 per participant</div></div>
-      <div class="kpi"><div class="l">Total guests</div><div class="n"><span class="mf-lg">141</span></div><div class="sub">28% of invitations</div></div>
-      <div class="kpi"><div class="l">GP100</div><div class="n"><span class="mf-lg">75</span></div><div class="sub">per 100 participants</div></div>
-      <div class="kpi term"><div class="l">Forum reg. effectiveness</div><div class="n"><span class="mf-lg">35%</span></div><div class="sub">34 ÷ 98 non-graduate guests</div></div>
-      <div class="kpi"><div class="l">RPH — Friday</div><div class="n"><span class="mf-lg">11</span></div><div class="sub">21 registrations</div></div>
-      <div class="kpi"><div class="l">RPH — Final Session</div><div class="n"><span class="v-na">—</span></div><div class="sub">not started · available Tuesday</div></div>
-    </div>
-  </div>
-
-  <div class="kpi-band">
-    <div class="kpi-hd"><span class="eyebrow">Graduate courses</span><span class="kpi-src">Source · Seminar and Advanced Course registration records</span></div>
-    <div class="kpi-grid">
-      <div class="kpi"><div class="l">Registrations (any course)</div><div class="n"><span class="mf-lg">71</span></div><div class="sub">unique participants</div></div>
-      <div class="kpi"><div class="l">Registrations per hundred</div><div class="n"><span class="mf-lg">38</span></div><div class="sub">per 100 participants</div></div>
-      <div class="kpi term"><div class="l">Registration effectiveness</div><div class="n"><span class="mf-lg">40%</span></div><div class="sub">71 ÷ 176 eligible</div></div>
+      <div class="kpi"><div class="l">Invitations sent</div><div class="n"><span class="mf-lg" data-stat="gsInvitationsSent">—</span></div><div class="sub" data-stat-sub="gsInvitationsSent">—</div></div>
+      <div class="kpi"><div class="l">Total guests</div><div class="n"><span class="mf-lg" data-stat="gsTotalGuests">—</span></div><div class="sub" data-stat-sub="gsTotalGuests">—</div></div>
+      <div class="kpi"><div class="l">GP100</div><div class="n"><span class="mf-lg" data-stat="gsGph">—</span></div><div class="sub">per 100 participants</div></div>
+      <div class="kpi term"><div class="l">Forum reg. effectiveness</div><div class="n"><span class="mf-lg" data-stat="gsForumRegEff">—</span></div><div class="sub" data-stat-sub="gsForumRegEff">—</div></div>
+      <div class="kpi"><div class="l">RPH</div><div class="n"><span class="mf-lg" data-stat="gsRph">—</span></div><div class="sub">registrations per 100 participants</div></div>
     </div>
   </div>
 
   <div class="kpi-band last">
     <div class="kpi-hd"><span class="eyebrow">Invitations</span><span class="kpi-src">Source · guest and registration teams</span></div>
     <div class="kpi-grid">
-      <div class="kpi"><div class="l">Participants who invited</div><div class="n"><span class="mf-lg">96</span></div><div class="sub">51% of the course</div></div>
-      <div class="kpi"><div class="l">Non-graduate guests</div><div class="n"><span class="mf-lg">98</span></div><div class="sub">no prior programme</div></div>
-      <div class="kpi"><div class="l">Graduate guests</div><div class="n"><span class="mf-lg">43</span></div><div class="sub">prior programme on record</div></div>
-      <div class="kpi"><div class="l">Records to resolve</div><div class="n"><span class="mf-lg">3</span></div><div class="sub">unidentified + unassociated</div></div>
+      <div class="kpi"><div class="l">Participants who invited</div><div class="n"><span class="mf-lg" data-stat="participantsWhoInvited">—</span></div><div class="sub" data-stat-sub="participantsWhoInvited">—</div></div>
+      <div class="kpi"><div class="l">Non-graduate guests</div><div class="n"><span class="mf-lg" data-stat="gsNonGradGuests">—</span></div><div class="sub">no prior programme</div></div>
+      <div class="kpi"><div class="l">Graduate guests</div><div class="n"><span class="mf-lg" data-stat="gsGradGuests">—</span></div><div class="sub">prior programme on record</div></div>
     </div>
   </div>
 
@@ -1879,36 +1658,36 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
     <div class="rev-row">
       <div class="rev-row-label">New LF</div>
       <div class="rev-grid">
-        <div class="kpi"><div class="l">Booked revenue</div><div class="n"><span class="mf-lg">$214,600</span></div><div class="sub">as of last close</div></div>
-        <div class="kpi"><div class="l">Projected revenue</div><div class="n"><span class="mf-lg">$248,900</span></div><div class="sub">at current pace</div></div>
-        <div class="kpi"><div class="l">Collected revenue</div><div class="n"><span class="mf-lg">$196,050</span></div><div class="sub">91% of booked</div></div>
+        <div class="kpi"><div class="l">Booked revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+        <div class="kpi"><div class="l">Projected revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+        <div class="kpi"><div class="l">Collected revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
       </div>
     </div>
 
     <div class="rev-row">
       <div class="rev-row-label">Seminar</div>
       <div class="rev-grid">
-        <div class="kpi"><div class="l">Booked revenue</div><div class="n"><span class="mf-lg">$42,000</span></div><div class="sub">as of last close</div></div>
-        <div class="kpi"><div class="l">Projected revenue</div><div class="n"><span class="mf-lg">$48,500</span></div><div class="sub">at current pace</div></div>
-        <div class="kpi"><div class="l">Collected revenue</div><div class="n"><span class="mf-lg">$37,800</span></div><div class="sub">90% of booked</div></div>
+        <div class="kpi"><div class="l">Booked revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+        <div class="kpi"><div class="l">Projected revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+        <div class="kpi"><div class="l">Collected revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
       </div>
     </div>
 
     <div class="rev-row">
       <div class="rev-row-label">Advanced Course</div>
       <div class="rev-grid">
-        <div class="kpi"><div class="l">Booked revenue</div><div class="n"><span class="mf-lg">$86,000</span></div><div class="sub">as of last close</div></div>
-        <div class="kpi"><div class="l">Projected revenue</div><div class="n"><span class="mf-lg">$97,300</span></div><div class="sub">at current pace</div></div>
-        <div class="kpi"><div class="l">Collected revenue</div><div class="n"><span class="mf-lg">$71,400</span></div><div class="sub">83% of booked</div></div>
+        <div class="kpi"><div class="l">Booked revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+        <div class="kpi"><div class="l">Projected revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+        <div class="kpi"><div class="l">Collected revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
       </div>
     </div>
 
     <div class="rev-row total">
       <div class="rev-row-label">Total</div>
       <div class="rev-grid">
-        <div class="kpi"><div class="l">Booked revenue</div><div class="n"><span class="mf-lg">$342,600</span></div><div class="sub">as of last close</div></div>
-        <div class="kpi"><div class="l">Projected revenue</div><div class="n"><span class="mf-lg">$394,700</span></div><div class="sub">at current pace</div></div>
-        <div class="kpi"><div class="l">Collected revenue</div><div class="n"><span class="mf-lg">$305,250</span></div><div class="sub">89% of booked</div></div>
+        <div class="kpi"><div class="l">Booked revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+        <div class="kpi"><div class="l">Projected revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+        <div class="kpi"><div class="l">Collected revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
       </div>
     </div>
   </div>
@@ -1917,7 +1696,6 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
     <b>Values</b>
     <span><span class="v-zero">0</span> zero</span>
     <span><span class="v-na">—</span> not applicable or not yet started</span>
-    <span style="margin-left:auto;color:#a9a49a;">GP100 / RPH definitions are inferred from the source specs — confirm with Landmark before the pilot.</span>
   </div>
 
 </section>
@@ -1946,6 +1724,19 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
   <button class="kebab-item" onclick="eventCardMenuAction('roster')">View Roster</button>
   <button class="kebab-item" onclick="eventCardMenuAction('exceptions')">Show Exceptions</button>
   <button class="kebab-item" onclick="eventCardMenuAction('assignments')">View Assignments</button>
+</div>
+
+<!-- Take Attendance session picker — REAL BUILD 2026-08-12. Floating menu,
+     JS-positioned off the roster header's Take Attendance button (same
+     positionFloating() mechanism as eventCardMenu/rowMenu). CS picks
+     Session (S1-S4) only — Day is always resolved server-side from
+     events.f3025, never client-supplied. See openTakeAttendanceMenu()/
+     confirmTakeAttendance() in the script. -->
+<div class="kebab-menu" id="takeAttendanceMenu">
+  <button class="kebab-item" onclick="confirmTakeAttendance('1')">Session 1</button>
+  <button class="kebab-item" onclick="confirmTakeAttendance('2')">Session 2</button>
+  <button class="kebab-item" onclick="confirmTakeAttendance('3')">Session 3</button>
+  <button class="kebab-item" onclick="confirmTakeAttendance('4')">Session 4</button>
 </div>
 
 <!-- Shared per-row ••• kebab menu — one instance, JS-positioned per
@@ -2044,13 +1835,13 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
      data, material releases) as final. This is a review-first confirmation,
      not a one-click action. -->
 <div class="modal" id="mEndSession">
-  <div class="modal-hd"><h3>End session — Day 2?</h3><p>Review every entry before confirming — ending the session submits today's entries exactly as entered.</p></div>
+  <div class="modal-hd"><h3>End session — <span id="esmTitleDay">Day 2</span>?</h3><p>Review every entry before confirming — ending the session submits today's entries exactly as entered.</p></div>
   <div class="modal-bd">
     <div class="warnbox">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 1.5 15 14H1L8 1.5Z"/><path d="M8 6v3.5M8 11.5v.01"/></svg>
       <div>
         <div class="t">This submits today's entries as final</div>
-        <div class="d">Attendance, classification changes, Seminar/AC status, guest data and material releases recorded for Day 2 are locked in the moment you confirm. Go back and check the roster and course materials first — corrections after ending the session require a separate override, not a quick edit.</div>
+        <div class="d">Attendance, classification changes, Seminar/AC status, guest data and material releases recorded for <span id="esmBodyDay">Day 2</span> are locked in the moment you confirm. Go back and check the roster and course materials first — corrections after ending the session require a separate override, not a quick edit.</div>
       </div>
     </div>
     <div class="kv" style="margin-top:14px;">
@@ -2058,31 +1849,60 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
       <span class="k">Material released today</span><span class="v"><b class="mf" id="endSessionReleaseCount">4 / 5</b></span>
     </div>
   </div>
-  <div class="modal-ft"><button class="btn btn-danger" onclick="confirmEndSession()">End session — submit entries</button><button class="btn" onclick="dismissModal()">Go back and review</button></div>
+  <div class="modal-ft"><button class="btn btn-danger" id="btnConfirmEndSession" onclick="confirmEndSession()">End session — submit entries</button><button class="btn" onclick="dismissModal()">Go back and review</button></div>
 </div>
 
-<!-- Correct Attendance — intentionally minimal/placeholder (§0l, §0m). Normal
-     attendance is now Zoom-sourced, read-only evidence disclosed via the
-     tick's anchored popover, not this modal. This exists only to prove the
-     entry point is separate from that read-only view — the real correction
-     contract for evidence-sourced attendance isn't finalized yet. -->
+<!-- Correct Attendance — REAL BUILD 2026-08-12. The manual-override tail of
+     Attendance Architecture Layer 2: CS picks Day/Session/Status, writes
+     registrations.f3191 (Attendance Status) always, f3190 (FS LATE NOTE,
+     shared with the automated resolution flow) only when Absent-Excused,
+     and the specific per-session ATTENDED checkbox (f3193-f3203/f3055)
+     to true only when Present. This is the manual path for when the
+     automated Zoom/Participant-ID match fails — normal attendance stays
+     Zoom-sourced and read-only via the tick's popover. -->
 <div class="modal" id="mCorrectAttendance">
-  <div class="modal-hd"><h3>Correct attendance — <span class="serif-it" id="attName">this participant</span></h3><p>Placeholder flow — the correction contract for Zoom-sourced attendance is not yet finalized. Writes to <span class="mf">oRegistration</span> for this Event only.</p></div>
+  <div class="modal-hd"><h3>Correct attendance — <span class="serif-it" id="attName">this participant</span></h3><p>Manual override for when the automated Zoom/Participant-ID match fails. Writes to <span class="mf">oRegistration</span> for this Event only.</p></div>
   <div class="modal-bd">
-    <div class="field"><label>Day</label>
-      <select id="corrAttDay"><option>Day 1</option><option selected>Day 2</option><option>Day 3</option></select>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="field"><label>Day</label>
+        <select id="corrAttDay">
+          <option value="1">Day 1</option>
+          <option value="2" selected>Day 2</option>
+          <option value="3">Day 3</option>
+        </select>
+      </div>
+      <div class="field"><label>Session</label>
+        <select id="corrAttSession">
+          <option value="1">Session 1</option>
+          <option value="2">Session 2</option>
+          <option value="3">Session 3</option>
+          <option value="4">Session 4</option>
+        </select>
+      </div>
     </div>
-    <div class="field"><label>What's being corrected, and why</label><textarea id="corrAttNote" rows="4" placeholder="Describe the correction — visible to staff only"></textarea></div>
+    <div class="field"><label>Status</label>
+      <select id="corrAttStatus" onchange="onCorrAttStatusChange()">
+        <option value="469">Present</option>
+        <option value="467">Absent - Excused</option>
+        <option value="468">Absent - NCNS</option>
+      </select>
+    </div>
+    <div class="field" id="corrAttNoteField"><label>Reason</label><textarea id="corrAttNote" rows="3" placeholder="Required — why is this excused?"></textarea></div>
   </div>
-  <div class="modal-ft"><button class="btn btn-primary" onclick="confirmCorrectAttendance()">Save</button><button class="btn" onclick="dismissModal()">Cancel</button></div>
+  <div class="modal-ft"><button class="btn btn-primary" id="corrAttSaveBtn" onclick="confirmCorrectAttendance()">Save</button><button class="btn" onclick="dismissModal()">Cancel</button></div>
 </div>
 
-<!-- Operational note popup — replaces the inline textarea on each record
-     card; the note icon fills green once a note exists. -->
+<!-- Operational note popup — REAL BUILD 2026-08-12 for the Roster & Classification
+     ••• kebab "Add Operational Note" action (append-only to registrations.f2886,
+     same pattern as Override Classification's optional note). Also still used by
+     the not-yet-real-data Pre-Forum readiness roster (.hr-row) — confirmNotes()
+     only performs the real write when opened from a real .ev-card with a real
+     numeric data-reg-id, otherwise falls back to the old demo-only behavior so a
+     fixture .hr-row can't send a fake ID to the real webhook. -->
 <div class="modal" id="mNotes">
   <div class="modal-hd"><h3>Operational note — <span class="serif-it" id="notesName">this record</span></h3><p>Visible to staff only.</p></div>
   <div class="modal-bd"><div class="field"><textarea id="notesText" rows="5" placeholder="Add an operational note…"></textarea></div></div>
-  <div class="modal-ft"><button class="btn btn-primary" onclick="confirmNotes()">Save note</button><button class="btn" onclick="dismissModal()">Cancel</button></div>
+  <div class="modal-ft"><button class="btn btn-primary" id="notesSaveBtn" onclick="confirmNotes()">Save note</button><button class="btn" onclick="dismissModal()">Cancel</button></div>
 </div>
 
 <!-- 8.1 First-release confirmation -->
@@ -2172,14 +1992,25 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
     <div class="field"><label>Override reason</label><textarea id="ocReasonText" rows="4" placeholder="Required — why is this classification being overridden?"></textarea></div>
     <div class="field"><label>Note (optional)</label><textarea id="ocNoteText" rows="2" placeholder="Optional — visible to staff only"></textarea></div>
   </div>
-  <div class="modal-ft"><button class="btn btn-primary" onclick="confirmOverrideClassification()">Save override</button><button class="btn" onclick="cancelOverrideClassification()">Cancel</button></div>
+  <div class="modal-ft"><button class="btn btn-primary" id="ocSaveBtn" onclick="confirmOverrideClassification()">Save override</button><button class="btn" onclick="cancelOverrideClassification()">Cancel</button></div>
 </div>
 
-<!-- Update Course Status (§0l) — Left Course? drives Left Type (LDP/NSHO
-     only), Day, Time, Leave Reason. WBO is read-only/derived from Leave
-     Reason, never a peer top-level status. Reverting Left Course? to No
-     clears the rest and restores ACTIVE — history lives in the audit
-     trail (logAudit()), not in stale fields the UI keeps around. -->
+<!-- Update Course Status (§0l) — REAL BUILD 2026-08-12. Left Course? drives
+     Left Type (real 5-option LDP list, registrations.f3056 — NOT the old
+     LDP/NSHO binary, NSHO isn't part of this field), Day (f3059), Time
+     (f3060, optional), Leave Reason (f3061 "WBO Reason", real 7-option
+     list). WBO (f2688) is read-only/derived — auto-true when Left Type is
+     LDP 2 or LDP 4, computed both here (display) and server-side
+     (authoritative — the webhook ignores any client WBO value). The old
+     "Operational note" field was cut from this modal: Operational Notes
+     (f2886) is its own separate kebab action (#5), not part of this one's
+     locked field spec. Reverting Left Course? to No clears Left Type/Day/
+     Leave Reason/WBO server-side and restores ACTIVE — history lives in
+     the audit trail (logAudit()), not in stale fields the UI keeps around.
+     Writes via dashboardWriteCourseStatus() to CS Dashboard : Update
+     Course Status (n8n id lj3Ewx20NFYpOp3g); on success the whole roster
+     is refetched so pills/ticks reflect real server state (no live-push
+     wired for roster edits yet). -->
 <div class="modal" id="mCourseStatus">
   <div class="modal-hd"><h3>Update course status — <span class="serif-it" id="csName">this participant</span></h3><p>Writes to <span class="mf">oRegistration</span> for this Event only.</p></div>
   <div class="modal-bd">
@@ -2192,53 +2023,59 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
     <div id="csLeftFields" style="display:none;">
       <div class="field"><label>Left type</label>
         <select id="csLeftType" onchange="onCsLeftTypeOrReasonChange()">
-          <option value="LDP">LDP</option>
-          <option value="NSHO">NSHO</option>
+          <option value="428">LDP 1 — Left course no communication (No Refund)</option>
+          <option value="427">LDP 2 — Sleep or transient type (WBO)(Refund)</option>
+          <option value="455">LDP 3 — Customer Service (Refund)</option>
+          <option value="454">LDP 4 — May not participate until leader states (Refund)(WBO)</option>
+          <option value="453">LDP 5 — Request transfer to future course (No refund)</option>
         </select>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="field"><label>Day</label><select id="csDay"><option>Day 1</option><option selected>Day 2</option><option>Day 3</option></select></div>
+        <div class="field"><label>Day</label><select id="csDay"><option value="431">Day 1</option><option value="430" selected>Day 2</option><option value="429">Day 3</option></select></div>
         <div class="field"><label>Time</label><input type="time" id="csTime" value="15:42"></div>
       </div>
       <div class="field"><label>Leave reason</label>
         <select id="csLeaveReason" onchange="onCsLeftTypeOrReasonChange()">
-          <option>Approved well-being departure</option>
-          <option>Technical issue / reconnect</option>
-          <option>Schedule conflict</option>
-          <option>Illness</option>
-          <option>Family emergency</option>
-          <option>Voluntary</option>
-          <option>No reason given</option>
+          <option value="432">Other (not WBO)</option>
+          <option value="433">Program Leader has a health concern and is unwilling for the person to continue</option>
+          <option value="434">Said they are thinking of ending their own life / have attempted / thinking of harming self or another</option>
+          <option value="435">Insufficient sleep in the days preceding or while taking the program (incl. between last day and the evening session)</option>
+          <option value="436">Suffered a serious long-term health problem during the program (e.g., epileptic seizures, heart problems, spinal problems making it impossible to sit)</option>
+          <option value="437">Now see they should heed the Health Warnings in their Program Information Form</option>
+          <option value="438">Informed us they do not think they can "handle" what they are experiencing</option>
         </select>
       </div>
       <div class="kv"><span class="k">WBO</span><span class="v" id="csWboDerived">No</span></div>
-      <div class="field"><label>Operational note</label><textarea id="csNoteText" rows="3" placeholder="Optional — visible to staff only"></textarea></div>
     </div>
   </div>
   <div class="modal-ft"><button class="btn btn-primary" id="csSaveBtn" onclick="confirmCourseStatus()">Save status</button><button class="btn" onclick="dismissModal()">Cancel</button></div>
 </div>
 
-<!-- Device / Zoom Exception (§0n) — each sub-action has a distinct,
-     directional effect on two separate signals, not one shared flag: known
-     shared/duplicate device only ever touches the passive .device-flag;
-     resolving a duplicate identity CLEARS the elevated .zoom-flag (it's
-     only reachable because Needs Review is already true); logging a new
-     "other" exception SETS it. -->
+<!-- Device / Zoom Exception (§0n) — REAL BUILD 2026-08-12. Writes
+     registrations.f3208 (Device Exception — real 3-option list: 473 Other
+     Zoom exception / 474 Multiple devices / 475 Shared device) + f3209
+     (note, optional) to this registration only. The prototype's 4th
+     option "Resolve duplicate identity" and its .zoom-flag/"Needs Review"
+     signal are cut — not part of the locked field spec, no confirmed
+     mapping. When Shared device is picked, the CS searches the REAL
+     roster (not a fake name list) for who the participant is sharing
+     with; the server independently resolves both real names and writes
+     f3207 bidirectionally, so the client only ever sends a registration
+     ID, never a name string. -->
 <div class="modal" id="mDeviceException">
   <div class="modal-hd"><h3>Device / Zoom exception — <span class="serif-it" id="deName">this participant</span></h3><p>Writes to <span class="mf">oRegistration</span> for this Event only.</p></div>
   <div class="modal-bd">
     <div class="field"><label>What's the exception?</label>
-      <select id="deSubAction">
-        <option value="shared_device">Shared device with another participant</option>
-        <option value="duplicate_device">Participant using duplicate device</option>
-        <option value="resolve_duplicate_identity">Resolve duplicate identity</option>
-        <option value="other_zoom_exception">Other Zoom exception</option>
+      <select id="deExceptionType" onchange="onDeExceptionTypeChange()">
+        <option value="473">Other Zoom exception</option>
+        <option value="474">Participant using multiple devices</option>
+        <option value="475">Shared device with another participant</option>
       </select>
     </div>
-    <div class="ev-field participant-combo"><label>Other participant (if applicable)</label><input class="iedit participant-input" id="deOtherParticipant" placeholder="Search participants…" oninput="participantFilter(this)" onfocus="participantFilter(this)" onblur="participantBlur(this)"><div class="combo-list"></div></div>
+    <div class="ev-field participant-combo" id="deOtherParticipantField" style="display:none;"><label>Sharing device with</label><input class="iedit participant-input" id="deOtherParticipant" placeholder="Search participants…" oninput="deviceParticipantFilter(this)" onfocus="deviceParticipantFilter(this)" onblur="participantBlur(this)"><div class="combo-list"></div></div>
     <div class="field"><label>Resolution note</label><textarea id="deNoteText" rows="3" placeholder="Optional — visible to staff only"></textarea></div>
   </div>
-  <div class="modal-ft"><button class="btn btn-primary" onclick="confirmDeviceException()">Save</button><button class="btn" onclick="dismissModal()">Cancel</button></div>
+  <div class="modal-ft"><button class="btn btn-primary" id="deSaveBtn" onclick="confirmDeviceException()">Save</button><button class="btn" onclick="dismissModal()">Cancel</button></div>
 </div>
 
 <!-- Participant preview -->
@@ -2441,12 +2278,548 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
    the SE reason popup, and the Spouse/Participant person comboboxes.
    ------------------------------------------------------------------ */
 
+/* DASHBOARD_DATA — real Ontraport merge-field syntax, same Page//
+   convention proven in member-portal.html. This page's own bound
+   object is the CS's oEventTeam (10007) record (Contact+Event
+   junction, one record per CS-per-event) — matches this pilot's
+   "one authorized Event" scope and the Home card loop's real source
+   (oEventTeam, §2). ROLE_MAP/FORMAT_MAP exist because Ontraport
+   dropdown fields return the raw option ID via the API, never label
+   text (confirmed project-wide gotcha — see member-portal.html).
+   Fields that need a live aggregate query (roster count, Not Ready
+   count, Event Leader name — a DIFFERENT oEventTeam record than the
+   CS's own) are NOT resolvable via merge tag and are left null here,
+   to be filled by dashboardFetchBootstrap() once the n8n webhook
+   exists (see n8n-dashboard-bootstrap-webhook-spec.md). */
+var ROLE_MAP = { '306':'Course Supervisor', '478':'Event Leader' };
+var FORMAT_MAP = { '124':'Hybrid', '125':'In Person', '126':'Online' };
+var DAY_MAP = { '404':'Day 1 of 3', '405':'Day 2 of 3', '406':'Day 3 of 3', '456':'Graduation' };
+var SHORT_DAY_MAP = { '404':'Day 1', '405':'Day 2', '406':'Day 3', '456':'Graduation' };
+var DASHBOARD_DATA = {
+  csFirstName: "[Page//Contact//First Name]",
+  csRoleRaw: "[Page//Role]",
+  eventTitle: "[Page//Event//Event Title]",
+  eventStartDate: "[Page//Event//Event Start Date]",
+  eventEndDate: "[Page//Event//Event End Date]",
+  eventFormatRaw: "[Page//Event//Format (in person, online, Hybrid)]",
+  todaysSessionRaw: "[Page//Event//Todays Session (Day)]",
+  eventId: "[Page//Event//ID]",
+  eventTeamId: "[Page//ID]",
+  // Not resolvable via merge tag — needs dashboardFetchBootstrap():
+  participantCount: null,
+  notReadyCount: null,
+  eventLeaderName: null,
+  courseName: null
+};
+
+function dashboardCsRole(){ return ROLE_MAP[DASHBOARD_DATA.csRoleRaw] || DASHBOARD_DATA.csRoleRaw; }
+function dashboardEventFormat(){ return FORMAT_MAP[DASHBOARD_DATA.eventFormatRaw] || DASHBOARD_DATA.eventFormatRaw; }
+function dashboardTodaysSession(){ return DAY_MAP[DASHBOARD_DATA.todaysSessionRaw] || DASHBOARD_DATA.todaysSessionRaw; }
+function dashboardTodaysSessionShort(){ return SHORT_DAY_MAP[DASHBOARD_DATA.todaysSessionRaw] || DASHBOARD_DATA.todaysSessionRaw; }
+
+/* dashboardFetchBootstrap() — calls the n8n webhook (see
+   n8n-dashboard-bootstrap-webhook-spec.md) scoped to this CS's
+   oEventTeam record, returns participant/not-ready counts, Event
+   Leader name, and course name. v1 (this call) covers Home only —
+   the Roster/Guests/Master Stats extensions in the spec's "Planned
+   extensions" section are separate future work. On failure the
+   dependent DOM nodes keep showing '—' (dashboardRenderHome's
+   existing null fallback) rather than a fabricated number. */
+var DASHBOARD_BOOTSTRAP_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-bootstrap';
+function dashboardFetchBootstrap(){
+  fetch(DASHBOARD_BOOTSTRAP_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ eventTeamId: DASHBOARD_DATA.eventTeamId })
+  }).then(function(res){
+    return res.json().then(function(result){ return { ok: res.ok, result: result }; });
+  }).then(function(r){
+    if(!r.ok || !r.result || r.result.success !== true) throw new Error((r.result && r.result.error) || 'Request failed');
+    DASHBOARD_DATA.participantCount = r.result.participantCount;
+    DASHBOARD_DATA.notReadyCount = r.result.notReadyCount;
+    DASHBOARD_DATA.eventLeaderName = r.result.eventLeaderName;
+    DASHBOARD_DATA.courseName = r.result.courseName;
+    if(r.result.eventId != null) DASHBOARD_DATA.eventId = r.result.eventId;
+    dashboardRenderHome();
+    dashboardInitRealtime();
+  }).catch(function(err){
+    console.error('dashboardFetchBootstrap failed:', err);
+  });
+}
+
+/* ---------- Roster & Classification — real data render (CS Dashboard
+   build, 2026-08-12). dashboardFetchRoster() calls the dashboard-roster
+   webhook (see n8n-dashboard-bootstrap-webhook-spec.md's "Planned
+   extensions") and dashboardRenderRoster() replaces the prototype's 12
+   hardcoded fixture .ev-card rows with real ones built from the field
+   rules locked in the CS Dashboard discovery memory. Classification
+   pills (MNR/REV/SE) and the Seminar/AC follow-on ladder reuse the
+   prototype's existing render helpers (updateProgramPills/
+   applyFollowOnLadder/syncNpFlag) — this function only needs to set the
+   right data attributes and initial classes, not reimplement that
+   state machine. Attendance ticks have no existing helper (see tk-ldp
+   CSS addition above) so the day/LDP/pending/absent logic is computed
+   here directly. ---------- */
+var DASHBOARD_ROSTER_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-roster';
+var ROSTER_LOCALE_ABBR = { 'Hybrid':'HYB', 'In Person':'IP', 'Online':'ONL' };
+var ROSTER_SE_REASON_MAP = { '420':'LEI Scholarship [India only]', '421':'Resides in China', '422':'Resides in Iran', '423':'Panda Restaurant Group employee', '424':'Banking unavailable in country', '425':'Under 18', '426':'Deaf/Hard of Hearing' };
+var ROSTER_LEFT_TYPE_MAP = { '427':'LDP 2 — Sleep or transient type (WBO)(Refund)', '428':'LDP 1 — Left course no communication (No Refund)', '453':'LDP 5 — Request transfer to future course (No refund)', '454':'LDP 4 — May not participate until leader states (Refund)(WBO)', '455':'LDP 3 — Customer Service (Refund)' };
+var ROSTER_LEFT_DAY_TO_NUM = { '431':1, '430':2, '429':3 };
+var ROSTER_WBO_REASON_MAP = { '432':'Other (not WBO)', '433':'Program Leader has a health concern and is unwilling for the person to continue', '434':'Said they are thinking of ending their own life / have attempted / thinking of harming self or another', '435':'Insufficient sleep in the days preceding or while taking the program (incl. between last day and the evening session)', '436':'Suffered a serious long-term health problem during the program (e.g., epileptic seizures, heart problems, spinal problems making it impossible to sit)', '437':'Now see they should heed the Health Warnings in their Program Information Form', '438':'Informed us they do not think they can "handle" what they are experiencing' };
+var ROSTER_WBO_TRIGGER_TYPES = ['427','454'];
+var ROSTER_MATCH_METHOD_MAP = { '311':'Manual', '312':'Email', '313':'Zoom Registrant ID' };
+var ROSTER_DAY_OPTION_ORDER = ['404','405','406','456'];
+
+function rosterEscAttr(s){ return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/'/g, '&#39;').replace(/"/g, '&quot;'); }
+function rosterEscHtml(s){ return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function rosterIsTrue(v){ return v === '1' || v === 1 || v === true; }
+function rosterDayOptionIndex(raw){ var i = ROSTER_DAY_OPTION_ORDER.indexOf(String(raw)); return i === -1 ? 0 : i; }
+function rosterFmtEpochTime(sec){
+  var n = Number(sec || 0);
+  if(!n) return '—';
+  var d = new Date(n * 1000);
+  if(isNaN(d.getTime())) return '—';
+  return d.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+}
+function rosterFmtMinutes(m){ var n = Number(m || 0); return n > 0 ? n.toFixed(1) : '0'; }
+
+function rosterBuildAttendanceTick(reg, dayNum, attendedField, minutesField, currentDayRaw){
+  var dayOptionCode = dayNum === 1 ? '404' : dayNum === 2 ? '405' : '406';
+  var leftDayNum = ROSTER_LEFT_DAY_TO_NUM[String(reg.f3059 || '')] || 0;
+  var isLdpDay = rosterIsTrue(reg.f2293) && leftDayNum === dayNum;
+  var attended = rosterIsTrue(reg[attendedField]);
+  var minutes = Number(reg[minutesField] || 0);
+  var cls, kv, title;
+  title = 'Day ' + dayNum + ' Attendance';
+  if(isLdpDay){
+    cls = 'tk-ldp';
+    var leftTypeLabel = ROSTER_LEFT_TYPE_MAP[String(reg.f3056 || '')] || 'LDP';
+    kv = [['Attended', 'LDP — ' + leftTypeLabel], ['Left Time', rosterFmtEpochTime(reg.f3060)]];
+    if(rosterIsTrue(reg.f2688)) kv.push(['Well Being Out', 'Yes']);
+  } else if(attended){
+    cls = 'tk-attended';
+    kv = [['Attended','Yes'], ['Minutes', rosterFmtMinutes(minutes)], ['First Join', rosterFmtEpochTime(reg.f2855)], ['Most Recent Leave', rosterFmtEpochTime(reg.f2862)], ['Join Count', String(Number(reg.f2871 || 0))], ['Match', ROSTER_MATCH_METHOD_MAP[String(reg.f2808 || '')] || '—']];
+  } else if(rosterDayOptionIndex(dayOptionCode) >= rosterDayOptionIndex(currentDayRaw)){
+    cls = 'tk-pending';
+    kv = [['Attended','Pending'], ['Match','Day not yet reached']];
+  } else {
+    cls = 'tk-absent';
+    kv = [['Attended','No'], ['Minutes', rosterFmtMinutes(minutes)], ['Match', ROSTER_MATCH_METHOD_MAP[String(reg.f2808 || '')] || 'No Zoom connection recorded for this day']];
+  }
+  return '<button class="tick ' + cls + '" onclick="openDetailPop(this)" data-pop-title="' + rosterEscAttr(title) + '" data-pop-kv=\'' + rosterEscAttr(JSON.stringify(kv)) + '\'>D' + dayNum + '</button>';
+}
+function rosterBuildChkpntTick(attended, dayLabel, tickLabel, field){
+  var fieldAttr = field ? (' data-field="' + rosterEscAttr(field) + '"') : '';
+  if(attended) return '<button class="tick tk-attended"' + fieldAttr + ' onclick="openDetailPop(this)" data-pop-title="' + rosterEscAttr(dayLabel) + '" data-pop-kv=\'' + rosterEscAttr(JSON.stringify([['Status','Complete']])) + '\'>' + tickLabel + '</button>';
+  return '<button class="tick tk-pending"' + fieldAttr + ' onclick="openDetailPop(this)" data-pop-title="' + rosterEscAttr(dayLabel) + '" data-pop-kv=\'' + rosterEscAttr(JSON.stringify([['Status','Not yet — checkpoint window not reached']])) + '\'>' + tickLabel + '</button>';
+}
+function rosterClassPill(classtype, isOn, onClass, label, title, editable, kvOn, kvOff){
+  var cls = isOn ? onClass : 'p-slot-off';
+  var editAttr = editable ? (' data-pop-edit="classification:' + (classtype === 'reviewer' ? 'reviewer' : 'se') + '"') : '';
+  var kv = isOn ? kvOn : kvOff;
+  return '<button class="pill ' + cls + ' ev-clickable" data-classtype="' + classtype + '" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="' + rosterEscAttr(title) + '"' + editAttr + ' data-pop-kv=\'' + rosterEscAttr(JSON.stringify(kv)) + '\'>' + label + '</button>';
+}
+
+function rosterBuildCardHtml(reg, currentDayRaw, localeAbbr){
+  var first = reg['f2213//firstname'] || '';
+  var last = reg['f2213//lastname'] || '';
+  var nameLikes = reg['f2213//f2792'] || '';
+  var legalName = (first + ' ' + last).trim() || 'Unknown Participant';
+  var displayFirst = nameLikes || first;
+  var displayName = (displayFirst + ' ' + last).trim() || legalName;
+  var pid = 'PID-' + (reg.f2794 || reg.id);
+  var statusActive = String(reg.f2424) === '154';
+  var statusLabel = statusActive ? 'ACTIVE' : 'CANCELLED';
+  var searchStr = (displayName + ' ' + legalName + ' ' + (reg.f2794 || '') + ' ' + reg.id).toLowerCase();
+
+  var mnrOn = rosterIsTrue(reg.f3206);
+  var revOn = rosterIsTrue(reg.f3044);
+  var seOn = rosterIsTrue(reg.f3046);
+  var seReason = ROSTER_SE_REASON_MAP[String(reg.f3053 || '')] || '';
+
+  var mnrPill = rosterClassPill('mnr', mnrOn, 'p-minor', 'MNR', 'Minor', false, [['Status','Yes']], [['Status','No']]);
+  var revPill = rosterClassPill('reviewer', revOn, 'p-review', 'REV', 'Reviewer', true, [['Reviewer','Yes'],['Source','Participant history']], [['Reviewer','No']]);
+  var sePill = rosterClassPill('se', seOn, 'p-excluded', 'SE', 'Statistical Exclusion', true, [['Status','Excluded'],['Reason', seReason || '—']], [['Status','Not excluded']]);
+  var acNpPill = '<button class="pill p-slot-off ev-clickable" data-classtype="ac-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Advanced Course — Not Potential" data-pop-kv=\'' + rosterEscAttr(JSON.stringify([['AC Potential', rosterIsTrue(reg.f2887 === '381') ? 'Non-Potential' : 'Pending']])) + '\'>AC-NP</button>';
+  var semNpPill = '<button class="pill p-slot-off ev-clickable" data-classtype="sem-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Seminar — Not Potential" data-pop-kv=\'' + rosterEscAttr(JSON.stringify([['Seminar Potential', String(reg.f2882) === '370' ? 'Non-Potential' : 'Pending']])) + '\'>SEM NP</button>';
+
+  var d1Tick = rosterBuildAttendanceTick(reg, 1, 'f2801', 'f2805', currentDayRaw);
+  var d2Tick = rosterBuildAttendanceTick(reg, 2, 'f2802', 'f2806', currentDayRaw);
+  var d3Tick = rosterBuildAttendanceTick(reg, 3, 'f2803', 'f2807', currentDayRaw);
+  var s3Tick = rosterBuildChkpntTick(rosterIsTrue(reg.f3203), 'Day 3 Session 3 Checkpoint', 'S3', 'f3203');
+  var s4Tick = rosterBuildChkpntTick(rosterIsTrue(reg.f3055), 'Day 3 Session 4 Attendance Check', 'S4', 'f3055');
+
+  var semReg = rosterIsTrue(reg.f2303) ? 1 : 0;
+  var semPot = String(reg.f2882) === '371' ? 1 : 0;
+  var semConf = (!semReg && String(reg.f2884) === '378') ? 1 : 0;
+  var semDesig = String(reg.f2885) === '380' ? 1 : 0;
+  var semAlt = String(reg.f2885) === '379' ? 1 : 0;
+  var semKv = semReg ? [['Registered','Yes'],['Seminar', reg.f3185 || '—']] : (semConf ? [['Potential','Yes'],['Confirmed','Yes'],['Registered','Not yet']] : [['Potential', semPot ? 'Yes' : 'No'],['Registered','No']]);
+  var seminarPill = '<button class="pill p-neutral ev-clickable prog-seminar" onclick="openDetailPop(this)" data-pot="' + semPot + '" data-confirmed="' + semConf + '" data-reg="' + semReg + '" data-desig="' + semDesig + '" data-alt="' + semAlt + '" data-pop-title="Seminar Registration" data-pop-kv=\'' + rosterEscAttr(JSON.stringify(semKv)) + '\'>—</button>';
+
+  var acReg = rosterIsTrue(reg.f2302) ? 1 : 0;
+  var acPot = String(reg.f2887) === '382' ? 1 : 0;
+  var acDesig = String(reg.f2890) === '392' ? 1 : 0;
+  var acAlt = String(reg.f2890) === '391' ? 1 : 0;
+  var acKv = acReg ? [['Registered','Yes'],['Course', reg.f3186 || '—']] : [['Potential', acPot ? 'Yes' : 'No'],['Registered','No']];
+  var acPill = '<button class="pill p-neutral ev-clickable prog-ac" onclick="openDetailPop(this)" data-pot="' + acPot + '" data-confirmed="0" data-reg="' + acReg + '" data-desig="' + acDesig + '" data-alt="' + acAlt + '" data-pop-title="Advanced Course Registration" data-pop-kv=\'' + rosterEscAttr(JSON.stringify(acKv)) + '\'>—</button>';
+
+  return '<div class="ev-card" data-search="' + rosterEscAttr(searchStr) + '" data-reg-id="' + rosterEscAttr(reg.id) + '">' +
+    '<div class="ev-row1">' +
+      '<div class="ev-field ev-identity">' +
+        '<div class="ev-name"><div class="ev-name-row"><b>' + rosterEscHtml(displayName) + '</b> <span class="status-sep">–</span> <span class="pill p-active">' + statusLabel + '</span></div><span>Legal: ' + rosterEscHtml(legalName) + ' · ' + rosterEscHtml(pid) + '</span></div>' +
+        '<div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv=\'' + rosterEscAttr(JSON.stringify([['Value', localeAbbr.full]])) + '\'>' + localeAbbr.abbr + '</button></div>' +
+      '</div>' +
+      '<div class="ev-field ev-classification">' +
+        '<div class="ev-l">Classification</div>' +
+        '<div class="class-pills">' + mnrPill + revPill + sePill + acNpPill + semNpPill + '</div>' +
+      '</div>' +
+      '<div class="ev-field"><div class="ev-l">Attendance</div><div class="ticks">' + d1Tick + d2Tick + d3Tick + '</div></div>' +
+      '<div class="ev-field"><div class="ev-l">CPLT CHKPNT</div><div class="ticks">' + s3Tick + s4Tick + '</div></div>' +
+      '<div class="ev-field"><div class="ev-l">Seminar</div>' + seminarPill + '</div>' +
+      '<div class="ev-field"><div class="ev-l">AC</div>' + acPill + '</div>' +
+      '<div class="ev-field ev-exception"><button class="kebab-btn" onclick="openRowMenu(this)" aria-label="Actions"><svg viewBox="0 0 4 16" fill="currentColor"><circle cx="2" cy="2" r="1.6"/><circle cx="2" cy="8" r="1.6"/><circle cx="2" cy="14" r="1.6"/></svg></button></div>' +
+    '</div>' +
+  '</div>';
+}
+
+function dashboardRenderRoster(registrations){
+  var list = document.getElementById('rosterList');
+  var header = list.querySelector('.hr-row.hd');
+  var localeFull = dashboardEventFormat();
+  var localeAbbr = { full: localeFull, abbr: ROSTER_LOCALE_ABBR[localeFull] || localeFull };
+  var currentDayRaw = DASHBOARD_DATA.todaysSessionRaw;
+  var html = registrations.map(function(reg){ return rosterBuildCardHtml(reg, currentDayRaw, localeAbbr); }).join('');
+  list.innerHTML = html;
+  document.querySelectorAll('#rosterList .ev-card').forEach(updateProgramPills);
+  var totalEl = list.closest('.card').querySelector('.card-hd .sub .mf');
+  if(totalEl) totalEl.textContent = registrations.length;
+  paginate('roster');
+}
+
+/* ---------- Course Snapshot + Device & Zoom Reconciliation — real data
+   render (CS Dashboard build, 2026-08-12). Same #em-snapshot (Event
+   Management, filterable) and #ms-snapshot (Master Stats, plain mirror)
+   cards, driven by one shared dashboardRenderSnapshot() off the same
+   registrations array Roster Fetch already returns, plus the eventFields/
+   staffCount the webhook was extended to include. Starts (Day 1) and
+   Final Session Expected are deliberately left as "—" — Starts needs a
+   frozen-at-Day-1-lock snapshot mechanism that doesn't exist yet (no
+   storage field confirmed), and Final Session Expected's formula was
+   explicitly flagged by the client as "confirm with Landmark team, may
+   change" — showing a fabricated number for either would be worse than
+   an honest empty state. Material Released tile cut entirely (locked
+   spec). Reviewer/SE split into two single-stat tiles per the locked
+   spec (was one combined "4/5" tile in the prototype). ---------- */
+function dashboardFmtPct(num, den){ return den ? Math.round((num / den) * 100) + '%' : '—'; }
+function dashboardSetStat(key, value){ document.querySelectorAll('[data-stat="' + key + '"]').forEach(function(el){ el.textContent = value; }); }
+function dashboardSetSub(key, value){ document.querySelectorAll('[data-stat-sub="' + key + '"]').forEach(function(el){ el.textContent = value; }); }
+
+function dashboardRenderSnapshot(registrations, eventFields, staffCount){
+  eventFields = eventFields || {};
+  staffCount = Number(staffCount || 0);
+  var total = registrations.length;
+  var ldpRows = registrations.filter(function(r){ return String(r.f2293) === '1'; });
+  var current = registrations.filter(function(r){ return String(r.f2424) === '154' && String(r.f3046) !== '1' && String(r.f2293) !== '1'; }).length;
+  var ldp = ldpRows.length;
+  var wbo = registrations.filter(function(r){ return String(r.f2688) === '1'; }).length;
+  var completions = registrations.filter(function(r){ return String(r.f2809) === '1'; }).length;
+  var attendingNow = registrations.filter(function(r){ return String(r.f2853) === '1'; }).length;
+  var seminarReg = registrations.filter(function(r){ return String(r.f2303) === '1'; }).length;
+  var seminarPotential = registrations.filter(function(r){ return String(r.f2882) === '371'; }).length;
+  var acReg = registrations.filter(function(r){ return String(r.f2302) === '1'; }).length;
+  var acPotential = registrations.filter(function(r){ return String(r.f2887) === '382'; }).length;
+  var invitationsWithGuests = registrations.filter(function(r){ return Number(r.f2272 || 0) > 0; }).length;
+  var reviewer = registrations.filter(function(r){ return String(r.f3044) === '1'; }).length;
+  var se = registrations.filter(function(r){ return String(r.f3046) === '1'; }).length;
+
+  dashboardSetStat('current', current);
+  dashboardSetStat('ldp', ldp);
+  dashboardSetStat('wbo', wbo);
+  dashboardSetSub('wbo', wbo + ' of ' + ldp + ' who left');
+  dashboardSetStat('completions', completions);
+  dashboardSetStat('attendanceNow', dashboardFmtPct(attendingNow, current));
+  dashboardSetSub('attendanceNow', attendingNow + ' / ' + current);
+  dashboardSetStat('seminarPct', dashboardFmtPct(seminarReg, seminarPotential));
+  dashboardSetSub('seminarPct', seminarReg + ' of ' + seminarPotential + ' potential');
+  dashboardSetStat('acPct', dashboardFmtPct(acReg, acPotential));
+  dashboardSetSub('acPct', acReg + ' of ' + acPotential + ' potential');
+  dashboardSetStat('invitationsSent', eventFields.f2266 != null ? eventFields.f2266 : '—');
+  dashboardSetSub('invitationsSent', invitationsWithGuests + ' participants invited');
+  dashboardSetStat('reviewer', reviewer);
+  dashboardSetStat('se', se);
+
+  // Raw counts (as opposed to the % tiles above) — needed for Reporting
+  // Dashboard's Seminar/AC/Invitations bands, which show Potential/
+  // Confirmed as their own tiles rather than folding straight into a %.
+  dashboardSetStat('seminarPotentialCount', seminarPotential);
+  dashboardSetSub('seminarPotentialCount', seminarPotential + ' invited');
+  dashboardSetStat('seminarRegCount', seminarReg);
+  dashboardSetStat('acPotentialCount', acPotential);
+  dashboardSetSub('acPotentialCount', acPotential + ' invited');
+  dashboardSetStat('acRegCount', acReg);
+  dashboardSetStat('participantsWhoInvited', invitationsWithGuests);
+  dashboardSetSub('participantsWhoInvited', dashboardFmtPct(invitationsWithGuests, total) + ' of the course');
+
+  var sharedDeviceCount = registrations.filter(function(r){ return String(r.f3207 || '').trim() !== ''; }).length;
+  var sharedAdj = -Math.floor(sharedDeviceCount / 2);
+  var dupAdj = -registrations.filter(function(r){ return String(r.f3208) === '474'; }).length;
+  var expected = total + staffCount + sharedAdj + dupAdj;
+  var observed = attendingNow + staffCount;
+  var reconciled = expected === observed;
+
+  dashboardSetStat('drParticipants', total);
+  dashboardSetStat('drStaff', staffCount);
+  dashboardSetStat('drSharedAdj', sharedAdj);
+  dashboardSetStat('drDupAdj', dupAdj);
+  dashboardSetStat('drExpected', expected);
+  dashboardSetStat('drObserved', observed);
+  dashboardSetStat('drReconciled', reconciled ? '✓' : '✗');
+  dashboardSetSub('drReconciled', observed + ' / ' + expected + (reconciled ? ' · reconciled' : ' · ' + Math.abs(expected - observed) + ' unresolved'));
+}
+
+function dashboardFetchRoster(){
+  fetch(DASHBOARD_ROSTER_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ eventTeamId: DASHBOARD_DATA.eventTeamId })
+  }).then(function(res){
+    return res.json().then(function(result){ return { ok: res.ok, result: result }; });
+  }).then(function(r){
+    if(!r.ok || !r.result || r.result.success !== true) throw new Error((r.result && r.result.error) || 'Request failed');
+    dashboardRenderRoster(r.result.registrations);
+    dashboardRenderSnapshot(r.result.registrations, r.result.eventFields, r.result.staffCount);
+    dashboardLastRoster = r.result.registrations;
+    dashboardLastEventFields = r.result.eventFields;
+    dashboardLastStaffCount = r.result.staffCount;
+    dashboardRenderGuestSnapshot();
+  }).catch(function(err){
+    console.error('dashboardFetchRoster failed:', err);
+  });
+}
+
+/* ---------- Guests — real data render (CS Dashboard build, 2026-08-12;
+   write-back added 2026-08-12). dashboardFetchGuests() calls the
+   dashboard-guests webhook, dashboardRenderGuests() replaces the prototype's
+   fixture .ev-card rows with real ones from oInvitations.
+   Real spec-vs-prototype gap found: invitations.f2959/f2960 (Guest First/Last Name)
+   are blank on every real record (confirmed via live event 218 data) — the actual
+   name lives on the linked Guest Contact (f2259) via f2259//firstname/f2259//lastname.
+   FS # column and the SE/Under-18/TOS/ENG pill row are cut — no confirmed in-scope
+   field mapping for them this pass. REG (Forum) and ADV. CRS reuse the roster's
+   NP/POT/REG pill styling (not toggle chips), per the locked spec, and stay
+   read-only this pass (client-confirmed scope: chips + notes only — pill editing
+   and guest-participant re-association are separate future passes). Format reuses
+   the same event-level value the roster shows (not per-guest).
+   Write-back scope (client-confirmed 2026-08-12): the 3 boolean chips
+   (After 7:30pm/Attend/LF Grad?, via CS Dashboard : Guest Toggle,
+   invitations.f2966/f3210/f2292) and Notes (via CS Dashboard : Guest Add
+   Note, append-only to invitations.f3214, same pattern as the roster's Add
+   Note). Both reuse dashboardFetchGuests() to refresh from server truth on
+   success. ---------- */
+var DASHBOARD_GUESTS_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-guests';
+var GUEST_NP_REASON_MAP = { '413':'Guest of SE participant', '414':'Under 18', '415':'Requires translation, no Forum in their language available', '416':'Registered for the LF prior to attending', '417':'Previously completed the LF' };
+var GUEST_AC_NP_REASON_MAP = { '476':'Already Registered For AC', '477':"Hasn't gone through LF" };
+
+function guestEscAttr(s){ return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/'/g, '&#39;').replace(/"/g, '&quot;'); }
+function guestEscHtml(s){ return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function guestIsTrue(v){ return v === '1' || v === 1 || v === true; }
+
+function guestProgPill(kind, registered, potential, reasonCode, reasonMap){
+  var cls, label, kv;
+  if(registered){ cls = 'p-pot'; label = 'REG'; kv = [['Status','Registered']]; }
+  else if(potential){ cls = 'p-neutral'; label = 'POT'; kv = [['Status','Potential']]; }
+  else { cls = 'p-neutral'; label = 'NP'; kv = [['Status','Non-Potential'], ['Reason', reasonMap[String(reasonCode || '')] || '—']]; }
+  return '<button class="pill ' + cls + ' ev-clickable prog-' + kind + '" data-reg="' + (registered ? 1 : 0) + '" onclick="openDetailPop(this)" data-pop-title="' + (kind === 'ac' ? 'Advanced Course' : 'Forum') + ' Registration" data-pop-kv=\'' + guestEscAttr(JSON.stringify(kv)) + '\'>' + label + '</button>';
+}
+
+function guestBuildCardHtml(inv, localeAbbr){
+  var guestFirst = inv['f2259//firstname'] || '';
+  var guestLast = inv['f2259//lastname'] || '';
+  var guestName = (guestFirst + ' ' + guestLast).trim() || 'Unknown Guest';
+  var invFirst = inv['f2257//firstname'] || '';
+  var invLast = inv['f2257//lastname'] || '';
+  var invNameLikes = inv['f2257//f2792'] || '';
+  var inviterDisplay = ((invNameLikes || invFirst) + ' ' + invLast).trim() || 'Not associated';
+  var searchStr = (guestName + ' ' + inviterDisplay).toLowerCase();
+
+  var after730 = guestIsTrue(inv.f2966);
+  var attended = guestIsTrue(inv.f3210);
+  var lfGrad = guestIsTrue(inv.f2292);
+
+  function regChip(on, label, key){
+    return '<button class="togchip chip-check' + (on ? ' on' : '') + '" data-key="' + key + '" onclick="toggleGuestChip(this)" title="' + label + (on ? ': Yes' : ': No') + '"><span class="dot"></span></button>';
+  }
+
+  var regPill = guestProgPill('lf', guestIsTrue(inv.f2299), guestIsTrue(inv.f3211), inv.f3050, GUEST_NP_REASON_MAP);
+  var acPill = guestProgPill('ac', guestIsTrue(inv.f2298), guestIsTrue(inv.f3212), inv.f3213, GUEST_AC_NP_REASON_MAP);
+
+  var notes = inv.f3214 || '';
+  var notesBtn = '<button class="ev-notesbtn' + (notes ? ' has-note' : '') + '" onclick="openNotes(this)" title="Operational note" aria-label="Operational note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button>';
+
+  return '<div class="ev-card" data-search="' + guestEscAttr(searchStr) + '" data-inv-id="' + guestEscAttr(inv.id) + '">' +
+    '<div class="ev-row1">' +
+      '<div class="ev-name"><b>' + guestEscHtml(guestName) + '</b><div class="ev-sub">Invited by ' + guestEscHtml(inviterDisplay) + '</div></div>' +
+      '<div class="ev-field"><div class="ev-l">After 7:30pm</div>' + regChip(after730, 'After 7:30pm', 'after730') + '</div>' +
+      '<div class="ev-field"><div class="ev-l">Attend</div>' + regChip(attended, 'Attend', 'attend') + '</div>' +
+      '<div class="ev-field"><div class="ev-l">Format</div><span class="pill p-locale">' + guestEscHtml(localeAbbr.abbr) + '</span></div>' +
+      '<div class="ev-field"><div class="ev-l">LF Grad?</div>' + regChip(lfGrad, 'LF Grad', 'lfGrad') + '</div>' +
+      '<div class="ev-field"><div class="ev-l">REG</div>' + regPill + '</div>' +
+      '<div class="ev-field"><div class="ev-l">ADV. CRS</div>' + acPill + '</div>' +
+      '<div class="ev-field"><div class="ev-l">Notes</div>' + notesBtn + '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function toggleGuestChip(btn){
+  if(btn.disabled) return;
+  var card = btn.closest('.ev-card');
+  var invId = Number(card.dataset.invId);
+  var key = btn.dataset.key;
+  var wasOn = btn.classList.contains('on');
+  var newValue = !wasOn;
+  btn.disabled = true;
+  btn.classList.toggle('on', newValue);
+  fetch(DASHBOARD_GUEST_TOGGLE_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ eventTeamId: DASHBOARD_DATA.eventTeamId, invitationId: invId, key: key, value: newValue })
+  }).then(function(res){
+    return res.json().then(function(result){ return { ok: res.ok, result: result }; });
+  }).then(function(r){
+    if(!r.ok || !r.result || r.result.success !== true) throw new Error((r.result && r.result.error) || 'Request failed');
+    btn.disabled = false;
+    btn.title = btn.title.replace(/: (Yes|No)$/, newValue ? ': Yes' : ': No');
+    logAudit('staff', currentActorName() + ' set guest ' + key + ' = ' + newValue);
+  }).catch(function(err){
+    console.error('toggleGuestChip failed:', err);
+    btn.classList.toggle('on', wasOn);
+    btn.disabled = false;
+    toast('Could not save — try again.', 'err');
+  });
+}
+
+function dashboardRenderGuests(guests){
+  var list = document.getElementById('guestList');
+  var localeFull = dashboardEventFormat();
+  var localeAbbr = { full: localeFull, abbr: ROSTER_LOCALE_ABBR[localeFull] || localeFull };
+  var html = guests.map(function(inv){ return guestBuildCardHtml(inv, localeAbbr); }).join('');
+  list.innerHTML = html || '<div class="tokline" style="padding:12px 20px;">No guests recorded yet for this event.</div>';
+  var totalEl = list.closest('.card').querySelector('.card-hd .sub .mf');
+  if(totalEl) totalEl.textContent = guests.length;
+  paginate('guest');
+}
+
+/* ---------- Guest Snapshot — real data render (CS Dashboard build,
+   2026-08-12). Needs BOTH the roster (for the less-SE participant
+   denominator) and the guests array (for grad/non-grad + distinct-guest
+   counting) — dashboardFetchRoster()/dashboardFetchGuests() run roughly
+   in parallel on page load, so this only computes once both have landed
+   (dashboardLastRoster/dashboardLastGuests/dashboardLastEventFields),
+   called from both fetch callbacks. Shared data-stat="gs*" hooks drive
+   both #em-guest-snapshot (Event Management > Guests) and the Reporting
+   Dashboard's "Landmark Forum / guests" band — same underlying numbers,
+   per the locked spec ("same data as Guest Snapshot"); Reporting's GP100
+   tile reuses gsGph directly (Reporting shows one combined tile, no
+   separate GGPH — Guest Snapshot itself keeps GPH/GGPH as two tiles). ---------- */
+var dashboardLastRoster = null;
+var dashboardLastGuests = null;
+var dashboardLastEventFields = null;
+var dashboardLastStaffCount = 0;
+function dashboardRenderGuestSnapshot(){
+  if(!dashboardLastRoster || !dashboardLastGuests || !dashboardLastEventFields) return;
+  var roster = dashboardLastRoster;
+  var guests = dashboardLastGuests;
+  var ev = dashboardLastEventFields;
+  var participantsLessSE = roster.filter(function(r){ return String(r.f3046) !== '1'; }).length;
+
+  var invitationsSent = ev.f2266 != null ? ev.f2266 : 0;
+  var perParticipant = participantsLessSE ? (invitationsSent / participantsLessSE).toFixed(1) : '—';
+
+  var distinctGuestIds = {};
+  guests.forEach(function(g){ if(g.f2259) distinctGuestIds[g.f2259] = true; });
+  var totalGuests = Object.keys(distinctGuestIds).length;
+  var pctOfInvitations = invitationsSent ? Math.round((totalGuests / invitationsSent) * 100) + '%' : '—';
+
+  var gph = Number(ev.f2306 || 0) + Number(ev.f2307 || 0);
+  var ggph = Number(ev.f2307 || 0);
+  var rph = participantsLessSE ? Math.round((Number(ev.f2301 || 0) / participantsLessSE) * 100) + '%' : '—';
+
+  var nonGradGuests = guests.filter(function(g){ return String(g.f2292) !== '1'; });
+  var gradGuestsCount = guests.length - nonGradGuests.length;
+  var nonGradRegistered = nonGradGuests.filter(function(g){ return String(g.f2299) === '1'; }).length;
+  var forumRegEff = nonGradGuests.length ? Math.round((nonGradRegistered / nonGradGuests.length) * 100) + '%' : '—';
+
+  dashboardSetStat('gsInvitationsSent', invitationsSent);
+  dashboardSetSub('gsInvitationsSent', perParticipant + ' per participant');
+  dashboardSetStat('gsTotalGuests', totalGuests);
+  dashboardSetSub('gsTotalGuests', pctOfInvitations + ' of invitations');
+  dashboardSetStat('gsGph', gph);
+  dashboardSetStat('gsGgph', ggph);
+  dashboardSetStat('gsRph', rph);
+  dashboardSetStat('gsForumRegEff', forumRegEff);
+  dashboardSetSub('gsForumRegEff', nonGradRegistered + ' ÷ ' + nonGradGuests.length + ' non-graduate guests');
+  dashboardSetStat('gsGradGuests', gradGuestsCount);
+  dashboardSetStat('gsNonGradGuests', nonGradGuests.length);
+}
+
+function dashboardFetchGuests(){
+  fetch(DASHBOARD_GUESTS_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ eventTeamId: DASHBOARD_DATA.eventTeamId })
+  }).then(function(res){
+    return res.json().then(function(result){ return { ok: res.ok, result: result }; });
+  }).then(function(r){
+    if(!r.ok || !r.result || r.result.success !== true) throw new Error((r.result && r.result.error) || 'Request failed');
+    dashboardRenderGuests(r.result.guests);
+    dashboardLastGuests = r.result.guests;
+    dashboardRenderGuestSnapshot();
+  }).catch(function(err){
+    console.error('dashboardFetchGuests failed:', err);
+  });
+}
+
+function dashboardRenderHome(){
+  var first = DASHBOARD_DATA.csFirstName;
+  document.getElementById('pcName').textContent = first;
+  document.getElementById('pcRole').textContent = dashboardCsRole();
+  document.getElementById('homeGreetName').textContent = first;
+  document.getElementById('evtSelName').textContent = DASHBOARD_DATA.eventTitle;
+  document.getElementById('evtSelCourseFormat').textContent =
+    (DASHBOARD_DATA.courseName || '—') + ' · ' + dashboardEventFormat();
+  document.getElementById('evtLeaderName').textContent = DASHBOARD_DATA.eventLeaderName || '—';
+  document.getElementById('evtCardTitle').textContent = DASHBOARD_DATA.eventTitle;
+  document.getElementById('evtCardDates').textContent =
+    formatEventDateRange(DASHBOARD_DATA.eventStartDate, DASHBOARD_DATA.eventEndDate);
+  document.getElementById('evtCardParticipants').textContent =
+    DASHBOARD_DATA.participantCount == null ? '—' : DASHBOARD_DATA.participantCount;
+  document.getElementById('evtCardNotReady').textContent =
+    DASHBOARD_DATA.notReadyCount == null ? '—' : DASHBOARD_DATA.notReadyCount;
+  document.querySelector('.evt-card').dataset.regId = DASHBOARD_DATA.eventId;
+}
+
+function dashboardRenderSessionStrip(){
+  document.getElementById('esDayLabel').textContent = dashboardTodaysSession();
+}
+
+/* formatEventDateRange() — same Date.parse() fallback pattern as
+   Portal.dateUtil.parseDate() in member-portal.html; Ontraport
+   fulldate fields render in a browser-Date-parseable default format. */
+function formatEventDateRange(startRaw, endRaw){
+  var s = new Date(startRaw), e = new Date(endRaw);
+  if(isNaN(s) || isNaN(e)) return startRaw + ' – ' + endRaw;
+  var optsFull = {weekday:'short', month:'short', day:'numeric'};
+  var optsDay = {weekday:'short', day:'numeric'};
+  return s.toLocaleDateString('en-US', optsDay) + ' - ' + e.toLocaleDateString('en-US', optsFull) + ', ' + e.getFullYear();
+}
+
 var currentView = 'home';
 var pendingRel = null;
 var pageState = { roster: 1, guest: 1 };
 
-function currentActorName(){ return 'Kris Feldmanis'; }
-function currentRoleLabel(){ return 'Course Supervisor'; }
+function currentActorName(){ return DASHBOARD_DATA.csFirstName; }
+function currentRoleLabel(){ return dashboardCsRole(); }
 
 /* ---------- navigation ---------- */
 function go(view){
@@ -2468,8 +2841,17 @@ function emTab(btn, key){
 
 /* ---------- Home (§0x) — Start Event is the only door into the
    dashboard chrome; go('em') already handles showing it (body.home
-   toggle above). ---------- */
-function startEvent(){
+   toggle above). Previously ignored data-reg-id entirely (Phase 2
+   punchlist item) — now threads the clicked card's real Event ID
+   into dashboardActiveEventId, which every later Event Management/
+   Master Stats/Guests fetch call keys off of. Single-card today
+   (this pilot demos exactly one authorized Event per §2), but this
+   makes the card loop safe to extend to multiple Events later
+   without revisiting startEvent() itself. ---------- */
+var dashboardActiveEventId = null;
+function startEvent(btn){
+  var card = btn.closest('.evt-card');
+  dashboardActiveEventId = card ? card.dataset.regId : DASHBOARD_DATA.eventId;
   logAudit('staff', currentActorName() + ' started the event — entering dashboard');
   go('em');
 }
@@ -2549,40 +2931,63 @@ document.addEventListener('click', function(e){
   if(rmenu && rmenu.classList.contains('open') && !e.target.closest('#rowMenu') && !e.target.closest('.kebab-btn')) closeRowMenu();
   var ecmenu = document.getElementById('eventCardMenu');
   if(ecmenu && ecmenu.classList.contains('open') && !e.target.closest('#eventCardMenu') && !e.target.closest('.evt-card')) closeEventCardMenu();
+  var taMenu = document.getElementById('takeAttendanceMenu');
+  if(taMenu && taMenu.classList.contains('open') && !e.target.closest('#takeAttendanceMenu') && !e.target.closest('#takeAttendanceBtn')) closeTakeAttendanceMenu();
 });
-
-/* ---------- session state: Not Started → In Session ----------
-   Day X of Y is a direct merge (Today's Session Day); this only computes
-   the dot/pill. Production should compare against a precomputed absolute
-   UTC instant, not do timezone math in the browser — see field dictionary.
-   The demo-only "flip state" control that used to sit next to the pill
-   has been removed — it was never part of production. */
-function applySessionState(){
-  var el = document.getElementById('esDay');
-  var startIso = el.dataset.sessionStart;
-  var started = startIso && new Date(startIso).getTime() <= Date.now();
-  document.getElementById('esDot').classList.toggle('notstarted', !started);
-  var state = document.getElementById('esState');
-  state.classList.toggle('notstarted', !started);
-  state.textContent = started ? 'In session' : 'Not started';
-}
-function initSessionState(){
-  document.getElementById('esDay').dataset.sessionStart = new Date(Date.now() - 10 * 60000).toISOString();
-  applySessionState();
-}
 
 /* ---------- End session — review-first confirmation. Confirming submits
    every entry recorded for the day as final; there is no quiet one-click
-   path. ---------- */
+   path. Writes events.f3025 via the dashboard-day-advance webhook, which
+   already triggers the existing Ably participant-notification pipeline
+   (day-advance is one of its 7 watched fields) — no separate publish
+   call needed here. ---------- */
+var DASHBOARD_DAY_ADVANCE_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-day-advance';
+var DASHBOARD_UPDATE_COURSE_STATUS_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-update-course-status';
+var DASHBOARD_DEVICE_EXCEPTION_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-device-exception';
+var DASHBOARD_OVERRIDE_CLASSIFICATION_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-override-classification';
+var DASHBOARD_CORRECT_ATTENDANCE_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-correct-attendance';
+var DASHBOARD_TAKE_ATTENDANCE_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-take-attendance';
+var DASHBOARD_ADD_NOTE_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-add-note';
+var DASHBOARD_GUEST_TOGGLE_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-guest-toggle';
+var DASHBOARD_GUEST_ADD_NOTE_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-guest-add-note';
+function openEndSessionModal(){
+  var label = dashboardTodaysSessionShort();
+  document.getElementById('esmTitleDay').textContent = label;
+  document.getElementById('esmBodyDay').textContent = label;
+  openModal('mEndSession');
+}
 function confirmEndSession(){
-  closeAll();
-  var btn = document.getElementById('btnSession');
-  btn.textContent = 'Session ended';
-  btn.disabled = true;
-  document.getElementById('evtStatusPill').style.display = '';
-  logAudit('staff', currentActorName() + ' ended the session for Day 2 — entries submitted');
-  go('home');
-  toast('Session ended. Day 2 entries submitted.');
+  var confirmBtn = document.getElementById('btnConfirmEndSession');
+  var originalLabel = confirmBtn.textContent;
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = 'Ending session…';
+  fetch(DASHBOARD_DAY_ADVANCE_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ eventTeamId: DASHBOARD_DATA.eventTeamId })
+  }).then(function(res){
+    return res.json().then(function(result){ return { ok: res.ok, result: result }; });
+  }).then(function(r){
+    if(!r.ok || !r.result || r.result.success !== true) throw new Error((r.result && r.result.error) || 'Request failed');
+    var endedLabel = SHORT_DAY_MAP[r.result.previousDayRaw] || r.result.previousDayRaw;
+    DASHBOARD_DATA.todaysSessionRaw = r.result.newDayRaw;
+    dashboardRenderSessionStrip();
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = originalLabel;
+    closeAll();
+    var sessBtn = document.getElementById('btnSession');
+    sessBtn.textContent = 'Session ended';
+    sessBtn.disabled = true;
+    document.getElementById('evtStatusPill').style.display = '';
+    logAudit('staff', currentActorName() + ' ended the session for ' + endedLabel + ' — entries submitted');
+    go('home');
+    toast('Session ended. ' + endedLabel + ' entries submitted.');
+  }).catch(function(err){
+    console.error('confirmEndSession failed:', err);
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = 'Could not end session — try again';
+    setTimeout(function(){ confirmBtn.textContent = originalLabel; }, 2600);
+  });
 }
 /* ---------- drawers / modals / toast ----------
    modalStack (§0x) — when a modal is opened while another modal is
@@ -2790,20 +3195,55 @@ function openNotes(btn){
   pendingNotesCard = card;
   var nameEl = card.querySelector('.ev-name b, .ev-name input, .hr-name b');
   document.getElementById('notesName').textContent = nameEl ? (nameEl.value || nameEl.textContent) : 'this record';
-  document.getElementById('notesText').value = card.dataset.note || '';
+  document.getElementById('notesText').value = '';
   openModal('mNotes');
 }
 function confirmNotes(){
-  if(pendingNotesCard){
-    var val = document.getElementById('notesText').value;
-    pendingNotesCard.dataset.note = val;
-    var btn = pendingNotesCard.querySelector('.ev-notesbtn');
-    if(btn) btn.classList.toggle('has-note', val.trim().length > 0);
+  var card = pendingNotesCard;
+  if(!card){ dismissModal(); return; }
+  var val = document.getElementById('notesText').value.trim();
+  if(!val){ toast('A note is required.', 'err'); return; }
+  var isRealRoster = card.classList.contains('ev-card') && /^\d+$/.test(card.dataset.regId || '');
+  var isRealGuest = card.classList.contains('ev-card') && /^\d+$/.test(card.dataset.invId || '');
+  if(!isRealRoster && !isRealGuest){
+    card.dataset.note = val;
+    var demoBtn = card.querySelector('.ev-notesbtn');
+    if(demoBtn) demoBtn.classList.toggle('has-note', val.length > 0);
     logAudit('staff', currentActorName() + ' updated the operational note');
+    pendingNotesCard = null;
+    dismissModal();
+    toast('Note saved.');
+    return;
   }
-  pendingNotesCard = null;
-  dismissModal();
-  toast('Note saved.');
+  var url = isRealGuest ? DASHBOARD_GUEST_ADD_NOTE_WEBHOOK_URL : DASHBOARD_ADD_NOTE_WEBHOOK_URL;
+  var payload = isRealGuest
+    ? { eventTeamId: DASHBOARD_DATA.eventTeamId, invitationId: Number(card.dataset.invId), note: val }
+    : { eventTeamId: DASHBOARD_DATA.eventTeamId, registrationId: Number(card.dataset.regId), note: val };
+  var saveBtn = document.getElementById('notesSaveBtn');
+  var originalLabel = saveBtn.textContent;
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving…';
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(function(res){
+    return res.json().then(function(result){ return { ok: res.ok, result: result }; });
+  }).then(function(r){
+    if(!r.ok || !r.result || r.result.success !== true) throw new Error((r.result && r.result.error) || 'Request failed');
+    saveBtn.disabled = false;
+    saveBtn.textContent = originalLabel;
+    logAudit('staff', currentActorName() + ' added an operational note');
+    pendingNotesCard = null;
+    dismissModal();
+    toast('Note saved.');
+    if(isRealGuest) dashboardFetchGuests();
+  }).catch(function(err){
+    console.error('confirmNotes failed:', err);
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Could not save — try again';
+    setTimeout(function(){ saveBtn.textContent = originalLabel; }, 2600);
+  });
 }
 
 /* ============================================================
@@ -2892,23 +3332,49 @@ function cardName(card){
   return nameEl ? (nameEl.value || nameEl.textContent) : 'this participant';
 }
 
-/* ---------- Update Course Status (§0l) — Left Course? drives Left Type
-   (LDP/NSHO only); WBO is read-only/derived from Leave Reason, never a
-   peer top-level status. Reverting to No clears the Left fields and
-   restores ACTIVE — the audit trail (logAudit) carries the history, not
-   stale fields left sitting in the UI. ---------- */
+/* ---------- Update Course Status (§0l) — REAL BUILD 2026-08-12. Left
+   Course? drives Left Type (real f3056, 5 LDP options), Day (f3059),
+   Time (f3060, optional), Leave Reason (f3061 "WBO Reason", real
+   7-option list). WBO (f2688) is read-only/derived from Left Type
+   (LDP 2/LDP 4 trigger it), computed here for display only — the
+   server independently recomputes and is authoritative. Writes via
+   dashboardWriteCourseStatus() below to CS Dashboard : Update Course
+   Status (n8n id lj3Ewx20NFYpOp3g); on success the roster is refetched
+   so ticks/pills reflect real server state instead of hand-patched DOM
+   (no name-row LDP pill exists in the real card render — the tick-level
+   amber LDP state, already built in the Roster read+render pass, is the
+   confirmed real display for this). ---------- */
 var pendingCourseStatusCard = null;
-var WBO_LEAVE_REASONS = ['Approved well-being departure'];
-function openCourseStatus(card, presetType){
+function rosterFindRegById(id){
+  var list = dashboardLastRoster || [];
+  for(var i = 0; i < list.length; i++){ if(String(list[i].id) === String(id)) return list[i]; }
+  return null;
+}
+function csEpochToTimeInput(epoch){
+  var n = Number(epoch || 0);
+  if(!n) return '';
+  var d = new Date(n * 1000);
+  var hh = String(d.getHours()).padStart(2, '0');
+  var mm = String(d.getMinutes()).padStart(2, '0');
+  return hh + ':' + mm;
+}
+function csTimeInputToEpoch(hhmm){
+  if(!hhmm) return '';
+  var parts = hhmm.split(':');
+  var d = new Date();
+  d.setHours(Number(parts[0] || 0), Number(parts[1] || 0), 0, 0);
+  return String(Math.floor(d.getTime() / 1000));
+}
+function openCourseStatus(card){
   pendingCourseStatusCard = card;
   document.getElementById('csName').textContent = cardName(card);
-  var isLeft = !!presetType || !!card.dataset.leftType;
+  var reg = rosterFindRegById(card.dataset.regId) || {};
+  var isLeft = rosterIsTrue(reg.f2293);
   document.getElementById('csLeftCourse').value = isLeft ? 'yes' : 'no';
-  document.getElementById('csLeftType').value = presetType || card.dataset.leftType || 'LDP';
-  document.getElementById('csDay').value = card.dataset.leftDay || 'Day 2';
-  document.getElementById('csTime').value = card.dataset.leftTime || '15:42';
-  document.getElementById('csLeaveReason').value = card.dataset.leaveReason || 'Approved well-being departure';
-  document.getElementById('csNoteText').value = card.dataset.leaveNote || '';
+  document.getElementById('csLeftType').value = ROSTER_LEFT_TYPE_MAP[String(reg.f3056 || '')] ? String(reg.f3056) : '428';
+  document.getElementById('csDay').value = ROSTER_LEFT_DAY_TO_NUM[String(reg.f3059 || '')] ? String(reg.f3059) : '430';
+  document.getElementById('csTime').value = csEpochToTimeInput(reg.f3060) || '15:42';
+  document.getElementById('csLeaveReason').value = ROSTER_WBO_REASON_MAP[String(reg.f3061 || '')] ? String(reg.f3061) : '432';
   onCsLeftCourseChange();
   onCsLeftTypeOrReasonChange();
   openModal('mCourseStatus');
@@ -2917,46 +3383,66 @@ function onCsLeftCourseChange(){
   document.getElementById('csLeftFields').style.display = document.getElementById('csLeftCourse').value === 'yes' ? 'block' : 'none';
 }
 function onCsLeftTypeOrReasonChange(){
-  var reason = document.getElementById('csLeaveReason').value;
-  document.getElementById('csWboDerived').textContent = WBO_LEAVE_REASONS.indexOf(reason) !== -1 ? 'Yes' : 'No';
+  var type = document.getElementById('csLeftType').value;
+  document.getElementById('csWboDerived').textContent = ROSTER_WBO_TRIGGER_TYPES.indexOf(type) !== -1 ? 'Yes' : 'No';
 }
 function confirmCourseStatus(){
   var card = pendingCourseStatusCard;
-  if(card){
-    var left = document.getElementById('csLeftCourse').value === 'yes';
-    var nameRow = card.querySelector('.ev-name-row');
-    var existing = nameRow.querySelector('.pill.p-active, .pill.p-ldp, .pill.p-nsho');
-    if(!left){
-      delete card.dataset.leftType; delete card.dataset.leftDay; delete card.dataset.leftTime;
-      delete card.dataset.leaveReason; delete card.dataset.leaveNote;
-      if(existing) existing.outerHTML = '<span class="pill p-active">ACTIVE</span>';
+  if(!card){ dismissModal(); return; }
+  var saveBtn = document.getElementById('csSaveBtn');
+  var originalLabel = saveBtn.textContent;
+  var left = document.getElementById('csLeftCourse').value === 'yes';
+  var payload = { eventTeamId: DASHBOARD_DATA.eventTeamId, registrationId: Number(card.dataset.regId), leftCourse: left };
+  var type = '', reason = '';
+  if(left){
+    type = document.getElementById('csLeftType').value;
+    reason = document.getElementById('csLeaveReason').value;
+    payload.leftType = type;
+    payload.leftDay = document.getElementById('csDay').value;
+    payload.wboReason = reason;
+    var timeEpoch = csTimeInputToEpoch(document.getElementById('csTime').value);
+    if(timeEpoch) payload.leftTime = timeEpoch;
+  }
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving…';
+  fetch(DASHBOARD_UPDATE_COURSE_STATUS_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(function(res){
+    return res.json().then(function(result){ return { ok: res.ok, result: result }; });
+  }).then(function(r){
+    if(!r.ok || !r.result || r.result.success !== true) throw new Error((r.result && r.result.error) || 'Request failed');
+    saveBtn.disabled = false;
+    saveBtn.textContent = originalLabel;
+    if(left){
+      logAudit('staff', currentActorName() + ' set course status = ' + (ROSTER_LEFT_TYPE_MAP[type] || type) + ' · ' + (ROSTER_WBO_REASON_MAP[reason] || reason) + (r.result.wbo ? ' · WBO' : ''));
+      toast('Course status saved.');
+    } else {
       logAudit('staff', currentActorName() + ' set course status = ACTIVE');
       toast('Course status saved — reverted to ACTIVE.');
-    } else {
-      var type = document.getElementById('csLeftType').value;
-      var day = document.getElementById('csDay').value;
-      var time = document.getElementById('csTime').value;
-      var reason = document.getElementById('csLeaveReason').value;
-      var note = document.getElementById('csNoteText').value;
-      var wbo = document.getElementById('csWboDerived').textContent;
-      card.dataset.leftType = type; card.dataset.leftDay = day; card.dataset.leftTime = time;
-      card.dataset.leaveReason = reason; card.dataset.leaveNote = note;
-      var kv = JSON.stringify([['Left Course','Yes'],['Left Type',type],['Day',day],['Time',time],['Leave Reason',reason],['WBO',wbo],['Note',note || '—']]);
-      var cls = type === 'NSHO' ? 'p-nsho' : 'p-ldp';
-      var html = '<button class="pill ' + cls + ' ev-clickable" onclick="openDetailPop(this)" data-pop-title="Course Status" data-pop-edit="courseStatus" data-pop-kv=\'' + kv.replace(/'/g, "&#39;") + '\'>' + type + '</button>';
-      if(existing) existing.outerHTML = html; else nameRow.insertAdjacentHTML('beforeend', html);
-      logAudit('staff', currentActorName() + ' set course status = ' + type + ' · ' + reason);
-      toast('Course status saved.');
     }
-  }
-  pendingCourseStatusCard = null;
-  dismissModal();
+    pendingCourseStatusCard = null;
+    dismissModal();
+    dashboardFetchRoster();
+  }).catch(function(err){
+    console.error('confirmCourseStatus failed:', err);
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Could not save — try again';
+    setTimeout(function(){ saveBtn.textContent = originalLabel; }, 2600);
+  });
 }
 
-/* ---------- Override Classification (§0s) — one shared modal for Reviewer,
-   Statistical Exclusion, Seminar Potential, Advanced Course Potential.
+/* ---------- Override Classification (§0s) — REAL BUILD 2026-08-12. One
+   shared modal for Reviewer (f3044), Statistical Exclusion (f3046),
+   Seminar Potential (f2882), Advanced Course Potential (f2887).
    Scholarship is deliberately excluded (§0o) — derived from payment data,
-   not overridable here. ---------- */
+   not overridable here. ocCurrentValue() already read real DOM state
+   from the Roster read+render pass (data-classtype/data-pot), unchanged.
+   confirmOverrideClassification() now POSTs to the real webhook (required
+   reason → f3068; optional note appends to f2886) instead of hand-patching
+   pill classes — dashboardFetchRoster() refreshes from server truth on
+   success, same pattern as Update Course Status/Device Exception. ---------- */
 var pendingOcCard = null;
 var OC_LABELS = {reviewer:'Reviewer', se:'Statistical Exclusion', seminarPotential:'Seminar Potential', acPotential:'Advanced Course Potential'};
 function ocCurrentValue(card, field){
@@ -2982,97 +3468,196 @@ function openOverrideClassification(card, presetField){
 }
 function confirmOverrideClassification(){
   var card = pendingOcCard;
-  if(card){
-    var field = document.getElementById('ocField').value;
-    var changeTo = document.getElementById('ocChangeTo').classList.contains('on');
-    var reason = document.getElementById('ocReasonText').value.trim();
-    if(!reason){ toast('An override reason is required.', 'err'); return; }
-    if(field === 'reviewer' || field === 'se'){
-      var slot = card.querySelector('[data-classtype="' + field + '"]');
-      var activeCls = field === 'reviewer' ? 'p-review' : 'p-excluded';
-      slot.classList.remove('p-slot-off', 'p-review', 'p-excluded');
-      slot.classList.add(changeTo ? activeCls : 'p-slot-off');
-      var kv = field === 'reviewer'
-        ? (changeTo ? [['Reviewer','Yes'],['Source','Participant history']] : [['Reviewer','No']])
-        : (changeTo ? [['Status','Excluded'],['Reason', reason],['Source','Course Supervisor override']] : [['Status','Not excluded']]);
-      slot.setAttribute('data-pop-kv', JSON.stringify(kv).replace(/'/g, "&#39;"));
-    } else {
-      var progEl = card.querySelector(field === 'seminarPotential' ? '.prog-seminar' : '.prog-ac');
-      if(progEl){ progEl.dataset.pot = changeTo ? '1' : '0'; applyFollowOnLadder(progEl); }
-    }
+  if(!card){ dismissModal(); return; }
+  var field = document.getElementById('ocField').value;
+  var changeTo = document.getElementById('ocChangeTo').classList.contains('on');
+  var reason = document.getElementById('ocReasonText').value.trim();
+  var note = document.getElementById('ocNoteText').value.trim();
+  if(!reason){ toast('An override reason is required.', 'err'); return; }
+  var saveBtn = document.getElementById('ocSaveBtn');
+  var originalLabel = saveBtn.textContent;
+  var payload = { eventTeamId: DASHBOARD_DATA.eventTeamId, registrationId: Number(card.dataset.regId), field: field, changeTo: changeTo, overrideNote: reason, operationalNote: note };
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving…';
+  fetch(DASHBOARD_OVERRIDE_CLASSIFICATION_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(function(res){
+    return res.json().then(function(result){ return { ok: res.ok, result: result }; });
+  }).then(function(r){
+    if(!r.ok || !r.result || r.result.success !== true) throw new Error((r.result && r.result.error) || 'Request failed');
+    saveBtn.disabled = false;
+    saveBtn.textContent = originalLabel;
     logAudit('staff', currentActorName() + ' overrode ' + OC_LABELS[field] + ' = ' + changeTo + ' · reason: ' + reason);
-  }
-  pendingOcCard = null;
-  dismissModal();
-  toast('Override saved.');
+    pendingOcCard = null;
+    dismissModal();
+    toast('Override saved.');
+    dashboardFetchRoster();
+  }).catch(function(err){
+    console.error('confirmOverrideClassification failed:', err);
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Could not save — try again';
+    setTimeout(function(){ saveBtn.textContent = originalLabel; }, 2600);
+  });
 }
 function cancelOverrideClassification(){ pendingOcCard = null; dismissModal(); }
 
-/* ---------- Correct Attendance — intentionally minimal/placeholder
-   (§0l, §0m). Normal attendance is Zoom-sourced, read-only evidence
-   disclosed via the tick's popover, not this modal. ---------- */
+/* ---------- Correct Attendance — REAL BUILD 2026-08-12. Manual-override
+   tail of Attendance Architecture Layer 2. Writes f3191 (Attendance
+   Status) always, f3190 (FS LATE NOTE) only when Absent-Excused, and the
+   specific per-session ATTENDED checkbox (f3193-f3203/f3055) only when
+   Present. Normal attendance stays Zoom-sourced/read-only via the tick's
+   popover — this is only the manual path for a failed automated match.
+   dashboardFetchRoster() refreshes from server truth on success, same
+   pattern as every other kebab action this build. ---------- */
 var pendingCorrectAttCard = null;
+var CORR_ATT_STATUS_LABELS = {'469':'Present', '467':'Absent - Excused', '468':'Absent - NCNS'};
 function openCorrectAttendance(card){
   pendingCorrectAttCard = card;
   document.getElementById('attName').textContent = cardName(card);
-  document.getElementById('corrAttDay').value = 'Day 2';
+  document.getElementById('corrAttDay').value = '2';
+  document.getElementById('corrAttSession').value = '1';
+  document.getElementById('corrAttStatus').value = '469';
   document.getElementById('corrAttNote').value = '';
+  onCorrAttStatusChange();
   openModal('mCorrectAttendance');
 }
+function onCorrAttStatusChange(){
+  var isExcused = document.getElementById('corrAttStatus').value === '467';
+  document.getElementById('corrAttNoteField').style.display = isExcused ? 'block' : 'none';
+}
 function confirmCorrectAttendance(){
-  if(pendingCorrectAttCard){
-    logAudit('staff', currentActorName() + ' recorded an attendance correction request for Day ' + document.getElementById('corrAttDay').value.replace('Day ', ''));
-  }
-  pendingCorrectAttCard = null;
-  dismissModal();
-  toast('Correction recorded. Audit entry saved.');
+  var card = pendingCorrectAttCard;
+  if(!card){ dismissModal(); return; }
+  var day = document.getElementById('corrAttDay').value;
+  var session = document.getElementById('corrAttSession').value;
+  var status = document.getElementById('corrAttStatus').value;
+  var note = document.getElementById('corrAttNote').value.trim();
+  if(status === '467' && !note){ toast('A reason is required for Absent - Excused.', 'err'); return; }
+  var saveBtn = document.getElementById('corrAttSaveBtn');
+  var originalLabel = saveBtn.textContent;
+  var payload = { eventTeamId: DASHBOARD_DATA.eventTeamId, registrationId: Number(card.dataset.regId), day: day, session: session, status: status, note: note };
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving…';
+  fetch(DASHBOARD_CORRECT_ATTENDANCE_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(function(res){
+    return res.json().then(function(result){ return { ok: res.ok, result: result }; });
+  }).then(function(r){
+    if(!r.ok || !r.result || r.result.success !== true) throw new Error((r.result && r.result.error) || 'Request failed');
+    saveBtn.disabled = false;
+    saveBtn.textContent = originalLabel;
+    logAudit('staff', currentActorName() + ' corrected attendance — Day ' + day + ' Session ' + session + ' = ' + CORR_ATT_STATUS_LABELS[status]);
+    pendingCorrectAttCard = null;
+    dismissModal();
+    toast('Correction recorded.');
+    dashboardFetchRoster();
+  }).catch(function(err){
+    console.error('confirmCorrectAttendance failed:', err);
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Could not save — try again';
+    setTimeout(function(){ saveBtn.textContent = originalLabel; }, 2600);
+  });
 }
 
-/* ---------- Device / Zoom Exception (§0n) — sub-actions have distinct,
-   directional effects: shared/duplicate device only ever touch the passive
-   .device-flag; resolving a duplicate identity CLEARS the elevated
-   .zoom-flag (reachable only because Needs Review is already true);
-   logging a new "other" exception SETS it. Neither touches the other
-   signal — they feed different downstream arithmetic (§0n). ---------- */
+/* ---------- Device / Zoom Exception (§0n) — REAL BUILD 2026-08-12. Writes
+   registrations.f3208 (473 Other Zoom exception / 474 Multiple devices /
+   475 Shared device) + f3209 (note) to this registration only via
+   dashboardWriteDeviceException()'s real webhook call. When exceptionType
+   is 475, the CS searches the real roster (deviceParticipantFilter, off
+   dashboardLastRoster — not the fake PARTICIPANT_NAMES list) for who the
+   device is shared with; only the selected registration's real ID is
+   ever sent — the server independently resolves both real names and
+   writes f3207 bidirectionally, so no client-typed name string is ever
+   trusted or transmitted. No DOM patching on save (no real .device-flag
+   pill exists in the roster card render yet) — dashboardFetchRoster()
+   refreshes from server truth instead, same pattern as Update Course
+   Status. ---------- */
 var pendingDeCard = null;
-function openDeviceException(card, presetSubAction){
+function dashboardParticipantDisplayName(reg){
+  var first = reg['f2213//firstname'] || '';
+  var last = reg['f2213//lastname'] || '';
+  var nameLikes = reg['f2213//f2792'] || '';
+  return ((nameLikes || first) + ' ' + last).trim() || 'Unknown Participant';
+}
+function openDeviceException(card){
   pendingDeCard = card;
   document.getElementById('deName').textContent = cardName(card);
-  document.getElementById('deSubAction').value = presetSubAction || 'shared_device';
-  document.getElementById('deOtherParticipant').value = '';
+  document.getElementById('deExceptionType').value = '473';
+  document.getElementById('deOtherParticipantField').style.display = 'none';
+  var otherInput = document.getElementById('deOtherParticipant');
+  otherInput.value = '';
+  delete otherInput.dataset.otherRegId;
   document.getElementById('deNoteText').value = '';
   openModal('mDeviceException');
 }
+function onDeExceptionTypeChange(){
+  var isShared = document.getElementById('deExceptionType').value === '475';
+  document.getElementById('deOtherParticipantField').style.display = isShared ? 'block' : 'none';
+}
+function deviceParticipantFilter(input){
+  var q = input.value.toLowerCase().trim();
+  var excludeId = String(pendingDeCard ? pendingDeCard.dataset.regId : '');
+  var candidates = (dashboardLastRoster || []).filter(function(r){ return String(r.id) !== excludeId; });
+  var matches = candidates.filter(function(r){
+    var name = dashboardParticipantDisplayName(r);
+    return !q || name.toLowerCase().indexOf(q) !== -1;
+  }).slice(0, 6);
+  var list = input.nextElementSibling;
+  list.innerHTML = matches.length
+    ? matches.map(function(r){
+        var name = dashboardParticipantDisplayName(r);
+        return '<div class="combo-opt" onmousedown="selectDeviceParticipant(this,\'' + r.id + '\',\'' + name.replace(/'/g, "\\'") + '\')">' + rosterEscHtml(name) + '</div>';
+      }).join('')
+    : '<div class="combo-opt muted">No match</div>';
+  list.classList.add('open');
+}
+function selectDeviceParticipant(el, regId, name){
+  var wrapper = el.closest('.participant-combo');
+  var input = wrapper.querySelector('.participant-input');
+  input.value = name;
+  input.dataset.otherRegId = regId;
+  wrapper.querySelector('.combo-list').classList.remove('open');
+}
 function confirmDeviceException(){
   var card = pendingDeCard;
-  if(card){
-    var sub = document.getElementById('deSubAction').value;
-    var other = document.getElementById('deOtherParticipant').value.trim();
-    var subEl = card.querySelector('.ev-sub');
-    if(sub === 'shared_device' || sub === 'duplicate_device'){
-      var label = sub === 'shared_device' ? 'Shared device' : 'Duplicate device';
-      var kv = sub === 'shared_device' && other
-        ? [['Type', label], ['Sharing with', other]]
-        : [['Type', label]];
-      var kvJson = JSON.stringify(kv).replace(/'/g, '&#39;');
-      var existingDf = subEl.querySelector('.device-flag');
-      if(existingDf){
-        existingDf.textContent = label;
-        existingDf.setAttribute('data-pop-kv', kvJson);
-      } else {
-        subEl.insertAdjacentHTML('beforeend', '<button class="device-flag ev-clickable" onclick="openDetailPop(this)" data-pop-title="Device Exception" data-pop-kv=\'' + kvJson + '\'>' + label + '</button>');
-      }
-    } else if(sub === 'resolve_duplicate_identity'){
-      var zf = subEl.querySelector('.zoom-flag');
-      if(zf) zf.remove();
-    } else if(sub === 'other_zoom_exception'){
-      if(!subEl.querySelector('.zoom-flag')) subEl.insertAdjacentHTML('beforeend', '<button class="zoom-flag ev-clickable" onclick="openDetailPop(this)" data-pop-title="Zoom Match" data-pop-kv=\'[["Status","Needs Review"]]\'>Needs review</button>');
-    }
-    logAudit('staff', currentActorName() + ' recorded a device/Zoom exception (' + sub + ')');
+  if(!card){ dismissModal(); return; }
+  var saveBtn = document.getElementById('deSaveBtn');
+  var originalLabel = saveBtn.textContent;
+  var exceptionType = document.getElementById('deExceptionType').value;
+  var note = document.getElementById('deNoteText').value.trim();
+  var payload = { eventTeamId: DASHBOARD_DATA.eventTeamId, registrationId: Number(card.dataset.regId), exceptionType: exceptionType, note: note };
+  if(exceptionType === '475'){
+    var otherRegId = document.getElementById('deOtherParticipant').dataset.otherRegId;
+    if(!otherRegId){ toast('Select who this participant is sharing a device with.', 'err'); return; }
+    payload.otherRegistrationId = Number(otherRegId);
   }
-  pendingDeCard = null;
-  dismissModal();
-  toast('Device/Zoom exception saved.');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving…';
+  fetch(DASHBOARD_DEVICE_EXCEPTION_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(function(res){
+    return res.json().then(function(result){ return { ok: res.ok, result: result }; });
+  }).then(function(r){
+    if(!r.ok || !r.result || r.result.success !== true) throw new Error((r.result && r.result.error) || 'Request failed');
+    saveBtn.disabled = false;
+    saveBtn.textContent = originalLabel;
+    logAudit('staff', currentActorName() + ' recorded a device/Zoom exception for ' + cardName(card) + (r.result.hasOther ? (' (shared with ' + r.result.otherName + ')') : ''));
+    pendingDeCard = null;
+    dismissModal();
+    toast('Device/Zoom exception saved.');
+    dashboardFetchRoster();
+  }).catch(function(err){
+    console.error('confirmDeviceException failed:', err);
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Could not save — try again';
+    setTimeout(function(){ saveBtn.textContent = originalLabel; }, 2600);
+  });
 }
 
 /* ---------- View Participant Details drawer — read-only roster summary,
@@ -3146,13 +3731,52 @@ function populateInformationForm(card){
   document.getElementById('dwWantAccomplish').textContent = name + ' would like to build on what they got from the Forum and apply it more consistently.';
 }
 
-/* ---------- Event-level checkpoint actions (§0m) — the browser never sets
-   an individual participant's completion flag directly; running a poll
-   returns an aggregate result and rows update from that. ---------- */
-function runCheckpointPoll(which){
-  var label = which === 's3' ? 'Day 3 Session 3 Checkpoint' : 'Day 3 Session 4 Attendance Check';
-  logAudit('staff', currentActorName() + ' ran ' + label + ' (Zoom poll)');
-  toast(label + ' complete — 176 present · 9 not present · 3 unmatched · 0 errors.');
+/* ---------- Take Attendance (§0m) — REAL BUILD 2026-08-12. Attendance
+   Architecture Layer 2. Replaces the old runCheckpointPoll() prototype
+   stub (which only toasted a fake aggregate — no real webhook existed).
+   The browser never sets an individual participant's attendance flag
+   directly: CS picks Session (S1-S4) from the floating menu; the server
+   resolves Day from events.f3025, does a fresh independent Zoom Live
+   Dashboard poll at click-time, writes the per-session ATTENDED field for
+   present participants / f3062 FS Late Arrival for everyone else on the
+   full Event roster, and returns an aggregate result. Same disable-button/
+   error-revert/refresh-from-server-truth pattern as every other kebab
+   action this build (confirmCourseStatus() etc.) — dashboardFetchRoster()
+   on success so ticks reflect real server state. ---------- */
+function openTakeAttendanceMenu(btn){
+  closeDetailPop();
+  var menu = document.getElementById('takeAttendanceMenu');
+  positionFloating(menu, btn);
+  menu.classList.add('open');
+}
+function closeTakeAttendanceMenu(){ document.getElementById('takeAttendanceMenu').classList.remove('open'); }
+function confirmTakeAttendance(session){
+  closeTakeAttendanceMenu();
+  var btn = document.getElementById('takeAttendanceBtn');
+  if(!btn) return;
+  var originalLabel = btn.textContent;
+  var payload = { eventTeamId: DASHBOARD_DATA.eventTeamId, session: session };
+  btn.disabled = true;
+  btn.textContent = 'Taking attendance…';
+  fetch(DASHBOARD_TAKE_ATTENDANCE_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(function(res){
+    return res.json().then(function(result){ return { ok: res.ok, result: result }; });
+  }).then(function(r){
+    if(!r.ok || !r.result || r.result.success !== true) throw new Error((r.result && r.result.error) || 'Request failed');
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+    logAudit('staff', currentActorName() + ' took attendance — Session ' + session + ' (Day ' + r.result.day + ') — ' + r.result.presentCount + ' present, ' + r.result.lateMarkedCount + ' not yet present');
+    toast('Attendance taken — Session ' + session + ': ' + r.result.presentCount + ' present · ' + r.result.lateMarkedCount + ' not present yet.');
+    dashboardFetchRoster();
+  }).catch(function(err){
+    console.error('confirmTakeAttendance failed:', err);
+    btn.disabled = false;
+    btn.textContent = 'Could not take attendance — try again';
+    setTimeout(function(){ btn.textContent = originalLabel; }, 2600);
+  });
 }
 
 /* ---------- Person comboboxes: Spouse (household link) and the guest's
@@ -3201,11 +3825,11 @@ function participantBlur(input){ comboBlur(input); }
    Management only; each predicate reads state already rendered on the
    card (course status pill, classification pill, prog-seminar/prog-ac
    text, attendance/checkpoint ticks) rather than tracking anything
-   new. Invitations sent / Final Session expected / Material released
-   are deliberately NOT wired here — none of them are a per-registration
-   boolean the roster row actually carries (invitations are an
-   oInvitation/guest concept, Final Session expected and Material
-   released aren't modeled per participant on this card). ---------- */
+   new. Invitations sent / Final Session expected are deliberately NOT
+   wired here — neither is a per-registration boolean the roster row
+   actually carries (invitations are an oInvitation/guest concept,
+   Final Session expected isn't modeled per participant on this card).
+   Material Released tile was cut entirely per the locked spec. ---------- */
 var rosterStatFilter = null;
 var ROSTER_STAT_FILTERS = {
   starts: { label: 'Starts (Day 1)', test: function(card){
@@ -3241,8 +3865,11 @@ var ROSTER_STAT_FILTERS = {
     var el = card.querySelector('.prog-ac');
     return !!el && el.textContent.trim() === 'REG';
   } },
-  reviewerSe: { label: 'Reviewer / SE', test: function(card){
-    return !!card.querySelector('[data-classtype="reviewer"].p-review, [data-classtype="se"].p-excluded');
+  reviewer: { label: 'Reviewer', test: function(card){
+    return !!card.querySelector('[data-classtype="reviewer"].p-review');
+  } },
+  se: { label: 'SE', test: function(card){
+    return !!card.querySelector('[data-classtype="se"].p-excluded');
   } }
 };
 function applyStatFilter(key, el){
@@ -3287,7 +3914,36 @@ function pagerGo(kind, delta){ pageState[kind] = (pageState[kind] || 1) + delta;
 /* ---------- 4.7 / §8 Live Material Release — sectioned by day, no tabs.
    Each row is just the toggle, title + type, and a single timestamp cell
    (children[2]) showing when the item was first shown — no separate
-   Hidden/Visible pill, no notification-status pill, no Resend button. */
+   Hidden/Visible pill, no notification-status pill, no Resend button.
+   Rows carrying data-key + data-toggle write through the matching
+   webhook on confirm — semantic key + explicit boolean, server flips the
+   field directly (no read-then-toggle). data-toggle="materials" covers
+   the 6 Course Materials fields (events.f3121-f3126); data-toggle=
+   "announcements" covers the 3 Announcements fields (f3104/f3105/f3167,
+   built 2026-08-12) — both already fire the existing PORTAL : Ably
+   Publish automation once the field write lands. */
+var DASHBOARD_TOGGLE_WEBHOOKS = {
+  materials: 'https://landmarkworldwide.awesomate.io/webhook/dashboard-course-materials',
+  announcements: 'https://landmarkworldwide.awesomate.io/webhook/dashboard-announcements'
+};
+function dashboardWriteToggle(btn, value, onSuccess, onError){
+  var key = btn.dataset.key;
+  var url = DASHBOARD_TOGGLE_WEBHOOKS[btn.dataset.toggle];
+  if(!key || !url){ if(onSuccess) onSuccess(); return; }
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ eventTeamId: DASHBOARD_DATA.eventTeamId, key: key, value: value })
+  }).then(function(res){
+    return res.json().then(function(result){ return { ok: res.ok, result: result }; });
+  }).then(function(r){
+    if(!r.ok || !r.result || r.result.success !== true) throw new Error((r.result && r.result.error) || 'Request failed');
+    if(onSuccess) onSuccess();
+  }).catch(function(err){
+    console.error('dashboardWriteToggle failed:', err);
+    if(onError) onError(err);
+  });
+}
 function relToggle(btn){
   if(btn.disabled) return;
   pendingRel = btn;
@@ -3328,6 +3984,11 @@ function confirmRelease(){
     logAuditRelease(currentActorName() + ' released "' + btn.dataset.title + '" · Hidden → Visible · email sent to 184, SMS sent to 96 consented');
     toast('Released. Participants notified, audit entry recorded.');
   }
+  dashboardWriteToggle(btn, true, null, function(){
+    btn.classList.remove('on');
+    timeCell.innerHTML = '—';
+    toast('Could not save — the release did not persist. Try again.', 'err');
+  });
   pendingRel = null; dismissModal();
 }
 function retryFirstShow(el){
@@ -3343,6 +4004,10 @@ function confirmRehide(){
   var btn = pendingRel;
   btn.classList.remove('on');
   logAuditRelease(currentActorName() + ' re-hid "' + btn.dataset.title + '" · Visible → Hidden · no message sent');
+  dashboardWriteToggle(btn, false, null, function(){
+    btn.classList.add('on');
+    toast('Could not save — the re-hide did not persist. Try again.', 'err');
+  });
   pendingRel = null; dismissModal();
   toast('Re-hidden. No message sent — see the warning about copies already opened.');
 }
@@ -3351,12 +4016,202 @@ function confirmReshow(){
   var btn = pendingRel;
   btn.classList.add('on');
   logAuditRelease(currentActorName() + ' re-showed "' + btn.dataset.title + '" · Hidden → Visible · already notified, no duplicate message sent');
+  dashboardWriteToggle(btn, true, null, function(){
+    btn.classList.remove('on');
+    toast('Could not save — the re-show did not persist. Try again.', 'err');
+  });
   pendingRel = null; dismissModal();
   toast('Re-shown — already notified, no duplicate message sent.');
 }
 
+/* ---------- CS Dashboard : Ably Realtime (added 2026-08-12) ----------
+   Both directions of "Ably subscribe both directions":
+     Direction 1 — subscribes to material.changed / announcement.changed /
+       day.advanced, already published by the CS Dashboard's own toggle
+       actions (dashboardWriteToggle) and End Session (confirmEndSession)
+       via the existing PORTAL : Ably Publish automation. This is what
+       makes a second open dashboard tab/device reflect a change live,
+       and is part of what backs the client's locked "no Recalculate
+       button anywhere" decision.
+     Direction 2 — subscribes to attendance.changed, newly published by
+       CS Dashboard : Take Attendance / Attendance Reconcile Sweep / LM |
+       Zoom | Live Attendance Poller right after each of the 14
+       whitelisted attendance-field writes (registrations.f2853, the 12
+       session ATTENDED fields f3193-f3203/f3055, and f3062).
+
+   Mirrors the subscribe-only shape of Portal.realtime in
+   portal-engine.js conceptually (same dynamic-SDK-load pattern, same
+   CDN URL, same "degrade silently on any failure" contract) — but this
+   is a different file with its own DOM/state, so nothing is shared code.
+   Auth is via PORTAL : Ably Token Auth's new eventTeamId path (CS staff
+   have no oRegistrations row, so they authorize via their oEventTeam
+   record instead — see n8n workflow jKY55TShApwyZ2mP), channel
+   event:<eventId>, with eventId coming from dashboardFetchBootstrap()'s
+   now-additive eventId field (server-verified, independent of the
+   [Page//Event//ID] merge tag already in DASHBOARD_DATA).
+
+   Guarded against the known local-demo limitation (merge tags/
+   eventTeamId unresolved): dashboardInitRealtime() only runs from
+   dashboardFetchBootstrap()'s SUCCESS branch, and bootstrap itself
+   already 400s on a non-numeric eventTeamId, so this code path is
+   simply never reached in that state — no console errors either way. */
+var DASHBOARD_ABLY_TOKEN_AUTH_URL = 'https://landmarkworldwide.awesomate.io/webhook/ably-token-auth';
+var DASHBOARD_ABLY_SDK_URL = 'https://cdn.ably.com/lib/ably.min-2.js';
+var dashboardAblyClient = null;
+var DASHBOARD_ATTENDANCE_TICK_FIELDS = {
+  f3203: { label: 'S3', title: 'Day 3 Session 3 Checkpoint' },
+  f3055: { label: 'S4', title: 'Day 3 Session 4 Attendance Check' }
+};
+var DASHBOARD_DAY_NUM_TO_RAW = { 1: '404', 2: '405', 3: '406', 'Final': '456' };
+
+function dashboardLoadAblySdk(cb){
+  if(window.Ably){ cb(); return; }
+  var s = document.createElement('script');
+  s.src = DASHBOARD_ABLY_SDK_URL;
+  s.onload = cb;
+  s.onerror = function(){ console.error('dashboardLoadAblySdk: Ably SDK failed to load'); };
+  document.head.appendChild(s);
+}
+
+/* Materials — matched by data-title (the Ably message's `name`), not by
+   the toggle's own data-key: the two use different string conventions
+   (e.g. data-key="day3-follow-through" vs the Ably field key
+   'day3-followthrough') that were never reconciled since key matching
+   isn't actually needed here — data-title/name are already unique and
+   exact-match across every material row (confirmed against the MATERIALS
+   map in PORTAL : Ably Publish). */
+function dashboardApplyMaterialChanged(msg){
+  var data = (msg && msg.data) || {};
+  if(!data.name) return;
+  var btns = document.querySelectorAll('.tog[data-toggle="materials"]');
+  for(var i = 0; i < btns.length; i++){
+    var btn = btns[i];
+    if(btn.dataset.title !== data.name) continue;
+    var wantOn = !!data.visible;
+    if(btn.classList.contains('on') === wantOn) return;
+    var row = btn.closest('.res-row');
+    var timeCell = row ? row.children[2] : null;
+    if(wantOn){
+      btn.classList.add('on');
+      btn.dataset.notified = '1';
+      btn.dataset.notifat = 'just now';
+      if(timeCell) timeCell.innerHTML = 'First shown <b>just now</b>';
+    } else {
+      btn.classList.remove('on');
+      if(timeCell) timeCell.innerHTML = '—';
+    }
+    return;
+  }
+}
+
+/* Announcements — matched case-insensitively by data-key vs the Ably
+   message's `key`: PORTAL : Ably Publish normalizes AC's key to
+   lowercase ('ac-open') even though the dashboard's own toggle button
+   keeps the capitalized 'AC-open' as its data-key (see CS Dashboard
+   build notes / portal-engine.js's identical ANNOUNCEMENT_KEY_MAP
+   comment) — case-insensitive comparison sidesteps that mismatch. */
+function dashboardApplyAnnouncementChanged(msg){
+  var data = (msg && msg.data) || {};
+  if(!data.key) return;
+  var btns = document.querySelectorAll('.tog[data-toggle="announcements"]');
+  for(var i = 0; i < btns.length; i++){
+    var btn = btns[i];
+    if(!btn.dataset.key || btn.dataset.key.toLowerCase() !== String(data.key).toLowerCase()) continue;
+    var wantOn = !!data.open;
+    if(btn.classList.contains('on') === wantOn) return;
+    var row = btn.closest('.res-row');
+    var timeCell = row ? row.children[2] : null;
+    if(wantOn){
+      btn.classList.add('on');
+      btn.dataset.notified = '1';
+      btn.dataset.notifat = 'just now';
+      if(timeCell) timeCell.innerHTML = 'First shown <b>just now</b>';
+    } else {
+      btn.classList.remove('on');
+      if(timeCell) timeCell.innerHTML = '—';
+    }
+    return;
+  }
+}
+
+function dashboardApplyDayAdvanced(msg){
+  var data = (msg && msg.data) || {};
+  var raw = DASHBOARD_DAY_NUM_TO_RAW[data.day];
+  if(!raw || raw === DASHBOARD_DATA.todaysSessionRaw) return;
+  DASHBOARD_DATA.todaysSessionRaw = raw;
+  dashboardRenderSessionStrip();
+  dashboardFetchRoster();
+}
+
+/* Attendance — targeted in-place patch, not a full dashboardFetchRoster()
+   refetch (these can fire often during a live session). f3203/f3055 have
+   a dedicated tick (S3/S4 checkpoint) patched directly; f2853 (Currently
+   Present) feeds the Master Stats "attendingNow" tile, recomputed cheaply
+   from the already-fetched roster rather than hitting the server again.
+   The other 10 session fields (f3193-f3202) have no dedicated per-card
+   UI in this prototype today (the D1/D2/D3 ticks read the separate
+   f2801-f2803 Day-level aggregates the Live Attendance Poller computes
+   independently — see rosterBuildAttendanceTick) — those still get their
+   in-memory dashboardLastRoster value kept in sync for correctness on
+   the next re-render/detail-pop, just no live DOM patch target exists
+   for this pass. */
+function dashboardApplyAttendanceChanged(msg){
+  var data = (msg && msg.data) || {};
+  var regId = data.registrationId;
+  var field = data.field;
+  if(!regId || !field) return;
+  var list = dashboardLastRoster || [];
+  var reg = null;
+  for(var i = 0; i < list.length; i++){
+    if(Number(list[i].id) === Number(regId)){ reg = list[i]; break; }
+  }
+  if(!reg) return;
+  var newVal = data.value ? 1 : 0;
+  if(Number(reg[field] || 0) === newVal) return;
+  reg[field] = newVal;
+  var tickMeta = DASHBOARD_ATTENDANCE_TICK_FIELDS[field];
+  if(tickMeta){
+    var card = document.querySelector('#rosterList .ev-card[data-reg-id="' + regId + '"]');
+    var oldTick = card ? card.querySelector('.tick[data-field="' + field + '"]') : null;
+    if(oldTick){
+      var wrap = document.createElement('div');
+      wrap.innerHTML = rosterBuildChkpntTick(newVal === 1, tickMeta.title, tickMeta.label, field);
+      oldTick.replaceWith(wrap.firstChild);
+    }
+  } else if(field === 'f2853'){
+    dashboardRenderSnapshot(dashboardLastRoster, dashboardLastEventFields, dashboardLastStaffCount);
+  }
+}
+
+function dashboardInitRealtime(){
+  var eventId = DASHBOARD_DATA.eventId;
+  var eventTeamId = DASHBOARD_DATA.eventTeamId;
+  if(!eventId || !eventTeamId || dashboardAblyClient) return;
+  dashboardLoadAblySdk(function(){
+    if(!window.Ably) return;
+    try{
+      dashboardAblyClient = new Ably.Realtime({
+        authUrl: DASHBOARD_ABLY_TOKEN_AUTH_URL,
+        authParams: { eventTeamId: String(eventTeamId) }
+      });
+      dashboardAblyClient.connection.on('failed', function(err){ console.error('dashboardInitRealtime: Ably connection failed', err); });
+      var channel = dashboardAblyClient.channels.get('event:' + eventId);
+      channel.subscribe('material.changed', dashboardApplyMaterialChanged);
+      channel.subscribe('announcement.changed', dashboardApplyAnnouncementChanged);
+      channel.subscribe('day.advanced', dashboardApplyDayAdvanced);
+      channel.subscribe('attendance.changed', dashboardApplyAttendanceChanged);
+    }catch(err){
+      console.error('dashboardInitRealtime failed:', err);
+    }
+  });
+}
+
 go('home');
-initSessionState();
+dashboardRenderHome();
+dashboardRenderSessionStrip();
+dashboardFetchBootstrap();
+dashboardFetchRoster();
+dashboardFetchGuests();
 paginate('roster');
 paginate('guest');
 document.querySelectorAll('.ev-card').forEach(updateProgramPills);
@@ -3560,13 +4415,19 @@ document.querySelectorAll('.ev-card').forEach(updateProgramPills);
          use attended/not-attended/pending/needs-review only, and
          not-attended only renders once that day's window has actually
          closed (a zero-minutes-so-far mid-session participant stays
-         pending, not implied-absent). Completion (S3/S4 checkpoints) is
-         populated by two Event-level actions — run_d3s3_checkpoint_poll,
-         run_d3s4_attendance_poll (see runCheckpointPoll() and the
-         Checkpoint Attendance / Attendance Check buttons on the roster
-         header) — never by a generic browser-settable per-participant
-         field; the browser must never be able to directly flip completion
-         true for an arbitrary participant. Completion visibility is
+         pending, not implied-absent). Completion (S3/S4 checkpoints) was
+         originally scoped as two Day-3-only Event-level actions —
+         run_d3s3_checkpoint_poll, run_d3s4_attendance_poll — behind the
+         old runCheckpointPoll() stub and its "Checkpoint Attendance" /
+         "Attendance Check" header buttons. SUPERSEDED 2026-08-12 by the
+         real Attendance Architecture Layer 2 build: a single "Take
+         Attendance" button + Session (S1-S4) floating menu, spanning all
+         three Days (not Day 3 only), Day always resolved server-side from
+         events.f3025 — see openTakeAttendanceMenu()/confirmTakeAttendance()
+         and CS Dashboard : Take Attendance (n8n). Never a generic browser-
+         settable per-participant field; the browser must never be able to
+         directly flip completion true for an arbitrary participant.
+         Completion visibility is
          gated by the same current-session signal the header already
          computes for Day X of Y (§0c) — it should not appear at the start
          of Day 3 before the actual D3S3/D3S4 session window is reached.

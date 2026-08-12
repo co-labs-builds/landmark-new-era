@@ -1,0 +1,1689 @@
+</head>
+<body class="home">
+<!-- ============================================================
+     PERSISTENT HEADER (brief §4.1) — event name/course/format/dates/
+     timezone/Event Leader, event selector limited to authorized events,
+     and a "View as" role switcher standing in for real event-scoped
+     auth (brief §2) so Master Stats access and Revenue gating can be
+     demonstrated live in this single demo file.
+     ============================================================ -->
+<div class="topbar"><div class="wrap row">
+  <img class="nav-logo" src="https://res.cloudinary.com/mynd/image/upload/v1785903673/wordmark-green_uwtxhv.png" alt="Landmark">
+
+  <div class="evt-sel" onclick="openModal('mEvents')" title="Switch event">
+    <div>
+      <div class="en" id="evtSelName">North America Forum — August</div>
+      <div class="ct" id="evtSelCourseFormat">The Landmark Forum · Online</div>
+    </div>
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4.5 6 7.5 9 4.5"/></svg>
+  </div>
+
+  <div class="evt-meta">
+    <span>Event Leader: <span id="evtLeaderName">—</span></span>
+  </div>
+
+  <div class="top-right">
+    <!-- Single-logged-in-user page: role is resolved by authentication, not
+         chosen client-side. This is now purely a profile chip (name + role)
+         with a logout action — no dropdown, no role switching. -->
+    <div style="position:relative;">
+      <div class="profile-chip" id="profileChip" onclick="toggleProfileMenu(event)">
+        <div class="av">CS</div>
+        <div class="lbl"><b id="pcName">Kris</b><span id="pcRole">Course Supervisor</span></div>
+      </div>
+      <div class="profile-menu" id="profileMenu">
+        <button class="profile-menu-item" onclick="toast('Logging out…')">Log out</button>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<!-- Day X of Y is a direct merge of events.f3025 "Todays Session (Day)" —
+     only ever advanced by confirming End Session, no separate Day-advance
+     control (CS Dashboard discovery, Session strip section). The former
+     Not Started/In Session live pill next to the Day indicator is cut per
+     client decision (Ably live-push makes it redundant) — see esDot/
+     esState removed below, not just hidden. -->
+<div class="evtstrip"><div class="wrap row">
+  <div class="es-day" id="esDay">
+    <span id="esDayLabel">Day 2 of 3</span>
+  </div>
+  <div class="es-right">
+    <button class="btn-session" id="btnSession" onclick="openEndSessionModal()">End session</button>
+  </div>
+</div></div>
+
+<nav class="tabbar"><div class="wrap row">
+  <button class="active" data-v="em" id="navEm" onclick="go('em')">Event Management</button>
+  <button data-v="master" id="navMaster" onclick="go('master')">Master Stats</button>
+  <button data-v="kpi" id="navKpi" onclick="go('kpi')">Reporting Dashboard</button>
+</div></nav>
+
+<!-- Event Management's own sub-tabs — shown only while the Event Management
+     view is active; real panel switching, not scroll-jump. -->
+<div class="secnav" id="secnav"><div class="wrap row">
+  <button class="active" data-em="roster" onclick="emTab(this,'roster')">Roster &amp; Classification</button>
+  <button data-em="materials" onclick="emTab(this,'materials')">Course Materials</button>
+  <button data-em="guests" onclick="emTab(this,'guests')">Guests</button>
+</div></div>
+
+<main><div class="wrap">
+
+<!-- ============================================================
+     HOME (§0x) — pre-Forum landing. Welcomes the authenticated CS
+     and lists every Event they're authorized on as a card (this
+     pilot demos exactly one). Start Event is the only way into the
+     Event Management/Master Stats/Reporting Dashboard chrome below —
+     that chrome is fully hidden while on Home (body.home, see CSS).
+     ============================================================ -->
+<section class="view active" id="v-home">
+  <div class="sechd">
+    <h2>Welcome back, <span id="homeGreetName">Kris</span></h2>
+    <div class="lede">Here's what's on for you today.</div>
+  </div>
+  <div class="home-events">
+  <h3 style="font-size:13px;font-weight:800;letter-spacing:-.01em;margin:26px 0 14px;text-align:center;">Events</h3>
+  <div class="home-cards">
+    <!-- LOOP: repeat: events for this Contact (oEventTeam, §2) — one
+         card per Event; this pilot demos a single authorized Event, so
+         data-reg-id is set from DASHBOARD_DATA.eventId directly rather
+         than a real loop (see dashboardActiveEventId in the script). -->
+    <div class="evt-card" data-reg-id="">
+      <div class="evt-card-bd">
+        <div class="evt-card-top">
+          <div>
+            <div class="evt-card-title" id="evtCardTitle">The Landmark Forum - Online</div>
+            <div class="evt-card-dates" id="evtCardDates">Fri, Aug 14 - Sun, Aug 16th 2026</div>
+          </div>
+          <div class="evt-card-right">
+            <span class="pill p-inprogress" id="evtStatusPill" style="display:none;">In Progress</span>
+            <button class="kebab-btn" onclick="openEventCardMenu(this)" aria-label="Event actions"><svg viewBox="0 0 4 16" fill="currentColor"><circle cx="2" cy="2" r="1.6"/><circle cx="2" cy="8" r="1.6"/><circle cx="2" cy="14" r="1.6"/></svg></button>
+          </div>
+        </div>
+        <div class="evt-card-caption"><span class="mf" id="evtCardParticipants">—</span> Participants&nbsp;|&nbsp;<span class="mf" id="evtCardNotReady">—</span> Not Ready</div>
+      </div>
+      <div class="evt-card-ft">
+        <button class="btn btn-primary" onclick="startEvent(this)">Start Event</button>
+      </div>
+    </div>
+  </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     MASTER STATS (brief §4) — Course Supervisor's single working
+     surface. Recomposes the full prototype's Participants, Attendance,
+     Content and Outcomes components into one page. Audience is CS only
+     (brief §3) — an Event-Leader-only session gets this denial panel
+     instead of the working content, never a silently blank page.
+     ============================================================ -->
+<!-- ============================================================
+     MASTER STATS — numbers only, no edit controls. All roster,
+     attendance, seminar/AC and material-release editing now lives on
+     Event Management; this page is the "read the numbers aloud"
+     destination (brief §4.6 in-course statistics), unchanged in spirit
+     but no longer carrying the editable surfaces. Course Supervisor
+     only, enforced by page-level access outside this file (see field
+     dictionary) — not a client-side check.
+     ============================================================ -->
+<section class="view" id="v-master">
+
+  <div class="sechd">
+    <h2>Master Stats</h2>
+    <div class="lede">No editing happens here.</div>
+  </div>
+
+  <div class="card msec" id="ms-snapshot">
+    <div class="card-hd">
+      <h3>Course snapshot</h3>
+      <div class="r"><span style="font-size:11.5px;color:var(--gray);">Live</span></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="l">Starts (Day 1)</div><div class="n"><span class="v-na" data-stat="starts">—</span></div><div class="sub" data-stat-sub="starts">pending Day 1 lock mechanism</div></div>
+      <div class="stat"><div class="l">Current</div><div class="n"><span class="mf-lg" data-stat="current">—</span></div><div class="sub" data-stat-sub="current">still participating</div></div>
+      <div class="stat"><div class="l">LDP</div><div class="n"><span class="mf-lg" data-stat="ldp">—</span></div><div class="sub">left for any reason</div></div>
+      <div class="stat"><div class="l">WBO</div><div class="n"><span class="mf-lg" data-stat="wbo">—</span></div><div class="sub" data-stat-sub="wbo">of those who left</div></div>
+      <div class="stat"><div class="l">Completions</div><div class="n"><span class="mf-lg" data-stat="completions">—</span></div><div class="sub">Forum Completed</div></div>
+      <div class="stat big"><div class="l">Attendance now</div><div class="n"><span class="mf-lg" data-stat="attendanceNow">—</span></div><div class="sub" style="color:rgba(255,255,255,.55);" data-stat-sub="attendanceNow">—</div></div>
+      <div class="stat"><div class="l">Seminar registered</div><div class="n"><span class="mf-lg" data-stat="seminarPct">—</span></div><div class="sub" data-stat-sub="seminarPct">of potential</div></div>
+      <div class="stat"><div class="l">AC registered</div><div class="n"><span class="mf-lg" data-stat="acPct">—</span></div><div class="sub" data-stat-sub="acPct">of potential</div></div>
+      <div class="stat"><div class="l">Invitations sent</div><div class="n"><span class="mf-lg" data-stat="invitationsSent">—</span></div><div class="sub" data-stat-sub="invitationsSent">by participants</div></div>
+      <div class="stat"><div class="l">Final Session expected</div><div class="n"><span class="v-na" data-stat="finalSession">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+      <div class="stat"><div class="l">Reviewer</div><div class="n"><span class="mf-lg" data-stat="reviewer">—</span></div><div class="sub">flagged this event</div></div>
+      <div class="stat"><div class="l">SE</div><div class="n"><span class="mf-lg" data-stat="se">—</span></div><div class="sub">flagged this event</div></div>
+    </div>
+  </div>
+
+  <!-- Device & Zoom reconciliation — Event-level aggregate, computed 2026-08-12
+       from real roster/staff data (Roster Fetch webhook): Participants = total
+       registrants no exclusions; Staff = oEventTeam Currently Present WHERE
+       Staff Access; Shared/Duplicate adjustments from f3207/f3208; Observed
+       reuses the same Currently-Present fields, no separate Zoom API call. -->
+  <div class="card msec" id="ms-devicerecon">
+    <div class="card-hd">
+      <h3>Device &amp; Zoom reconciliation</h3>
+      <span class="sub">Derived from roster device exceptions and live Zoom presence</span>
+      <div class="r"><span style="font-size:11.5px;color:var(--gray);">Live</span></div>
+    </div>
+    <div class="stats stats-7">
+      <div class="stat"><div class="l">Participants</div><div class="n"><span class="mf-lg" data-stat="drParticipants">—</span></div><div class="sub">enrolled this Event</div></div>
+      <div class="stat"><div class="l">Staff</div><div class="n"><span class="mf-lg" data-stat="drStaff">—</span></div><div class="sub">Zoom-connected now</div></div>
+      <div class="stat"><div class="l">Shared-device adj.</div><div class="n"><span class="mf-lg" data-stat="drSharedAdj">—</span></div><div class="sub">known shared devices</div></div>
+      <div class="stat"><div class="l">Duplicate-device adj.</div><div class="n"><span class="mf-lg" data-stat="drDupAdj">—</span></div><div class="sub">known duplicate devices</div></div>
+      <div class="stat"><div class="l">Expected Zoom devices</div><div class="n"><span class="mf-lg" data-stat="drExpected">—</span></div><div class="sub">participants + staff, adjusted</div></div>
+      <div class="stat"><div class="l">Observed</div><div class="n"><span class="mf-lg" data-stat="drObserved">—</span></div><div class="sub">connected now</div></div>
+      <div class="stat big"><div class="l">Reconciled</div><div class="n"><span class="mf-lg" data-stat="drReconciled">—</span></div><div class="sub" style="color:rgba(255,255,255,.55);" data-stat-sub="drReconciled">—</div></div>
+    </div>
+  </div>
+
+  <p style="font-size:11.5px;color:#a9a49a;margin-top:2px;">Roster editing, attendance overrides, seminar/AC entry, guest management and material release now live on <a onclick="go('em')" style="cursor:pointer;color:var(--green);font-weight:600;">Event Management</a>.</p>
+
+</section>
+
+<!-- ============================================================
+     EVENT MANAGEMENT — the Course Supervisor's working surface.
+     Default landing tab. One record card per participant/guest with
+     everything actionable on that record in one place, per the Event
+     Management layout reference. Search + 10-per-page pagination on
+     both the roster and guest lists. Course Materials (formerly Live
+     Material Release) moved here as its own sub-tab.
+     ============================================================ -->
+<section class="view" id="v-em">
+
+  <div class="sechd">
+    <h2>Event Management</h2>
+    <div class="lede">Everything actionable for this Event, one record card at a time.</div>
+  </div>
+
+  <!-- ============ ROSTER & CLASSIFICATION ============ -->
+  <div id="em-roster" class="emview active">
+  <!-- Course snapshot — Roster subtab only now. This used to sit above all
+       three sub-tabs (shown regardless of which was active); moved inside
+       #em-roster so Course Materials and Guests don't carry an unrelated
+       whole-course snapshot — Guests gets its own guest-focused card
+       instead (see #em-guest-snapshot below). -->
+  <div class="card msec" id="em-snapshot">
+    <div class="card-hd">
+      <h3>Course snapshot</h3>
+      <div class="r"><span style="font-size:11.5px;color:var(--gray);">As of <span class="mf">7:44 pm</span> · Day 2 of 3</span></div>
+    </div>
+    <div class="stats">
+      <div class="stat" title="Pending Day 1 lock mechanism"><div class="l">Starts (Day 1)</div><div class="n"><span class="v-na" data-stat="starts">—</span></div><div class="sub" data-stat-sub="starts">pending Day 1 lock mechanism</div></div>
+      <div class="stat stat-filterable" onclick="applyStatFilter('current', this)" title="Show only records still participating"><div class="l">Current</div><div class="n"><span class="mf-lg" data-stat="current">—</span></div><div class="sub" data-stat-sub="current">still participating</div></div>
+      <div class="stat stat-filterable" onclick="applyStatFilter('ldp', this)" title="Show only LDP records"><div class="l">LDP</div><div class="n"><span class="mf-lg" data-stat="ldp">—</span></div><div class="sub">left for any reason</div></div>
+      <div class="stat stat-filterable" onclick="applyStatFilter('wbo', this)" title="Show only WBO records"><div class="l">WBO</div><div class="n"><span class="mf-lg" data-stat="wbo">—</span></div><div class="sub" data-stat-sub="wbo">of those who left</div></div>
+      <div class="stat stat-filterable" onclick="applyStatFilter('completions', this)" title="Show only records with a completed checkpoint"><div class="l">Completions</div><div class="n"><span class="mf-lg" data-stat="completions">—</span></div><div class="sub">Forum Completed</div></div>
+      <div class="stat big stat-filterable" onclick="applyStatFilter('attendanceNow', this)" title="Show only records attending today"><div class="l">Attendance now</div><div class="n"><span class="mf-lg" data-stat="attendanceNow">—</span></div><div class="sub" style="color:rgba(255,255,255,.55);" data-stat-sub="attendanceNow">—</div></div>
+      <div class="stat stat-filterable" onclick="applyStatFilter('seminar', this)" title="Show only Seminar-registered records"><div class="l">Seminar registered</div><div class="n"><span class="mf-lg" data-stat="seminarPct">—</span></div><div class="sub" data-stat-sub="seminarPct">of potential</div></div>
+      <div class="stat stat-filterable" onclick="applyStatFilter('ac', this)" title="Show only AC-registered records"><div class="l">AC registered</div><div class="n"><span class="mf-lg" data-stat="acPct">—</span></div><div class="sub" data-stat-sub="acPct">of potential</div></div>
+      <div class="stat"><div class="l">Invitations sent</div><div class="n"><span class="mf-lg" data-stat="invitationsSent">—</span></div><div class="sub" data-stat-sub="invitationsSent">by participants</div></div>
+      <div class="stat"><div class="l">Final Session expected</div><div class="n"><span class="v-na" data-stat="finalSession">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+      <div class="stat stat-filterable" onclick="applyStatFilter('reviewer', this)" title="Show only Reviewer-flagged records"><div class="l">Reviewer</div><div class="n"><span class="mf-lg" data-stat="reviewer">—</span></div><div class="sub">flagged this event</div></div>
+      <div class="stat stat-filterable" onclick="applyStatFilter('se', this)" title="Show only SE-flagged records"><div class="l">SE</div><div class="n"><span class="mf-lg" data-stat="se">—</span></div><div class="sub">flagged this event</div></div>
+    </div>
+  </div>
+  <!-- 4.2 Roster and classification — the current Event's oRegistrations,
+       not Contacts directly. Preferred name is inline-editable and writes
+       to Contact (identity follows the person); classification pills and
+       Attendance write to oRegistration (status belongs to one participant
+       in one Event) — see field dictionary at the foot of this file. -->
+  <!-- 4.2 Roster and classification — card-per-participant, exception-first
+       monitoring surface (pilot revision — see field dictionary §0l–§0t).
+       Six always-visible zones: Identity, Participation, Completion,
+       Classification, Follow-On, Exception/Actions. No raw inline controls
+       remain in the row — pills disclose detail via the shared anchored
+       popover (#detailPop); corrections happen only through the per-row
+       ••• menu (#rowMenu) and its contextual modals. Search filters, 10
+       per page. -->
+  <div class="card msec" id="ms-roster">
+    <div class="card-hd">
+      <h3>Roster &amp; classification</h3>
+      <span class="sub"><span class="mf">188</span> on oRegistrations for this Event · showing <span class="mf" id="rosterShowingCount">12</span></span>
+      <span class="pill p-neutral" id="rosterFilterChip" style="display:none;cursor:pointer;gap:6px;" onclick="clearStatFilter()" title="Clear filter">Filtered: <span id="rosterFilterLabel"></span> ✕</span>
+      <div class="r">
+        <div class="search" style="position:relative;">
+          <input type="text" id="rosterSearch" oninput="filterList('roster')" placeholder="Search preferred name, legal name, PID…" style="border:1px solid var(--line);border-radius:7px;padding:8px 12px;font-size:12.5px;width:240px;">
+        </div>
+        <!-- Take Attendance — REAL BUILD 2026-08-12. Attendance Architecture
+             Layer 2. Replaces the old separate "Checkpoint Attendance" /
+             "Attendance Check" buttons (formerly runCheckpointPoll(), a
+             prototype stub that only toasted a fake aggregate — no real
+             webhook existed). CS picks Session (S1-S4) from a floating menu;
+             Day is never client-supplied — the server resolves it from
+             events.f3025. The browser never sets an individual participant's
+             attendance flag directly; a fresh Zoom Live Dashboard poll runs
+             server-side at click-time and the aggregate result is toasted,
+             then the roster is refetched from server truth. See
+             openTakeAttendanceMenu()/confirmTakeAttendance(). -->
+        <button class="btn btn-sm" id="takeAttendanceBtn" onclick="openTakeAttendanceMenu(this)">Take Attendance</button>
+        <button class="btn btn-sm" onclick="toast('Export queued — audit entry recorded.')">Export</button>
+      </div>
+    </div>
+    <div class="card-bd flush">
+      <div class="ev-list" id="rosterList">
+      <!-- LOOP: repeat: registrations.rows (current Event only). One
+           always-visible row per card, six zones (see comment above).
+           Seminar/ADV. CRS collapse to a single state-priority pill via
+           updateProgramPills() — see field dictionary §0p. -->
+      <div class="ev-card" data-search="emily maddox 40470" data-reg-id="REG-40470" data-phone="(555) 010-0470" data-email="emily.k.maddox@gmail.com">
+        <div class="ev-row1">
+          <div class="ev-field ev-identity">
+            <div class="ev-name"><div class="ev-name-row"><b>Emily Maddox</b> <span class="status-sep">–</span> <span class="pill p-active">ACTIVE</span></div><span>Legal: Emily Maddox · PID-40470</span></div>
+            <div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv='[["Value","Online"]]'>ONL</button><span class="mf">4</span></div>
+          </div>
+          <div class="ev-field ev-classification">
+            <div class="ev-l">Classification</div>
+            <div class="class-pills">
+              <button class="pill p-slot-off ev-clickable" data-classtype="mnr" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Minor" data-pop-kv='[["Status","No"]]'>MNR</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="reviewer" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Reviewer" data-pop-edit="classification:reviewer" data-pop-kv='[["Reviewer","No"]]'>REV</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="se" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Statistical Exclusion" data-pop-edit="classification:se" data-pop-kv='[["Status","Not excluded"]]'>SE</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="ac-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Advanced Course — Not Potential" data-pop-kv='[["AC Potential","Pending"]]'>AC-NP</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="sem-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Seminar — Not Potential" data-pop-kv='[["Seminar Potential","Pending"]]'>SEM NP</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Attendance</div>
+            <div class="ticks">
+              <button class="tick tk-attended" onclick="openDetailPop(this)" data-pop-title="Day 1 Attendance" data-pop-kv='[["Attended","Yes"],["Minutes","401.6"],["First Join","8:47 AM"],["Most Recent Leave","6:02 PM"],["Join Count","1"],["Match","Verified"]]'>D1</button>
+              <button class="tick tk-review" onclick="openDetailPop(this)" data-pop-title="Day 2 Attendance" data-pop-kv='[["Attended","Unmatched"],["Minutes","—"],["Match","Device not linked to a registration"]]'>D2</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Attendance" data-pop-kv='[["Attended","Pending"],["Match","Session in progress"]]'>D3</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">CPLT CHKPNT</div>
+            <div class="ticks">
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 3 Checkpoint" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S3</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 4 Attendance Check" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S4</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Seminar</div>
+            <button class="pill p-pot ev-clickable prog-seminar" onclick="openDetailPop(this)" data-pot="1" data-confirmed="1" data-reg="1" data-desig="0" data-alt="0" data-pop-title="Seminar Registration" data-pop-kv='[["Registered","Yes"],["Registration","Standard"],["Seminar","Communication: Access to Power"],["Dates","September 12–14"],["Confirmed","August 10"]]'>REG</button>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">AC</div>
+            <button class="pill p-pot ev-clickable prog-ac" onclick="openDetailPop(this)" data-pot="1" data-confirmed="1" data-reg="1" data-desig="0" data-alt="0" data-pop-title="Advanced Course Registration" data-pop-kv='[["Registered","Yes"],["Registration","Standard"],["Course","The Advanced Course"],["Dates","October 3–5"],["Confirmed","August 12"]]'>REG</button>
+          </div>
+          <div class="ev-field ev-exception">
+            <button class="kebab-btn" onclick="openRowMenu(this)" aria-label="Actions"><svg viewBox="0 0 4 16" fill="currentColor"><circle cx="2" cy="2" r="1.6"/><circle cx="2" cy="8" r="1.6"/><circle cx="2" cy="14" r="1.6"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="ev-card" data-search="michael mankowski 40507" data-reg-id="REG-40507" data-phone="(555) 010-0507" data-email="mankowski.mike@gmail.com">
+        <div class="ev-row1">
+          <div class="ev-field ev-identity">
+            <div class="ev-name"><div class="ev-name-row"><b>Michael Mankowski</b> <span class="status-sep">–</span> <span class="pill p-active">ACTIVE</span></div><span>Legal: Michael Mankowski · PID-40507</span></div>
+            <div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv='[["Value","Online"]]'>ONL</button><span class="mf">3</span></div>
+          </div>
+          <div class="ev-field ev-classification">
+            <div class="ev-l">Classification</div>
+            <div class="class-pills">
+              <button class="pill p-slot-off ev-clickable" data-classtype="mnr" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Minor" data-pop-kv='[["Status","No"]]'>MNR</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="reviewer" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Reviewer" data-pop-edit="classification:reviewer" data-pop-kv='[["Reviewer","No"]]'>REV</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="se" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Statistical Exclusion" data-pop-edit="classification:se" data-pop-kv='[["Status","Not excluded"]]'>SE</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="ac-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Advanced Course — Not Potential" data-pop-kv='[["AC Potential","Pending"]]'>AC-NP</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="sem-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Seminar — Not Potential" data-pop-kv='[["Seminar Potential","Pending"]]'>SEM NP</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Attendance</div>
+            <div class="ticks">
+              <button class="tick tk-attended" onclick="openDetailPop(this)" data-pop-title="Day 1 Attendance" data-pop-kv='[["Attended","Yes"],["Minutes","412.0"],["First Join","8:41 AM"],["Most Recent Leave","6:09 PM"],["Join Count","1"],["Match","Verified"]]'>D1</button>
+              <button class="tick tk-attended" onclick="openDetailPop(this)" data-pop-title="Day 2 Attendance" data-pop-kv='[["Attended","Yes"],["Minutes","318.4"],["First Join","9:02 AM"],["Most Recent Leave","In progress"],["Join Count","1"],["Match","Verified"]]'>D2</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Attendance" data-pop-kv='[["Attended","Pending"],["Match","Session in progress"]]'>D3</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">CPLT CHKPNT</div>
+            <div class="ticks">
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 3 Checkpoint" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S3</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 4 Attendance Check" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S4</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Seminar</div>
+            <button class="pill p-pot ev-clickable prog-seminar" onclick="openDetailPop(this)" data-pot="1" data-confirmed="1" data-reg="1" data-desig="0" data-alt="0" data-pop-title="Seminar Registration" data-pop-kv='[["Registered","Yes"],["Registration","Standard"],["Seminar","Communication: Access to Power"],["Dates","September 12–14"],["Confirmed","August 9"]]'>REG</button>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">AC</div>
+            <button class="pill p-neutral ev-clickable prog-ac" onclick="openDetailPop(this)" data-pot="1" data-confirmed="0" data-reg="0" data-desig="0" data-alt="0" data-pop-title="Advanced Course Registration" data-pop-edit="classification:acPotential" data-pop-kv='[["Potential","Yes"],["Registered","No"]]'>POT</button>
+          </div>
+          <div class="ev-field ev-exception">
+            <button class="kebab-btn" onclick="openRowMenu(this)" aria-label="Actions"><svg viewBox="0 0 4 16" fill="currentColor"><circle cx="2" cy="2" r="1.6"/><circle cx="2" cy="8" r="1.6"/><circle cx="2" cy="14" r="1.6"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="ev-card" data-search="acacia blyth 40581" data-reg-id="REG-40581" data-phone="(555) 010-0581" data-email="acaciablyth@gmail.com">
+        <div class="ev-row1">
+          <div class="ev-field ev-identity">
+            <div class="ev-name"><div class="ev-name-row"><b>Acacia Blyth</b> <span class="status-sep">–</span> <span class="pill p-active">ACTIVE</span></div><span>Legal: Acacia Blyth · PID-40581</span></div>
+            <div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv='[["Value","Online"]]'>ONL</button><span class="v-zero">0</span></div>
+          </div>
+          <div class="ev-field ev-classification">
+            <div class="ev-l">Classification</div>
+            <div class="class-pills">
+              <button class="pill p-slot-off ev-clickable" data-classtype="mnr" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Minor" data-pop-kv='[["Status","No"]]'>MNR</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="reviewer" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Reviewer" data-pop-edit="classification:reviewer" data-pop-kv='[["Reviewer","No"]]'>REV</button>
+              <button class="pill p-excluded ev-clickable" data-classtype="se" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Statistical Exclusion" data-pop-edit="classification:se" data-pop-kv='[["Status","Excluded"],["Reason","Prior full participation on record — statistical exclusion, not a reviewer case"],["Source","Automatically classified"]]'>SE</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="ac-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Advanced Course — Not Potential" data-pop-kv='[["AC Potential","Pending"]]'>AC-NP</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="sem-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Seminar — Not Potential" data-pop-kv='[["Seminar Potential","Pending"]]'>SEM NP</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Attendance</div>
+            <div class="ticks">
+              <button class="tick tk-review" onclick="openDetailPop(this)" data-pop-title="Day 1 Attendance" data-pop-kv='[["Attended","Yes — manual"],["Minutes","286.1"],["First Join","10:14 AM"],["Most Recent Leave","6:03 PM"],["Join Count","2"],["Match","Manually corrected"]]'>D1</button>
+              <button class="tick tk-attended" onclick="openDetailPop(this)" data-pop-title="Day 2 Attendance" data-pop-kv='[["Attended","Yes"],["Minutes","305.7"],["First Join","8:58 AM"],["Most Recent Leave","In progress"],["Join Count","1"],["Match","Verified"]]'>D2</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Attendance" data-pop-kv='[["Attended","Pending"],["Match","Session in progress"]]'>D3</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">CPLT CHKPNT</div>
+            <div class="ticks">
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 3 Checkpoint" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S3</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 4 Attendance Check" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S4</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Seminar</div>
+            <button class="pill p-neutral ev-clickable prog-seminar" onclick="openDetailPop(this)" data-pot="1" data-confirmed="0" data-reg="0" data-desig="0" data-alt="0" data-pop-title="Seminar Registration" data-pop-edit="classification:seminarPotential" data-pop-kv='[["Potential","Yes"],["Registered","No"]]'>POT</button>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">AC</div>
+            <button class="pill p-neutral ev-clickable prog-ac" onclick="openDetailPop(this)" data-pot="1" data-confirmed="0" data-reg="0" data-desig="0" data-alt="0" data-pop-title="Advanced Course Registration" data-pop-edit="classification:acPotential" data-pop-kv='[["Potential","Yes"],["Registered","No"]]'>POT</button>
+          </div>
+          <div class="ev-field ev-exception">
+            <button class="kebab-btn" onclick="openRowMenu(this)" aria-label="Actions"><svg viewBox="0 0 4 16" fill="currentColor"><circle cx="2" cy="2" r="1.6"/><circle cx="2" cy="8" r="1.6"/><circle cx="2" cy="14" r="1.6"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="ev-card" data-search="galahad blyth 40618" data-reg-id="REG-40618" data-phone="(555) 010-0618" data-email="galahadblyth@gmail.com">
+        <div class="ev-row1">
+          <div class="ev-field ev-identity">
+            <div class="ev-name"><div class="ev-name-row"><b>Galahad Blyth</b> <span class="status-sep">–</span> <button class="pill p-ldp ev-clickable" onclick="openDetailPop(this)" data-pop-title="Course Status" data-pop-edit="courseStatus" data-pop-kv='[["Left Course","Yes"],["Left Type","LDP"],["Day","Day 2"],["Time","3:42 PM"],["Leave Reason","Approved well-being departure"],["WBO","Yes"],["Note","Participant spoke with Course Supervisor."]]'>LDP</button></div><span>Legal: Galahad Blyth · PID-40618</span></div>
+            <div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv='[["Value","Online"]]'>ONL</button><span class="v-zero">0</span></div>
+          </div>
+          <div class="ev-field ev-classification">
+            <div class="ev-l">Classification</div>
+            <div class="class-pills">
+              <button class="pill p-slot-off ev-clickable" data-classtype="mnr" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Minor" data-pop-kv='[["Status","No"]]'>MNR</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="reviewer" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Reviewer" data-pop-edit="classification:reviewer" data-pop-kv='[["Reviewer","No"]]'>REV</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="se" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Statistical Exclusion" data-pop-edit="classification:se" data-pop-kv='[["Status","Not excluded"]]'>SE</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="ac-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Advanced Course — Not Potential" data-pop-kv='[["AC Potential","Pending"]]'>AC-NP</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="sem-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Seminar — Not Potential" data-pop-kv='[["Seminar Potential","Pending"]]'>SEM NP</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Attendance</div>
+            <div class="ticks">
+              <button class="tick tk-attended" onclick="openDetailPop(this)" data-pop-title="Day 1 Attendance" data-pop-kv='[["Attended","Yes"],["Minutes","398.2"],["First Join","8:50 AM"],["Most Recent Leave","6:01 PM"],["Join Count","1"],["Match","Verified"]]'>D1</button>
+              <button class="tick tk-absent" onclick="openDetailPop(this)" data-pop-title="Day 2 Attendance" data-pop-kv='[["Attended","No"],["Minutes","41.3"],["First Join","9:00 AM"],["Most Recent Leave","3:42 PM"],["Join Count","1"],["Match","Verified — left before Day 2 close"]]'>D2</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Attendance" data-pop-kv='[["Attended","Pending"],["Match","Session in progress"]]'>D3</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">CPLT CHKPNT</div>
+            <div class="ticks">
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 3 Checkpoint" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S3</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 4 Attendance Check" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S4</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Seminar</div>
+            <button class="pill p-neutral ev-clickable prog-seminar" onclick="openDetailPop(this)" data-pot="0" data-confirmed="0" data-reg="0" data-desig="0" data-alt="0" data-pop-title="Seminar Registration" data-pop-edit="classification:seminarPotential" data-pop-kv='[["Potential","No"],["Registered","No"]]'>NP</button>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">AC</div>
+            <button class="pill p-neutral ev-clickable prog-ac" onclick="openDetailPop(this)" data-pot="0" data-confirmed="0" data-reg="0" data-desig="0" data-alt="0" data-pop-title="Advanced Course Registration" data-pop-edit="classification:acPotential" data-pop-kv='[["Potential","No"],["Registered","No"]]'>NP</button>
+          </div>
+          <div class="ev-field ev-exception">
+            <button class="kebab-btn" onclick="openRowMenu(this)" aria-label="Actions"><svg viewBox="0 0 4 16" fill="currentColor"><circle cx="2" cy="2" r="1.6"/><circle cx="2" cy="8" r="1.6"/><circle cx="2" cy="14" r="1.6"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="ev-card" data-search="gabe shamash 40729" data-reg-id="REG-40729" data-phone="(555) 010-0729" data-email="gabesham@gmail.com">
+        <div class="ev-row1">
+          <div class="ev-field ev-identity">
+            <div class="ev-name"><div class="ev-name-row"><b>Gabe Shamash</b> <span class="status-sep">–</span> <span class="pill p-active">ACTIVE</span></div><span>Legal: Gabe Shamash · PID-40729</span></div>
+            <div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv='[["Value","Online"]]'>ONL</button><span class="mf">1</span></div>
+          </div>
+          <div class="ev-field ev-classification">
+            <div class="ev-l">Classification</div>
+            <div class="class-pills">
+              <button class="pill p-slot-off ev-clickable" data-classtype="mnr" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Minor" data-pop-kv='[["Status","No"]]'>MNR</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="reviewer" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Reviewer" data-pop-edit="classification:reviewer" data-pop-kv='[["Reviewer","No"]]'>REV</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="se" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Statistical Exclusion" data-pop-edit="classification:se" data-pop-kv='[["Status","Not excluded"]]'>SE</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="ac-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Advanced Course — Not Potential" data-pop-kv='[["AC Potential","Pending"]]'>AC-NP</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="sem-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Seminar — Not Potential" data-pop-kv='[["Seminar Potential","Pending"]]'>SEM NP</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Attendance</div>
+            <div class="ticks">
+              <button class="tick tk-attended" onclick="openDetailPop(this)" data-pop-title="Day 1 Attendance" data-pop-kv='[["Attended","Yes"],["Minutes","405.9"],["First Join","8:55 AM"],["Most Recent Leave","6:05 PM"],["Join Count","1"],["Match","Verified"]]'>D1</button>
+              <button class="tick tk-absent" onclick="openDetailPop(this)" data-pop-title="Day 2 Attendance" data-pop-kv='[["Attended","No"],["Minutes","0"],["Match","No Zoom connection recorded for this day"]]'>D2</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Attendance" data-pop-kv='[["Attended","Pending"],["Match","Session in progress"]]'>D3</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">CPLT CHKPNT</div>
+            <div class="ticks">
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 3 Checkpoint" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S3</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 4 Attendance Check" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S4</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Seminar</div>
+            <button class="pill p-neutral ev-clickable prog-seminar" onclick="openDetailPop(this)" data-pot="1" data-confirmed="0" data-reg="0" data-desig="0" data-alt="0" data-pop-title="Seminar Registration" data-pop-edit="classification:seminarPotential" data-pop-kv='[["Potential","Yes"],["Registered","No"]]'>POT</button>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">AC</div>
+            <button class="pill p-neutral ev-clickable prog-ac" onclick="openDetailPop(this)" data-pot="1" data-confirmed="0" data-reg="0" data-desig="0" data-alt="0" data-pop-title="Advanced Course Registration" data-pop-edit="classification:acPotential" data-pop-kv='[["Potential","Yes"],["Registered","No"]]'>POT</button>
+          </div>
+          <div class="ev-field ev-exception">
+            <button class="kebab-btn" onclick="openRowMenu(this)" aria-label="Actions"><svg viewBox="0 0 4 16" fill="currentColor"><circle cx="2" cy="2" r="1.6"/><circle cx="2" cy="8" r="1.6"/><circle cx="2" cy="14" r="1.6"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="ev-card" data-search="henry kay 41136" data-reg-id="REG-41136" data-phone="(555) 010-1136" data-email="henrykay87@gmail.com">
+        <div class="ev-row1">
+          <div class="ev-field ev-identity">
+            <div class="ev-name"><div class="ev-name-row"><b>Henry Kay</b> <span class="status-sep">–</span> <span class="pill p-active">ACTIVE</span></div><span>Legal: Henry Kay · PID-41136</span></div>
+            <div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv='[["Value","Online"]]'>ONL</button><span class="v-zero">0</span><button class="device-flag ev-clickable" onclick="openDetailPop(this)" data-pop-title="Device Exception" data-pop-kv='[["Type","Shared device"],["Sharing with","Emily Maddox"]]'>Shared device</button></div>
+          </div>
+          <div class="ev-field ev-classification">
+            <div class="ev-l">Classification</div>
+            <div class="class-pills">
+              <button class="pill p-slot-off ev-clickable" data-classtype="mnr" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Minor" data-pop-kv='[["Status","No"]]'>MNR</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="reviewer" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Reviewer" data-pop-edit="classification:reviewer" data-pop-kv='[["Reviewer","No"]]'>REV</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="se" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Statistical Exclusion" data-pop-edit="classification:se" data-pop-kv='[["Status","Not excluded"]]'>SE</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="ac-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Advanced Course — Not Potential" data-pop-kv='[["AC Potential","Pending"]]'>AC-NP</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="sem-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Seminar — Not Potential" data-pop-kv='[["Seminar Potential","Pending"]]'>SEM NP</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Attendance</div>
+            <div class="ticks">
+              <button class="tick tk-attended" onclick="openDetailPop(this)" data-pop-title="Day 1 Attendance" data-pop-kv='[["Attended","Yes"],["Minutes","409.4"],["First Join","8:44 AM"],["Most Recent Leave","6:07 PM"],["Join Count","1"],["Match","Verified"]]'>D1</button>
+              <button class="tick tk-attended" onclick="openDetailPop(this)" data-pop-title="Day 2 Attendance" data-pop-kv='[["Attended","Yes"],["Minutes","311.0"],["First Join","8:59 AM"],["Most Recent Leave","In progress"],["Join Count","1"],["Match","Verified"]]'>D2</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Attendance" data-pop-kv='[["Attended","Pending"],["Match","Session in progress"]]'>D3</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">CPLT CHKPNT</div>
+            <div class="ticks">
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 3 Checkpoint" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S3</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 4 Attendance Check" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S4</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Seminar</div>
+            <button class="pill p-pot ev-clickable prog-seminar" onclick="openDetailPop(this)" data-pot="1" data-confirmed="1" data-reg="1" data-desig="0" data-alt="1" data-pop-title="Seminar Registration" data-pop-kv='[["Registered","Yes"],["Registration","Alternate"],["Seminar","Communication: Access to Power"],["Dates","September 12–14"],["Confirmed","August 16"]]'>REG</button>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">AC</div>
+            <button class="pill p-neutral ev-clickable prog-ac" onclick="openDetailPop(this)" data-pot="1" data-confirmed="0" data-reg="0" data-desig="0" data-alt="0" data-pop-title="Advanced Course Registration" data-pop-edit="classification:acPotential" data-pop-kv='[["Potential","Yes"],["Registered","No"]]'>POT</button>
+          </div>
+          <div class="ev-field ev-exception">
+            <button class="kebab-btn" onclick="openRowMenu(this)" aria-label="Actions"><svg viewBox="0 0 4 16" fill="currentColor"><circle cx="2" cy="2" r="1.6"/><circle cx="2" cy="8" r="1.6"/><circle cx="2" cy="14" r="1.6"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="ev-card" data-search="paul schurch 41173" data-reg-id="REG-41173" data-phone="(555) 010-1173" data-email="pschurch555@gmail.com">
+        <div class="ev-row1">
+          <div class="ev-field ev-identity">
+            <div class="ev-name"><div class="ev-name-row"><b>Paul Schürch</b> <span class="status-sep">–</span> <span class="pill p-active">ACTIVE</span></div><span>Legal: Paul Schürch · PID-41173</span></div>
+            <div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv='[["Value","Online"]]'>ONL</button><span class="v-zero">0</span></div>
+          </div>
+          <div class="ev-field ev-classification">
+            <div class="ev-l">Classification</div>
+            <div class="class-pills">
+              <button class="pill p-slot-off ev-clickable" data-classtype="mnr" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Minor" data-pop-kv='[["Status","No"]]'>MNR</button>
+              <button class="pill p-review ev-clickable" data-classtype="reviewer" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Reviewer" data-pop-edit="classification:reviewer" data-pop-kv='[["Reviewer","Yes"],["Source","Participant history"]]'>REV</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="se" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Statistical Exclusion" data-pop-edit="classification:se" data-pop-kv='[["Status","Not excluded"]]'>SE</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="ac-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Advanced Course — Not Potential" data-pop-kv='[["AC Potential","Pending"]]'>AC-NP</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="sem-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Seminar — Not Potential" data-pop-kv='[["Seminar Potential","Pending"]]'>SEM NP</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Attendance</div>
+            <div class="ticks">
+              <button class="tick tk-attended" onclick="openDetailPop(this)" data-pop-title="Day 1 Attendance" data-pop-kv='[["Attended","Yes"],["Minutes","415.8"],["First Join","8:39 AM"],["Most Recent Leave","6:11 PM"],["Join Count","1"],["Match","Verified"]]'>D1</button>
+              <button class="tick tk-attended" onclick="openDetailPop(this)" data-pop-title="Day 2 Attendance" data-pop-kv='[["Attended","Yes"],["Minutes","300.2"],["First Join","9:01 AM"],["Most Recent Leave","In progress"],["Join Count","1"],["Match","Verified"]]'>D2</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Attendance" data-pop-kv='[["Attended","Pending"],["Match","Session in progress"]]'>D3</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">CPLT CHKPNT</div>
+            <div class="ticks">
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 3 Checkpoint" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S3</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 4 Attendance Check" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S4</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Seminar</div>
+            <button class="pill p-neutral ev-clickable prog-seminar" onclick="openDetailPop(this)" data-pot="0" data-confirmed="0" data-reg="0" data-desig="0" data-alt="0" data-pop-title="Seminar Registration" data-pop-edit="classification:seminarPotential" data-pop-kv='[["Potential","No"],["Registered","No"]]'>NP</button>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">AC</div>
+            <button class="pill p-neutral ev-clickable prog-ac" onclick="openDetailPop(this)" data-pot="0" data-confirmed="0" data-reg="0" data-desig="0" data-alt="0" data-pop-title="Advanced Course Registration" data-pop-edit="classification:acPotential" data-pop-kv='[["Potential","No"],["Registered","No"]]'>NP</button>
+          </div>
+          <div class="ev-field ev-exception">
+            <button class="kebab-btn" onclick="openRowMenu(this)" aria-label="Actions"><svg viewBox="0 0 4 16" fill="currentColor"><circle cx="2" cy="2" r="1.6"/><circle cx="2" cy="8" r="1.6"/><circle cx="2" cy="14" r="1.6"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="ev-card" data-search="lisa moreno 41247" data-reg-id="REG-41247" data-phone="(555) 010-1247" data-email="morenolisa188@gmail.com">
+        <div class="ev-row1">
+          <div class="ev-field ev-identity">
+            <div class="ev-name"><div class="ev-name-row"><b>Lisa Moreno</b> <span class="status-sep">–</span> <span class="pill p-active">ACTIVE</span></div><span>Legal: Lisa Moreno · PID-41247</span></div>
+            <div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv='[["Value","Online"]]'>ONL</button><span class="v-zero">0</span></div>
+          </div>
+          <div class="ev-field ev-classification">
+            <div class="ev-l">Classification</div>
+            <div class="class-pills">
+              <button class="pill p-slot-off ev-clickable" data-classtype="mnr" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Minor" data-pop-kv='[["Status","No"]]'>MNR</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="reviewer" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Reviewer" data-pop-edit="classification:reviewer" data-pop-kv='[["Reviewer","No"]]'>REV</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="se" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Statistical Exclusion" data-pop-edit="classification:se" data-pop-kv='[["Status","Not excluded"]]'>SE</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="ac-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Advanced Course — Not Potential" data-pop-kv='[["AC Potential","Pending"]]'>AC-NP</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="sem-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Seminar — Not Potential" data-pop-kv='[["Seminar Potential","Pending"]]'>SEM NP</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Attendance</div>
+            <div class="ticks">
+              <button class="tick tk-attended" onclick="openDetailPop(this)" data-pop-title="Day 1 Attendance" data-pop-kv='[["Attended","Yes"],["Minutes","403.1"],["First Join","8:48 AM"],["Most Recent Leave","6:03 PM"],["Join Count","1"],["Match","Verified"]]'>D1</button>
+              <button class="tick tk-attended" onclick="openDetailPop(this)" data-pop-title="Day 2 Attendance" data-pop-kv='[["Attended","Yes"],["Minutes","296.5"],["First Join","9:04 AM"],["Most Recent Leave","In progress"],["Join Count","1"],["Match","Verified"]]'>D2</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Attendance" data-pop-kv='[["Attended","Pending"],["Match","Session in progress"]]'>D3</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">CPLT CHKPNT</div>
+            <div class="ticks">
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 3 Checkpoint" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S3</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 4 Attendance Check" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S4</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Seminar</div>
+            <button class="pill p-conf ev-clickable prog-seminar" onclick="openDetailPop(this)" data-pot="1" data-confirmed="1" data-reg="0" data-desig="0" data-alt="0" data-pop-title="Seminar Registration" data-pop-kv='[["Potential","Yes"],["Confirmed","Yes"],["Registered","Not yet"],["Seminar","Communication: Access to Power"],["Dates","September 12–14"]]'>CONF</button>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">AC</div>
+            <button class="pill p-neutral ev-clickable prog-ac" onclick="openDetailPop(this)" data-pot="1" data-confirmed="0" data-reg="0" data-desig="0" data-alt="0" data-pop-title="Advanced Course Registration" data-pop-edit="classification:acPotential" data-pop-kv='[["Potential","Yes"],["Registered","No"]]'>POT</button>
+          </div>
+          <div class="ev-field ev-exception">
+            <button class="kebab-btn" onclick="openRowMenu(this)" aria-label="Actions"><svg viewBox="0 0 4 16" fill="currentColor"><circle cx="2" cy="2" r="1.6"/><circle cx="2" cy="8" r="1.6"/><circle cx="2" cy="14" r="1.6"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="ev-card" data-search="annamarie phillips 41284" data-reg-id="REG-41284" data-phone="(555) 010-1284" data-email="alestephillips@gmail.com">
+        <div class="ev-row1">
+          <div class="ev-field ev-identity">
+            <div class="ev-name"><div class="ev-name-row"><b>Annamarie Phillips</b> <span class="status-sep">–</span> <span class="pill p-active">ACTIVE</span></div><span>Legal: Annamarie Phillips · PID-41284</span></div>
+            <div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv='[["Value","Online"]]'>ONL</button><span class="v-zero">0</span></div>
+          </div>
+          <div class="ev-field ev-classification">
+            <div class="ev-l">Classification</div>
+            <div class="class-pills">
+              <button class="pill p-slot-off ev-clickable" data-classtype="mnr" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Minor" data-pop-kv='[["Status","No"]]'>MNR</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="reviewer" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Reviewer" data-pop-edit="classification:reviewer" data-pop-kv='[["Reviewer","No"]]'>REV</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="se" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Statistical Exclusion" data-pop-edit="classification:se" data-pop-kv='[["Status","Not excluded"]]'>SE</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="ac-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Advanced Course — Not Potential" data-pop-kv='[["AC Potential","Pending"]]'>AC-NP</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="sem-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Seminar — Not Potential" data-pop-kv='[["Seminar Potential","Pending"]]'>SEM NP</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Attendance</div>
+            <div class="ticks">
+              <button class="tick tk-attended" onclick="openDetailPop(this)" data-pop-title="Day 1 Attendance" data-pop-kv='[["Attended","Yes"],["Minutes","399.7"],["First Join","8:53 AM"],["Most Recent Leave","6:00 PM"],["Join Count","1"],["Match","Verified"]]'>D1</button>
+              <button class="tick tk-attended" onclick="openDetailPop(this)" data-pop-title="Day 2 Attendance" data-pop-kv='[["Attended","Yes"],["Minutes","289.9"],["First Join","9:05 AM"],["Most Recent Leave","In progress"],["Join Count","1"],["Match","Verified"]]'>D2</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Attendance" data-pop-kv='[["Attended","Pending"],["Match","Session in progress"]]'>D3</button>
+            </div>
+          </div>
+          <!-- Demo-only override: illustrates the .tick-exception treatment for
+               an out-of-order checkpoint result. Ignore the Day 2 header state
+               for this one card — see field dictionary §0m. -->
+          <div class="ev-field">
+            <div class="ev-l">CPLT CHKPNT</div>
+            <span class="tick-exception" onclick="openDetailPop(this)" data-pop-title="Forum Completion" data-pop-kv='[["Day 3 Session 4 Attendance Check","✓ Present at 6:14 PM"],["Day 3 Session 3 Checkpoint","Not yet recorded"],["Status","Exception — S4 resolved before S3"]]'>S4 ✓ · S3 —</span>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Seminar</div>
+            <button class="pill p-neutral ev-clickable prog-seminar" onclick="openDetailPop(this)" data-pot="1" data-confirmed="0" data-reg="0" data-desig="0" data-alt="0" data-pop-title="Seminar Registration" data-pop-edit="classification:seminarPotential" data-pop-kv='[["Potential","Yes"],["Registered","No"]]'>POT</button>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">AC</div>
+            <button class="pill p-pot ev-clickable prog-ac" onclick="openDetailPop(this)" data-pot="1" data-confirmed="1" data-reg="1" data-desig="1" data-alt="0" data-pop-title="Advanced Course Registration" data-pop-kv='[["Registered","Yes"],["Registration","Designated"],["Course","The Advanced Course"],["Dates","October 3–5"],["Confirmed","August 14"]]'>REG</button>
+          </div>
+          <div class="ev-field ev-exception">
+            <button class="kebab-btn" onclick="openRowMenu(this)" aria-label="Actions"><svg viewBox="0 0 4 16" fill="currentColor"><circle cx="2" cy="2" r="1.6"/><circle cx="2" cy="8" r="1.6"/><circle cx="2" cy="14" r="1.6"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="ev-card" data-search="gretchen leaton 41321" data-reg-id="REG-41321" data-phone="(555) 010-1321" data-email="Greteldetel73@gmail.com">
+        <div class="ev-row1">
+          <div class="ev-field ev-identity">
+            <div class="ev-name"><div class="ev-name-row"><b>Gretchen Leaton</b> <span class="status-sep">–</span> <span class="pill p-active">ACTIVE</span></div><span>Legal: Gretchen Leaton · PID-41321</span></div>
+            <div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv='[["Value","Online"]]'>ONL</button><span class="v-zero">0</span></div>
+          </div>
+          <div class="ev-field ev-classification">
+            <div class="ev-l">Classification</div>
+            <div class="class-pills">
+              <button class="pill p-slot-off ev-clickable" data-classtype="mnr" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Minor" data-pop-kv='[["Status","No"]]'>MNR</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="reviewer" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Reviewer" data-pop-edit="classification:reviewer" data-pop-kv='[["Reviewer","No"]]'>REV</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="se" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Statistical Exclusion" data-pop-edit="classification:se" data-pop-kv='[["Status","Not excluded"]]'>SE</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="ac-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Advanced Course — Not Potential" data-pop-kv='[["AC Potential","Pending"]]'>AC-NP</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="sem-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Seminar — Not Potential" data-pop-kv='[["Seminar Potential","Pending"]]'>SEM NP</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Attendance</div>
+            <div class="ticks">
+              <button class="tick tk-attended" onclick="openDetailPop(this)" data-pop-title="Day 1 Attendance" data-pop-kv='[["Attended","Yes"],["Minutes","406.3"],["First Join","8:46 AM"],["Most Recent Leave","6:04 PM"],["Join Count","1"],["Match","Verified"]]'>D1</button>
+              <button class="tick tk-attended" onclick="openDetailPop(this)" data-pop-title="Day 2 Attendance" data-pop-kv='[["Attended","Yes"],["Minutes","293.8"],["First Join","9:00 AM"],["Most Recent Leave","In progress"],["Join Count","1"],["Match","Verified"]]'>D2</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Attendance" data-pop-kv='[["Attended","Pending"],["Match","Session in progress"]]'>D3</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">CPLT CHKPNT</div>
+            <div class="ticks">
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 3 Checkpoint" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S3</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 4 Attendance Check" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S4</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Seminar</div>
+            <button class="pill p-neutral ev-clickable prog-seminar" onclick="openDetailPop(this)" data-pot="0" data-confirmed="0" data-reg="0" data-desig="0" data-alt="0" data-pop-title="Seminar Registration" data-pop-edit="classification:seminarPotential" data-pop-kv='[["Potential","No"],["Registered","No"]]'>NP</button>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">AC</div>
+            <button class="pill p-neutral ev-clickable prog-ac" onclick="openDetailPop(this)" data-pot="0" data-confirmed="0" data-reg="0" data-desig="0" data-alt="0" data-pop-title="Advanced Course Registration" data-pop-edit="classification:acPotential" data-pop-kv='[["Potential","No"],["Registered","No"]]'>NP</button>
+          </div>
+          <div class="ev-field ev-exception">
+            <button class="kebab-btn" onclick="openRowMenu(this)" aria-label="Actions"><svg viewBox="0 0 4 16" fill="currentColor"><circle cx="2" cy="2" r="1.6"/><circle cx="2" cy="8" r="1.6"/><circle cx="2" cy="14" r="1.6"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="ev-card" data-search="suzanne kronisch 41358" data-reg-id="REG-41358" data-phone="(555) 010-1358" data-email="suzanne.kronisch@gmail.com">
+        <div class="ev-row1">
+          <div class="ev-field ev-identity">
+            <div class="ev-name"><div class="ev-name-row"><b>Suzanne Kronisch</b> <span class="status-sep">–</span> <span class="pill p-active">ACTIVE</span></div><span>Legal: Suzanne Kronisch · PID-41358</span></div>
+            <div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv='[["Value","Online"]]'>ONL</button><span class="v-zero">0</span><button class="zoom-flag ev-clickable" onclick="openDetailPop(this)" data-pop-title="Zoom Match" data-pop-kv='[["Status","Needs Review"],["Detail","Two devices seen under this name"]]'>Needs review</button></div>
+          </div>
+          <div class="ev-field ev-classification">
+            <div class="ev-l">Classification</div>
+            <div class="class-pills">
+              <button class="pill p-slot-off ev-clickable" data-classtype="mnr" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Minor" data-pop-kv='[["Status","No"]]'>MNR</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="reviewer" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Reviewer" data-pop-edit="classification:reviewer" data-pop-kv='[["Reviewer","No"]]'>REV</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="se" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Statistical Exclusion" data-pop-edit="classification:se" data-pop-kv='[["Status","Not excluded"]]'>SE</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="ac-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Advanced Course — Not Potential" data-pop-kv='[["AC Potential","Pending"]]'>AC-NP</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="sem-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Seminar — Not Potential" data-pop-kv='[["Seminar Potential","Pending"]]'>SEM NP</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Attendance</div>
+            <div class="ticks">
+              <button class="tick tk-attended" onclick="openDetailPop(this)" data-pop-title="Day 1 Attendance" data-pop-kv='[["Attended","Yes"],["Minutes","397.5"],["First Join","8:56 AM"],["Most Recent Leave","5:59 PM"],["Join Count","1"],["Match","Verified"]]'>D1</button>
+              <button class="tick tk-attended" onclick="openDetailPop(this)" data-pop-title="Day 2 Attendance" data-pop-kv='[["Attended","Yes"],["Minutes","280.4"],["First Join","9:07 AM"],["Most Recent Leave","In progress"],["Join Count","2"],["Match","Unresolved — two devices seen under this name"]]'>D2</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Attendance" data-pop-kv='[["Attended","Pending"],["Match","Session in progress"]]'>D3</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">CPLT CHKPNT</div>
+            <div class="ticks">
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 3 Checkpoint" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S3</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 4 Attendance Check" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S4</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Seminar</div>
+            <button class="pill p-neutral ev-clickable prog-seminar" onclick="openDetailPop(this)" data-pot="1" data-confirmed="0" data-reg="0" data-desig="0" data-alt="0" data-pop-title="Seminar Registration" data-pop-edit="classification:seminarPotential" data-pop-kv='[["Potential","Yes"],["Registered","No"]]'>POT</button>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">AC</div>
+            <button class="pill p-neutral ev-clickable prog-ac" onclick="openDetailPop(this)" data-pot="1" data-confirmed="0" data-reg="0" data-desig="0" data-alt="0" data-pop-title="Advanced Course Registration" data-pop-edit="classification:acPotential" data-pop-kv='[["Potential","Yes"],["Registered","No"]]'>POT</button>
+          </div>
+          <div class="ev-field ev-exception">
+            <button class="kebab-btn" onclick="openRowMenu(this)" aria-label="Actions"><svg viewBox="0 0 4 16" fill="currentColor"><circle cx="2" cy="2" r="1.6"/><circle cx="2" cy="8" r="1.6"/><circle cx="2" cy="14" r="1.6"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="ev-card" data-search="melissa clark 41395" data-reg-id="REG-41395" data-phone="(555) 010-1395" data-email="melissa.clark88@icloud.com">
+        <div class="ev-row1">
+          <div class="ev-field ev-identity">
+            <div class="ev-name"><div class="ev-name-row"><b>Melissa Clark</b> <span class="status-sep">–</span> <span class="pill p-active">ACTIVE</span></div><span>Legal: Melissa Clark · PID-41395</span></div>
+            <div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv='[["Value","Online"]]'>ONL</button><span class="v-zero">0</span></div>
+          </div>
+          <div class="ev-field ev-classification">
+            <div class="ev-l">Classification</div>
+            <div class="class-pills">
+              <button class="pill p-slot-off ev-clickable" data-classtype="mnr" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Minor" data-pop-kv='[["Status","No"]]'>MNR</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="reviewer" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Reviewer" data-pop-edit="classification:reviewer" data-pop-kv='[["Reviewer","No"]]'>REV</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="se" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Statistical Exclusion" data-pop-edit="classification:se" data-pop-kv='[["Status","Not excluded"]]'>SE</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="ac-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Advanced Course — Not Potential" data-pop-kv='[["AC Potential","Pending"]]'>AC-NP</button>
+              <button class="pill p-slot-off ev-clickable" data-classtype="sem-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Seminar — Not Potential" data-pop-kv='[["Seminar Potential","Pending"]]'>SEM NP</button>
+            <button class="pill p-scholarship ev-clickable" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Scholarship" data-pop-kv='[["Status","Approved"],["Source","Payment record — Amount Paid $0.00"]]'>SCH</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">Attendance</div>
+            <div class="ticks">
+              <button class="tick tk-attended" onclick="openDetailPop(this)" data-pop-title="Day 1 Attendance" data-pop-kv='[["Attended","Yes"],["Minutes","404.0"],["First Join","8:49 AM"],["Most Recent Leave","6:06 PM"],["Join Count","1"],["Match","Verified"]]'>D1</button>
+              <button class="tick tk-attended" onclick="openDetailPop(this)" data-pop-title="Day 2 Attendance" data-pop-kv='[["Attended","Yes"],["Minutes","297.1"],["First Join","9:03 AM"],["Most Recent Leave","In progress"],["Join Count","1"],["Match","Verified"]]'>D2</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Attendance" data-pop-kv='[["Attended","Pending"],["Match","Session in progress"]]'>D3</button>
+            </div>
+          </div>
+          <div class="ev-field">
+            <div class="ev-l">CPLT CHKPNT</div>
+            <div class="ticks">
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 3 Checkpoint" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S3</button>
+              <button class="tick tk-pending" onclick="openDetailPop(this)" data-pop-title="Day 3 Session 4 Attendance Check" data-pop-kv='[["Status","Not yet — checkpoint window not reached"]]'>S4</button>
+            </div>
+          </div>
+          <div class="ev-field"><div class="ev-l">Seminar</div><span class="v-na">—</span></div>
+          <div class="ev-field"><div class="ev-l">AC</div><span class="v-na">—</span></div>
+          <div class="ev-field ev-exception">
+            <button class="kebab-btn" onclick="openRowMenu(this)" aria-label="Actions"><svg viewBox="0 0 4 16" fill="currentColor"><circle cx="2" cy="2" r="1.6"/><circle cx="2" cy="8" r="1.6"/><circle cx="2" cy="14" r="1.6"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <!-- end repeat -->
+      </div>
+      <div class="pager" id="rosterPager">
+        <button class="btn btn-sm" onclick="pagerGo('roster',-1)">Prev</button>
+        <span class="mf" id="rosterPageLabel">Page 1 of 2</span>
+        <button class="btn btn-sm" onclick="pagerGo('roster',1)">Next</button>
+      </div>
+    </div>
+    <div class="legend">
+      <b>Owner</b>
+      <span>Preferred name → <span class="mf">Contact</span></span>
+      <span>Classification pills / Attendance / Seminar / ADV. CRS → <span class="mf">oRegistration</span></span>
+      <span>Course Status / Completion / Scholarship / Device exception → <span class="mf">oRegistration</span> (assumed, unconfirmed — see field dictionary §0l–§0o)</span>
+      <span style="margin-left:auto;color:#a9a49a;">Every edit here goes through the secure write service — see the field dictionary at the foot of this page.</span>
+    </div>
+  </div>
+  </div><!-- /#em-roster -->
+
+  <!-- ============ COURSE MATERIALS ============ -->
+  <div id="em-materials" class="emview">
+  <!-- 4.7 Live Material Release — REQUIRED P0 (brief §4.7).
+       Correction to earlier pilot simplification: each resource carries
+       its own Hidden/Visible state; a single "current released session"
+       field is not sufficient. Release is manual only — the CS toggles
+       at the moment the Event Leader begins speaking on the topic, never
+       on a clock. First release is confirmation-gated and triggers
+       participant email (+ SMS where consent exists). Re-hide warns and
+       sends nothing; re-show after a prior notify also sends nothing —
+       there is no separate resend action in this simplified view (§0j). -->
+  <div class="card msec" id="ms-release">
+    <div class="card-hd">
+      <h3>Course materials</h3>
+      <span class="sub">Hidden by default · release when the Forum Leader reaches the topic, not on a clock</span>
+      <div class="r">
+        <span style="font-size:12px;color:var(--gray);">Released <b class="mf" id="relProgCard">4 / 5</b> today</span>
+        <button class="btn btn-sm" onclick="openModal('mPreview')">Participant preview</button>
+      </div>
+    </div>
+
+    <!-- Sectioned by day, chronological, no tabs to switch — Day 1 → Day 2
+         → Day 3 → Graduation. There is deliberately no "Always" or "Prep"
+         section: nothing on this course defaults to always-visible: every
+         resource is released manually, on a day, when the Forum Leader
+         reaches it. Each row is just the toggle, the title + material
+         type, and a single "first shown" timestamp — no separate Hidden/
+         Visible pill (the toggle already shows that), no topic or
+         engagement metrics under the title, no Resend button. -->
+    <div class="relview" id="rel-day1">
+      <h4 class="daysec-hd">Day 1</h4>
+      <div class="res-row">
+        <div><button class="tog on" data-key="day1-assignments" data-toggle="materials" data-title="Day 1 Assignments" data-kind="Assignment" data-notified="1" data-notifat="Sat 2:14 pm" disabled></button></div>
+        <div class="res-t"><div class="nm">Day 1 Assignments</div><div class="mt"><span>Assignment</span></div></div>
+        <div class="res-time">First shown <b>Sat 2:14 pm</b></div>
+      </div>
+      <div class="res-row">
+        <div><button class="tog on" data-key="day1-agreements" data-toggle="materials" data-title="Day 1 Agreements" data-kind="Agreement" data-notified="1" data-notifat="Sat 2:14 pm" disabled></button></div>
+        <div class="res-t"><div class="nm">Day 1 Agreements</div><div class="mt"><span>Agreement</span></div></div>
+        <div class="res-time">First shown <b>Sat 2:14 pm</b></div>
+      </div>
+      <div class="res-row">
+        <div><button class="tog on" data-key="day1-letter" data-toggle="materials" data-title="Day 1 Letter" data-kind="Letter" data-notified="1" data-notifat="Sat 2:14 pm" disabled></button></div>
+        <div class="res-t"><div class="nm">Day 1 Letter</div><div class="mt"><span>Letter</span></div></div>
+        <div class="res-time">First shown <b>Sat 2:14 pm</b></div>
+      </div>
+      <div class="tokline" style="padding:12px 20px;">Day 1 is complete — 3 of 3 released. Kept read-only here; re-hide is still possible per §8.2 but is not demoed on a closed day.</div>
+    </div>
+
+    <div class="relview" id="rel-day2">
+      <h4 class="daysec-hd">Day 2 (today)</h4>
+      <!-- LOOP: repeat: content.subjects (Day 2) — each resource carries its own release state -->
+      <div class="res-row">
+        <div><button class="tog on" data-key="day2-assignments" data-toggle="materials" data-title="Day 2 Assignments" data-kind="Assignment" data-notified="1" data-notifat="6:58 pm" onclick="relToggle(this)"></button></div>
+        <div class="res-t"><div class="nm">Day 2 Assignments</div><div class="mt"><span>Assignment</span></div></div>
+        <div class="res-time">First shown <b>6:58 pm</b></div>
+      </div>
+      <div class="res-row">
+        <div><button class="tog on" data-key="day2-letter" data-toggle="materials" data-title="Day 2 Letter" data-kind="Letter" data-notified="1" data-notifat="6:58 pm" onclick="relToggle(this)"></button></div>
+        <div class="res-t"><div class="nm">Day 2 Letter</div><div class="mt"><span>Letter</span></div></div>
+        <div class="res-time">First shown <b>6:58 pm</b></div>
+      </div>
+      <!-- end repeat -->
+    </div>
+
+    <div class="relview" id="rel-day3">
+      <h4 class="daysec-hd">Day 3</h4>
+      <div class="res-row">
+        <div><button class="tog" data-key="day3-follow-through" data-toggle="materials" data-title="Day 3 Follow-Through" data-kind="Assignment" data-notified="0" disabled title="Day 3 has not started"></button></div>
+        <div class="res-t"><div class="nm">Day 3 Follow-Through</div><div class="mt"><span>Assignment</span></div></div>
+        <div class="res-time">—</div>
+      </div>
+    </div>
+
+    <div class="relview" id="rel-final">
+      <h4 class="daysec-hd">Graduation</h4>
+      <div class="res-row">
+        <div><button class="tog" disabled title="Available Tuesday"></button></div>
+        <div class="res-t"><div class="nm">Registration Table Link</div><div class="mt"><span>Link</span></div></div>
+        <div class="res-time">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Announcements — a much smaller surface than Course Materials: three
+       manual toggles, one per program (Seminar/AC/Gift a Forum), for
+       announcing that registration/gifting is open. Reuses the same
+       release toggle pattern (relToggle()/confirm/re-hide/re-show flow)
+       rather than a new component. Real spec-vs-prototype gap found and
+       fixed 2026-08-12: this card only had 2 rows (Seminar/AC) — the
+       "Gift a Forum" toggle (events.f3167) was missing entirely, added
+       as a 3rd row to match the 3-field spec. -->
+  <div class="card msec" id="ms-announcements">
+    <div class="card-hd">
+      <h3>Announcements</h3>
+      <span class="sub">Manual toggles — announce when the Forum Leader opens registration for each program</span>
+    </div>
+    <div class="relview">
+      <div class="res-row">
+        <div><button class="tog" data-key="seminar-open" data-toggle="announcements" data-title="Seminar announcement" data-kind="Announcement" data-notified="0" onclick="relToggle(this)"></button></div>
+        <div class="res-t"><div class="nm">Seminar</div><div class="mt"><span>Registration announcement</span></div></div>
+        <div class="res-time">—</div>
+      </div>
+      <div class="res-row">
+        <div><button class="tog" data-key="AC-open" data-toggle="announcements" data-title="Advanced Course announcement" data-kind="Announcement" data-notified="0" onclick="relToggle(this)"></button></div>
+        <div class="res-t"><div class="nm">Advanced Course</div><div class="mt"><span>Registration announcement</span></div></div>
+        <div class="res-time">—</div>
+      </div>
+      <div class="res-row">
+        <div><button class="tog" data-key="gift-open" data-toggle="announcements" data-title="Gift a Forum announcement" data-kind="Announcement" data-notified="0" onclick="relToggle(this)"></button></div>
+        <div class="res-t"><div class="nm">Gift a Forum</div><div class="mt"><span>Gifting announcement</span></div></div>
+        <div class="res-time">—</div>
+      </div>
+    </div>
+  </div>
+  </div><!-- /#em-materials -->
+
+  <!-- ============ GUESTS ============ -->
+  <div id="em-guests" class="emview">
+  <!-- Guest snapshot — replaces the generic whole-course Course snapshot
+       card on this subtab with guest-specific metrics only. Mirrors the
+       Reporting Dashboard's "Landmark Forum / guests" KPI band (Invitations
+       sent, Total guests, GP100, Forum reg. effectiveness, RPH — Friday,
+       RPH — Final Session) plus Graduate/Non-graduate guests from the
+       "Invitations" band — same source numbers, restyled to this page's
+       .stats tile pattern instead of the read-only .kpi pattern. -->
+  <div class="card msec" id="em-guest-snapshot">
+    <div class="card-hd">
+      <h3>Guest snapshot</h3>
+      <div class="r"><span style="font-size:11.5px;color:var(--gray);">Live</span></div>
+    </div>
+    <div class="stats stats-4">
+      <div class="stat"><div class="l">Invitations sent</div><div class="n"><span class="mf-lg" data-stat="gsInvitationsSent">—</span></div><div class="sub" data-stat-sub="gsInvitationsSent">—</div></div>
+      <div class="stat"><div class="l">Total guests</div><div class="n"><span class="mf-lg" data-stat="gsTotalGuests">—</span></div><div class="sub" data-stat-sub="gsTotalGuests">—</div></div>
+      <div class="stat"><div class="l">GPH</div><div class="n"><span class="mf-lg" data-stat="gsGph">—</span></div><div class="sub">per 100 participants</div></div>
+      <div class="stat"><div class="l">GGPH</div><div class="n"><span class="mf-lg" data-stat="gsGgph">—</span></div><div class="sub">graduate guests per 100</div></div>
+      <div class="stat big"><div class="l">Forum reg. effectiveness</div><div class="n"><span class="mf-lg" data-stat="gsForumRegEff">—</span></div><div class="sub" style="color:rgba(255,255,255,.55);" data-stat-sub="gsForumRegEff">—</div></div>
+      <div class="stat"><div class="l">RPH</div><div class="n"><span class="mf-lg" data-stat="gsRph">—</span></div><div class="sub">registrations per 100 participants</div></div>
+      <div class="stat"><div class="l">Grad guests</div><div class="n"><span class="mf-lg" data-stat="gsGradGuests">—</span></div><div class="sub">prior programme on record</div></div>
+      <div class="stat"><div class="l">Non-grad guests</div><div class="n"><span class="mf-lg" data-stat="gsNonGradGuests">—</span></div><div class="sub">no prior programme</div></div>
+    </div>
+  </div>
+  <!-- Guest attendance / registration / inviter association → oInvitation
+       (brief §7). Same card + search + pagination pattern as the roster,
+       different field set: inviting participant instead of legal name/PID,
+       and guest-specific booleans (After 7:30pm, Attend, LF Grad?, REG). -->
+  <div class="card msec" id="ms-guests">
+    <div class="card-hd">
+      <h3>Guests</h3>
+      <span class="sub"><span class="mf">141</span> expected for the Final Session · showing <span class="mf" id="guestShowingCount">11</span></span>
+      <div class="r">
+        <div class="search" style="position:relative;">
+          <input type="text" id="guestSearch" oninput="filterList('guest')" placeholder="Search guest name or inviting participant…" style="border:1px solid var(--line);border-radius:7px;padding:8px 12px;font-size:12.5px;width:260px;">
+        </div>
+        <button class="btn btn-sm" onclick="toast('Export queued — audit entry recorded.')">Export</button>
+      </div>
+    </div>
+    <div class="card-bd flush">
+      <div class="ev-list" id="guestList">
+      <!-- LOOP: repeat: guest.rows (from oInvitations, via dashboard-guests webhook).
+           Real spec (2026-08-12): Name = the linked Guest Contact's name (f2259//
+           firstname/lastname — invitations.f2959/f2960 are blank in practice, confirmed
+           via real event 218 data). Invited by = f2257 Participant, read-only display
+           for this pass (no write-back yet). Format = same event-level value as the main
+           roster (not per-guest). FS # column cut entirely. LF Grad? = f2292. REG (Forum)
+           and ADV. CRS both use the roster's NP/POT/REG pill styling: REG (green) once
+           registered (f2299/f2298), POT (grey) if flagged Potential (f3211/f3212) but not
+           yet registered, NP (grey, hover reason f3050/f3213) otherwise. SE Exception/
+           Under-18/TOS/ENG chips dropped — no confirmed in-scope field mapping for this
+           pass (see CS Dashboard memory). -->
+      </div>
+      <div class="pager" id="guestPager">
+        <button class="btn btn-sm" onclick="pagerGo('guest',-1)">Prev</button>
+        <span class="mf" id="guestPageLabel">Page 1 of 2</span>
+        <button class="btn btn-sm" onclick="pagerGo('guest',1)">Next</button>
+      </div>
+    </div>
+    <div class="legend">
+      <b>Owner</b>
+      <span>All guest fields → <span class="mf">oInvitation</span></span>
+      <span style="margin-left:auto;color:#a9a49a;">Guest activity is invitation/event-specific, per the data-ownership table in the field dictionary.</span>
+    </div>
+  </div>
+  </div><!-- /#em-guests -->
+
+</section>
+
+<!-- ============================================================
+     REPORTING DASHBOARD (brief §5) — read-only reporting. Course Stats /
+     Seminar / Advanced Course / Landmark Forum & Guests / Graduate
+     Courses / Invitations are visible here. Revenue is Event-Leader-only
+     per the source spec — see the field dictionary note (§0a) on why
+     that must be enforced outside this client-side file, not with a
+     toggle. No drill-down into Event Management or Master Stats (brief
+     §5, deferred per §12: full metric drill-down into included/excluded
+     records).
+     ============================================================ -->
+<section class="view" id="v-kpi">
+
+  <div class="sechd">
+    <h2>KPI Dashboard</h2>
+    <div class="lede">Read current course performance in card form. Read-only by construction.</div>
+  </div>
+
+  <div class="kpi-note">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6.4"/><path d="M8 7.3v4M8 4.8v.01"/></svg>
+    <span>All cards read live object data — nothing here is manually entered. Untouched or not-yet-started values show <span class="v-na">—</span>, never a misleading zero. Metric drill-down into included/excluded record sets is deferred past the pilot.</span>
+  </div>
+
+  <div class="kpi-band">
+    <div class="kpi-hd"><span class="eyebrow">Course stats</span><span class="kpi-src">Source · roster and Zoom attendance</span></div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="l">Participants in course</div><div class="n"><span class="mf-lg" data-stat="drParticipants">—</span></div><div class="sub">roster total</div></div>
+      <div class="kpi"><div class="l">Still participating</div><div class="n"><span class="mf-lg" data-stat="current">—</span></div><div class="sub">still participating</div></div>
+      <div class="kpi"><div class="l">Lost during Forum</div><div class="n"><span class="mf-lg" data-stat="ldp">—</span></div><div class="sub">left for any reason</div></div>
+      <div class="kpi"><div class="l">Completed the Forum</div><div class="n"><span class="mf-lg" data-stat="completions">—</span></div><div class="sub">Forum Completed</div></div>
+      <div class="kpi term"><div class="l">Attendance rate</div><div class="n"><span class="mf-lg" data-stat="attendanceNow">—</span></div><div class="sub" data-stat-sub="attendanceNow">—</div></div>
+    </div>
+  </div>
+
+  <div class="kpi-band">
+    <div class="kpi-hd"><span class="eyebrow">Seminar</span><span class="badge-optin">Enabled for this pilot</span><span class="kpi-src">Source · Seminar registration records</span></div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="l">Potential</div><div class="n"><span class="mf-lg" data-stat="seminarPotentialCount">—</span></div><div class="sub" data-stat-sub="seminarPotentialCount">—</div></div>
+      <div class="kpi"><div class="l">Confirmed</div><div class="n"><span class="mf-lg" data-stat="seminarRegCount">—</span></div><div class="sub">registered</div></div>
+      <div class="kpi term"><div class="l">Confirmation rate</div><div class="n"><span class="mf-lg" data-stat="seminarPct">—</span></div><div class="sub" data-stat-sub="seminarPct">—</div></div>
+    </div>
+  </div>
+
+  <div class="kpi-band">
+    <div class="kpi-hd"><span class="eyebrow">Advanced Course</span><span class="kpi-src">Source · Advanced Course registration records</span></div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="l">Potential</div><div class="n"><span class="mf-lg" data-stat="acPotentialCount">—</span></div><div class="sub" data-stat-sub="acPotentialCount">—</div></div>
+      <div class="kpi"><div class="l">Registered</div><div class="n"><span class="mf-lg" data-stat="acRegCount">—</span></div><div class="sub">registered</div></div>
+      <div class="kpi term"><div class="l">Registration rate</div><div class="n"><span class="mf-lg" data-stat="acPct">—</span></div><div class="sub" data-stat-sub="acPct">—</div></div>
+    </div>
+  </div>
+
+  <div class="kpi-band">
+    <div class="kpi-hd"><span class="eyebrow">Landmark Forum / guests</span><span class="kpi-src">Source · guest team records</span></div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="l">Invitations sent</div><div class="n"><span class="mf-lg" data-stat="gsInvitationsSent">—</span></div><div class="sub" data-stat-sub="gsInvitationsSent">—</div></div>
+      <div class="kpi"><div class="l">Total guests</div><div class="n"><span class="mf-lg" data-stat="gsTotalGuests">—</span></div><div class="sub" data-stat-sub="gsTotalGuests">—</div></div>
+      <div class="kpi"><div class="l">GP100</div><div class="n"><span class="mf-lg" data-stat="gsGph">—</span></div><div class="sub">per 100 participants</div></div>
+      <div class="kpi term"><div class="l">Forum reg. effectiveness</div><div class="n"><span class="mf-lg" data-stat="gsForumRegEff">—</span></div><div class="sub" data-stat-sub="gsForumRegEff">—</div></div>
+      <div class="kpi"><div class="l">RPH</div><div class="n"><span class="mf-lg" data-stat="gsRph">—</span></div><div class="sub">registrations per 100 participants</div></div>
+    </div>
+  </div>
+
+  <div class="kpi-band last">
+    <div class="kpi-hd"><span class="eyebrow">Invitations</span><span class="kpi-src">Source · guest and registration teams</span></div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="l">Participants who invited</div><div class="n"><span class="mf-lg" data-stat="participantsWhoInvited">—</span></div><div class="sub" data-stat-sub="participantsWhoInvited">—</div></div>
+      <div class="kpi"><div class="l">Non-graduate guests</div><div class="n"><span class="mf-lg" data-stat="gsNonGradGuests">—</span></div><div class="sub">no prior programme</div></div>
+      <div class="kpi"><div class="l">Graduate guests</div><div class="n"><span class="mf-lg" data-stat="gsGradGuests">—</span></div><div class="sub">prior programme on record</div></div>
+    </div>
+  </div>
+
+  <!-- Revenue is Event-Leader-only in the source spec. This single-user
+       page shows it unconditionally in the demo; in production it must
+       not be rendered for a Course Supervisor session at all — see the
+       field dictionary for why a client-side toggle is the wrong place
+       to enforce that. -->
+  <div class="kpi-band revenue last" id="revenueBand">
+    <div class="kpi-hd"><span class="eyebrow">Revenue</span><span class="kpi-src">Event Leader only for this Event · booked / projected / collected, by product line</span></div>
+
+    <div class="rev-row">
+      <div class="rev-row-label">New LF</div>
+      <div class="rev-grid">
+        <div class="kpi"><div class="l">Booked revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+        <div class="kpi"><div class="l">Projected revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+        <div class="kpi"><div class="l">Collected revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+      </div>
+    </div>
+
+    <div class="rev-row">
+      <div class="rev-row-label">Seminar</div>
+      <div class="rev-grid">
+        <div class="kpi"><div class="l">Booked revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+        <div class="kpi"><div class="l">Projected revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+        <div class="kpi"><div class="l">Collected revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+      </div>
+    </div>
+
+    <div class="rev-row">
+      <div class="rev-row-label">Advanced Course</div>
+      <div class="rev-grid">
+        <div class="kpi"><div class="l">Booked revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+        <div class="kpi"><div class="l">Projected revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+        <div class="kpi"><div class="l">Collected revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+      </div>
+    </div>
+
+    <div class="rev-row total">
+      <div class="rev-row-label">Total</div>
+      <div class="rev-grid">
+        <div class="kpi"><div class="l">Booked revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+        <div class="kpi"><div class="l">Projected revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+        <div class="kpi"><div class="l">Collected revenue</div><div class="n"><span class="v-na">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend" style="border:1px solid var(--line);border-radius:12px;background:#fff;margin-top:18px;">
+    <b>Values</b>
+    <span><span class="v-zero">0</span> zero</span>
+    <span><span class="v-na">—</span> not applicable or not yet started</span>
+  </div>
+
+</section>
+
+</div></main>
+
+<!-- ============================================================
+     DRAWERS
+     ============================================================ -->
+<div class="scrim" id="scrim" onclick="dismissModal()"></div>
+
+<!-- Shared anchored detail popover — one instance, JS-positioned per
+     trigger pill/tick. See openDetailPop()/closeDetailPop()/onEditFromPop()
+     and field dictionary §0l–§0t for the Edit-CTA rules per state. -->
+<div class="det-pop" id="detailPop">
+  <div class="det-pop-eyebrow" id="detailPopEyebrow"></div>
+  <div class="det-pop-title" id="detailPopTitle"></div>
+  <dl class="det-pop-kv" id="detailPopKv"></dl>
+  <div class="det-pop-ft" id="detailPopFt" style="display:none;"><a onclick="onEditFromPop()">Edit</a></div>
+</div>
+
+<!-- Home event-card ••• kebab menu — one shared instance (§0x),
+     mirrors the per-row kebab pattern below (positionFloating) rather
+     than inventing a new floating-menu mechanism. -->
+<div class="kebab-menu" id="eventCardMenu">
+  <button class="kebab-item" onclick="eventCardMenuAction('roster')">View Roster</button>
+  <button class="kebab-item" onclick="eventCardMenuAction('exceptions')">Show Exceptions</button>
+  <button class="kebab-item" onclick="eventCardMenuAction('assignments')">View Assignments</button>
+</div>
+
+<!-- Take Attendance session picker — REAL BUILD 2026-08-12. Floating menu,
+     JS-positioned off the roster header's Take Attendance button (same
+     positionFloating() mechanism as eventCardMenu/rowMenu). CS picks
+     Session (S1-S4) only — Day is always resolved server-side from
+     events.f3025, never client-supplied. See openTakeAttendanceMenu()/
+     confirmTakeAttendance() in the script. -->
+<div class="kebab-menu" id="takeAttendanceMenu">
+  <button class="kebab-item" onclick="confirmTakeAttendance('1')">Session 1</button>
+  <button class="kebab-item" onclick="confirmTakeAttendance('2')">Session 2</button>
+  <button class="kebab-item" onclick="confirmTakeAttendance('3')">Session 3</button>
+  <button class="kebab-item" onclick="confirmTakeAttendance('4')">Session 4</button>
+</div>
+
+<!-- Shared per-row ••• kebab menu — one instance, JS-positioned per
+     trigger, Registration-contextual via pendingRowMenuCard/data-reg-id.
+     Items render conditionally — see openRowMenu(). -->
+<div class="kebab-menu" id="rowMenu">
+  <button class="kebab-item" onclick="kebabAction('courseStatus')">Update Course Status</button>
+  <button class="kebab-item" onclick="kebabAction('deviceException')">Device / Zoom Exception</button>
+  <button class="kebab-item" onclick="kebabAction('overrideClassification')">Override Classification</button>
+  <button class="kebab-item" onclick="kebabAction('correctAttendance')">Correct Attendance</button>
+  <button class="kebab-item" onclick="kebabAction('addNote')">Add Operational Note</button>
+  <button class="kebab-item" id="rowMenuResolveZoom" style="display:none;" onclick="kebabAction('resolveZoom')">Resolve Zoom Match</button>
+  <button class="kebab-item" onclick="kebabAction('viewDetails')">View Participant Details</button>
+</div>
+
+<div class="dw-layer">
+<!-- The global audit-trail popout drawer has been removed per revision
+     feedback. Auditable events still log — see the inline "Release audit"
+     list on Course Materials — they just don't have a dedicated drawer. -->
+
+<!-- View Participant Details — read-only summary of all six roster zones,
+     plus the two fields relocated out of the row (§0t): Edit Name and
+     Spouse. First real use of the .dw drawer component. -->
+<div class="dw" id="dwParticipant">
+  <div class="dw-hd">
+    <div><h3 id="dwName">Participant details</h3><div class="sub" id="dwLegalPid">Legal name · PID</div></div>
+    <button class="x" onclick="dismissModal()" aria-label="Close">&times;</button>
+  </div>
+  <div class="dw-bd">
+    <div class="dw-sec">
+      <h5>Identity</h5>
+      <div class="kv">
+        <span class="k">Preferred name</span><span class="v"><input class="iedit" id="dwNameInput" data-action="update_name_likes" onblur="inlineSave(this)"></span>
+        <span class="k">Spouse</span><span class="v"><span class="ev-field spouse-combo"><input class="iedit spouse-input" id="dwSpouseInput" value="" placeholder="Link household…" data-action="set_spouse" oninput="spouseFilter(this)" onfocus="spouseFilter(this)" onblur="spouseBlur(this)"><div class="combo-list"></div></span></span>
+      </div>
+    </div>
+    <!-- Contact info — so the CS can reach the participant directly if
+         needed. Preferred Communication defaults to Email per the
+         registration export (every row's Preferred Communication column
+         was blank except the header itself implying Email) — assumed
+         unconfirmed field mapping, see field dictionary §0u. -->
+    <div class="dw-sec">
+      <h5>Contact</h5>
+      <div class="kv">
+        <span class="k">Email</span><span class="v"><a id="dwEmail" href="#" style="color:var(--green);font-weight:600;">—</a></span>
+        <span class="k">Phone</span><span class="v"><a id="dwPhone" href="#">—</a></span>
+        <span class="k">Preferred Communication</span><span class="v" id="dwPreferredComm">Email</span>
+      </div>
+    </div>
+    <!-- Join link — read-only, copyable. For the CS to hand a late/locked-out
+         participant their own link rather than the generic Event join URL.
+         Assumed unconfirmed field mapping — see field dictionary §0u. -->
+    <div class="dw-sec">
+      <h5>Join link</h5>
+      <div class="kv">
+        <span class="k">Zoom link</span><span class="v"><span class="mf" id="dwJoinLink">—</span> <a onclick="copyJoinLink()" style="cursor:pointer;color:var(--green);font-weight:700;">Copy</a></span>
+      </div>
+    </div>
+    <div class="dw-sec">
+      <h5>Roster summary</h5>
+      <div class="kv" id="dwSummary"></div>
+    </div>
+    <!-- Information form — the participant's own pre-Event submission,
+         read-only here (not a CS correction surface). Assumed unconfirmed
+         field mapping — see field dictionary §0u. Demo content is the same
+         fictional placeholder set for every participant; production would
+         merge each participant's actual submitted responses. -->
+    <div class="dw-sec">
+      <h5>Information form</h5>
+      <div class="kv">
+        <span class="k">Emergency Contact Name</span><span class="v" id="dwEcName">—</span>
+        <span class="k">Emergency Contact Phone</span><span class="v" id="dwEcPhone">—</span>
+        <span class="k">Emergency Contact Relationship</span><span class="v" id="dwEcRel">—</span>
+        <span class="k">Coaching Call Availability</span><span class="v" id="dwCoaching">—</span>
+        <span class="k">Agreed to Registration Policies</span><span class="v" id="dwAgreeReg">—</span>
+        <span class="k">Agreed to Privacy Policy</span><span class="v" id="dwAgreePriv">—</span>
+        <span class="k">Agreed to Terms of Use</span><span class="v" id="dwAgreeTerms">—</span>
+        <span class="k">Information Form Completed</span><span class="v" id="dwFormComplete">—</span>
+        <span class="k">Is There Anything You'd Like Us to Know?</span><span class="v" id="dwAnythingKnow">—</span>
+        <span class="k">Dietary Restrictions / Special Needs</span><span class="v" id="dwDietary">—</span>
+        <span class="k">Forum Participants You Know</span><span class="v" id="dwParticipantsKnow">—</span>
+        <span class="k">What I Want to Accomplish</span><span class="v" id="dwWantAccomplish">—</span>
+      </div>
+    </div>
+  </div>
+  <div class="dw-ft"><button class="btn" onclick="dismissModal()">Close</button></div>
+</div>
+</div><!-- /.dw-layer -->
+
+<!-- ============================================================
+     MODALS
+     ============================================================ -->
+
+<!-- End session — ending Day 2 submits every entry recorded today (roster
+     edits, attendance overrides, classification, Seminar/AC status, guest
+     data, material releases) as final. This is a review-first confirmation,
+     not a one-click action. -->
+<div class="modal" id="mEndSession">
+  <div class="modal-hd"><h3>End session — <span id="esmTitleDay">Day 2</span>?</h3><p>Review every entry before confirming — ending the session submits today's entries exactly as entered.</p></div>
+  <div class="modal-bd">
+    <div class="warnbox">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 1.5 15 14H1L8 1.5Z"/><path d="M8 6v3.5M8 11.5v.01"/></svg>
+      <div>
+        <div class="t">This submits today's entries as final</div>
+        <div class="d">Attendance, classification changes, Seminar/AC status, guest data and material releases recorded for <span id="esmBodyDay">Day 2</span> are locked in the moment you confirm. Go back and check the roster and course materials first — corrections after ending the session require a separate override, not a quick edit.</div>
+      </div>
+    </div>
+    <div class="kv" style="margin-top:14px;">
+      <span class="k">Attendance</span><span class="v">Review the roster in Event Management before ending</span>
+      <span class="k">Material released today</span><span class="v"><b class="mf" id="endSessionReleaseCount">4 / 5</b></span>
+    </div>
+  </div>
+  <div class="modal-ft"><button class="btn btn-danger" id="btnConfirmEndSession" onclick="confirmEndSession()">End session — submit entries</button><button class="btn" onclick="dismissModal()">Go back and review</button></div>
+</div>
+
+<!-- Correct Attendance — REAL BUILD 2026-08-12. The manual-override tail of
+     Attendance Architecture Layer 2: CS picks Day/Session/Status, writes
+     registrations.f3191 (Attendance Status) always, f3190 (FS LATE NOTE,
+     shared with the automated resolution flow) only when Absent-Excused,
+     and the specific per-session ATTENDED checkbox (f3193-f3203/f3055)
+     to true only when Present. This is the manual path for when the
+     automated Zoom/Participant-ID match fails — normal attendance stays
+     Zoom-sourced and read-only via the tick's popover. -->
+<div class="modal" id="mCorrectAttendance">
+  <div class="modal-hd"><h3>Correct attendance — <span class="serif-it" id="attName">this participant</span></h3><p>Manual override for when the automated Zoom/Participant-ID match fails. Writes to <span class="mf">oRegistration</span> for this Event only.</p></div>
+  <div class="modal-bd">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="field"><label>Day</label>
+        <select id="corrAttDay">
+          <option value="1">Day 1</option>
+          <option value="2" selected>Day 2</option>
+          <option value="3">Day 3</option>
+        </select>
+      </div>
+      <div class="field"><label>Session</label>
+        <select id="corrAttSession">
+          <option value="1">Session 1</option>
+          <option value="2">Session 2</option>
+          <option value="3">Session 3</option>
+          <option value="4">Session 4</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Status</label>
+      <select id="corrAttStatus" onchange="onCorrAttStatusChange()">
+        <option value="469">Present</option>
+        <option value="467">Absent - Excused</option>
+        <option value="468">Absent - NCNS</option>
+      </select>
+    </div>
+    <div class="field" id="corrAttNoteField"><label>Reason</label><textarea id="corrAttNote" rows="3" placeholder="Required — why is this excused?"></textarea></div>
+  </div>
+  <div class="modal-ft"><button class="btn btn-primary" id="corrAttSaveBtn" onclick="confirmCorrectAttendance()">Save</button><button class="btn" onclick="dismissModal()">Cancel</button></div>
+</div>
+
+<!-- Operational note popup — REAL BUILD 2026-08-12 for the Roster & Classification
+     ••• kebab "Add Operational Note" action (append-only to registrations.f2886,
+     same pattern as Override Classification's optional note). Also still used by
+     the not-yet-real-data Pre-Forum readiness roster (.hr-row) — confirmNotes()
+     only performs the real write when opened from a real .ev-card with a real
+     numeric data-reg-id, otherwise falls back to the old demo-only behavior so a
+     fixture .hr-row can't send a fake ID to the real webhook. -->
+<div class="modal" id="mNotes">
+  <div class="modal-hd"><h3>Operational note — <span class="serif-it" id="notesName">this record</span></h3><p>Visible to staff only.</p></div>
+  <div class="modal-bd"><div class="field"><textarea id="notesText" rows="5" placeholder="Add an operational note…"></textarea></div></div>
+  <div class="modal-ft"><button class="btn btn-primary" id="notesSaveBtn" onclick="confirmNotes()">Save note</button><button class="btn" onclick="dismissModal()">Cancel</button></div>
+</div>
+
+<!-- 8.1 First-release confirmation -->
+<div class="modal" id="mRelease">
+  <div class="modal-hd">
+    <h3>Release <span class="serif-it" id="relItemTitle">this material</span>?</h3>
+    <p>This is exactly what becomes visible to participants the moment you confirm — release is manual only, tied to the Forum Leader reaching this topic.</p>
+  </div>
+  <div class="modal-bd">
+    <div class="preview">
+      <div class="preview-hd"><span class="pill p-visible"><i class="dot"></i>Participant view</span></div>
+      <div class="preview-bd">
+        <div class="pv-item"><div class="t" id="relItemTitle2">Day 2 Letter</div><div class="d" id="relItemKind">Letter</div></div>
+      </div>
+    </div>
+    <div class="kv" style="margin-top:16px;">
+      <span class="k">Audience</span><span class="v"><span class="mf">184</span> active registrations for this Event</span>
+      <span class="k">Email</span><span class="v">Sent to all 184 eligible participants, linking to the portal — not the raw asset URL</span>
+      <span class="k">SMS</span><span class="v">Sent to the <span class="mf">96</span> with SMS consent on file and a valid number</span>
+      <span class="k">Recorded as</span><span class="v" id="relActor">Kris Feldmanis · Course Supervisor</span>
+    </div>
+  </div>
+  <div class="modal-ft">
+    <button class="btn btn-primary" onclick="confirmRelease()">Confirm release</button>
+    <button class="btn" onclick="cancelRelToggle()">Cancel</button>
+    <span style="margin-left:auto;font-size:11px;color:var(--gray);">Notification is sent only after this write succeeds.</span>
+  </div>
+</div>
+
+<!-- 8.2 Re-hide warning -->
+<div class="modal" id="mRehide">
+  <div class="modal-hd"><h3>Re-hide <span class="serif-it" id="rehideTitle">this item</span>?</h3><p>Participants may already have opened or downloaded it.</p></div>
+  <div class="modal-bd">
+    <div class="warnbox">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 1.5 15 14H1L8 1.5Z"/><path d="M8 6v3.5M8 11.5v.01"/></svg>
+      <div>
+        <div class="t">Previously opened or downloaded copies cannot be recalled</div>
+        <div class="d">Re-hiding removes it from the portal and sends no message. If a participant already saved an external link, this cannot revoke that copy — this is a portal-visibility control, not a takedown.</div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-ft"><button class="btn btn-danger" onclick="confirmRehide()">Re-hide anyway</button><button class="btn" onclick="cancelRelToggle()">Keep visible</button></div>
+</div>
+
+<!-- Re-show after a prior notify — no duplicate message -->
+<div class="modal" id="mReshow">
+  <div class="modal-hd"><h3>Re-show <span class="serif-it" id="reshowTitle">this item</span>?</h3><p>This item was already notified once. Re-showing restores portal visibility only.</p></div>
+  <div class="modal-bd">
+    <div class="kv">
+      <span class="k">Notification sent at</span><span class="v" id="reshowSentAt">6:58 pm</span>
+      <span class="k">On re-show</span><span class="v">No automatic second email or SMS — <span class="mf">Notification Sent At</span> is already populated</span>
+    </div>
+  </div>
+  <div class="modal-ft"><button class="btn btn-primary" onclick="confirmReshow()">Re-show, no message</button><button class="btn" onclick="cancelRelToggle()">Cancel</button></div>
+</div>
+
+<!-- SE reason — Guests tab only (unchanged, out of scope for this revision).
+     Required whenever a guest's Statistically Excluded chip is turned on.
+     Cancelling reverts the chip since SE=on without a reason isn't valid.
+     Kept separate from the roster's new Override Classification modal below
+     — the two surfaces intentionally don't share a write flow here. -->
+<div class="modal" id="mSEReason">
+  <div class="modal-hd"><h3>Statistically Excluded — reason</h3><p>Required whenever SE is set. Writes to <span class="mf">oInvitation</span> alongside the flag.</p></div>
+  <div class="modal-bd"><div class="field"><textarea id="seReasonText" rows="4" placeholder="Why is this record statistically excluded?"></textarea></div></div>
+  <div class="modal-ft"><button class="btn btn-primary" onclick="confirmSEReason()">Save reason</button><button class="btn" onclick="cancelSEReason()">Cancel</button></div>
+</div>
+
+<!-- Override Classification (§0s) — the one shared modal for every
+     CS-correctable roster classification: Reviewer, Statistical Exclusion,
+     Seminar Potential, Advanced Course Potential. Scholarship is deliberately absent
+     (§0o) — it's derived from payment data, not overridable here. Cancelling
+     a first-time-on override reverts the pill, same safety behavior as the
+     old SE-only flow this replaces. -->
+<div class="modal" id="mOverrideClassification">
+  <div class="modal-hd"><h3>Override classification — <span class="serif-it" id="ocName">this participant</span></h3><p>Writes to <span class="mf">oRegistration</span> alongside the flag. A reason is required for every override.</p></div>
+  <div class="modal-bd">
+    <div class="field"><label>Field</label>
+      <select id="ocField">
+        <option value="reviewer">Reviewer</option>
+        <option value="se">Statistical Exclusion</option>
+        <option value="seminarPotential">Seminar Potential</option>
+        <option value="acPotential">Advanced Course Potential</option>
+      </select>
+    </div>
+    <div class="kv"><span class="k">Current value</span><span class="v" id="ocCurrent">—</span></div>
+    <div class="field" style="margin-top:10px;"><label>Change to</label><button class="tog" id="ocChangeTo" onclick="this.classList.toggle('on')"></button></div>
+    <div class="field"><label>Override reason</label><textarea id="ocReasonText" rows="4" placeholder="Required — why is this classification being overridden?"></textarea></div>
+    <div class="field"><label>Note (optional)</label><textarea id="ocNoteText" rows="2" placeholder="Optional — visible to staff only"></textarea></div>
+  </div>
+  <div class="modal-ft"><button class="btn btn-primary" id="ocSaveBtn" onclick="confirmOverrideClassification()">Save override</button><button class="btn" onclick="cancelOverrideClassification()">Cancel</button></div>
+</div>
+
+<!-- Update Course Status (§0l) — REAL BUILD 2026-08-12. Left Course? drives
+     Left Type (real 5-option LDP list, registrations.f3056 — NOT the old
+     LDP/NSHO binary, NSHO isn't part of this field), Day (f3059), Time
+     (f3060, optional), Leave Reason (f3061 "WBO Reason", real 7-option
+     list). WBO (f2688) is read-only/derived — auto-true when Left Type is
+     LDP 2 or LDP 4, computed both here (display) and server-side
+     (authoritative — the webhook ignores any client WBO value). The old
+     "Operational note" field was cut from this modal: Operational Notes
+     (f2886) is its own separate kebab action (#5), not part of this one's
+     locked field spec. Reverting Left Course? to No clears Left Type/Day/
+     Leave Reason/WBO server-side and restores ACTIVE — history lives in
+     the audit trail (logAudit()), not in stale fields the UI keeps around.
+     Writes via dashboardWriteCourseStatus() to CS Dashboard : Update
+     Course Status (n8n id lj3Ewx20NFYpOp3g); on success the whole roster
+     is refetched so pills/ticks reflect real server state (no live-push
+     wired for roster edits yet). -->
+<div class="modal" id="mCourseStatus">
+  <div class="modal-hd"><h3>Update course status — <span class="serif-it" id="csName">this participant</span></h3><p>Writes to <span class="mf">oRegistration</span> for this Event only.</p></div>
+  <div class="modal-bd">
+    <div class="field"><label>Left course?</label>
+      <select id="csLeftCourse" onchange="onCsLeftCourseChange()">
+        <option value="no">No</option>
+        <option value="yes">Yes</option>
+      </select>
+    </div>
+    <div id="csLeftFields" style="display:none;">
+      <div class="field"><label>Left type</label>
+        <select id="csLeftType" onchange="onCsLeftTypeOrReasonChange()">
+          <option value="428">LDP 1 — Left course no communication (No Refund)</option>
+          <option value="427">LDP 2 — Sleep or transient type (WBO)(Refund)</option>
+          <option value="455">LDP 3 — Customer Service (Refund)</option>
+          <option value="454">LDP 4 — May not participate until leader states (Refund)(WBO)</option>
+          <option value="453">LDP 5 — Request transfer to future course (No refund)</option>
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="field"><label>Day</label><select id="csDay"><option value="431">Day 1</option><option value="430" selected>Day 2</option><option value="429">Day 3</option></select></div>
+        <div class="field"><label>Time</label><input type="time" id="csTime" value="15:42"></div>
+      </div>
+      <div class="field"><label>Leave reason</label>
+        <select id="csLeaveReason" onchange="onCsLeftTypeOrReasonChange()">
+          <option value="432">Other (not WBO)</option>
+          <option value="433">Program Leader has a health concern and is unwilling for the person to continue</option>
+          <option value="434">Said they are thinking of ending their own life / have attempted / thinking of harming self or another</option>
+          <option value="435">Insufficient sleep in the days preceding or while taking the program (incl. between last day and the evening session)</option>
+          <option value="436">Suffered a serious long-term health problem during the program (e.g., epileptic seizures, heart problems, spinal problems making it impossible to sit)</option>
+          <option value="437">Now see they should heed the Health Warnings in their Program Information Form</option>
+          <option value="438">Informed us they do not think they can "handle" what they are experiencing</option>
+        </select>
+      </div>
+      <div class="kv"><span class="k">WBO</span><span class="v" id="csWboDerived">No</span></div>
+    </div>
+  </div>
+  <div class="modal-ft"><button class="btn btn-primary" id="csSaveBtn" onclick="confirmCourseStatus()">Save status</button><button class="btn" onclick="dismissModal()">Cancel</button></div>
+</div>
+
+<!-- Device / Zoom Exception (§0n) — REAL BUILD 2026-08-12. Writes
+     registrations.f3208 (Device Exception — real 3-option list: 473 Other
+     Zoom exception / 474 Multiple devices / 475 Shared device) + f3209
+     (note, optional) to this registration only. The prototype's 4th
+     option "Resolve duplicate identity" and its .zoom-flag/"Needs Review"
+     signal are cut — not part of the locked field spec, no confirmed
+     mapping. When Shared device is picked, the CS searches the REAL
+     roster (not a fake name list) for who the participant is sharing
+     with; the server independently resolves both real names and writes
+     f3207 bidirectionally, so the client only ever sends a registration
+     ID, never a name string. -->
+<div class="modal" id="mDeviceException">
+  <div class="modal-hd"><h3>Device / Zoom exception — <span class="serif-it" id="deName">this participant</span></h3><p>Writes to <span class="mf">oRegistration</span> for this Event only.</p></div>
+  <div class="modal-bd">
+    <div class="field"><label>What's the exception?</label>
+      <select id="deExceptionType" onchange="onDeExceptionTypeChange()">
+        <option value="473">Other Zoom exception</option>
+        <option value="474">Participant using multiple devices</option>
+        <option value="475">Shared device with another participant</option>
+      </select>
+    </div>
+    <div class="ev-field participant-combo" id="deOtherParticipantField" style="display:none;"><label>Sharing device with</label><input class="iedit participant-input" id="deOtherParticipant" placeholder="Search participants…" oninput="deviceParticipantFilter(this)" onfocus="deviceParticipantFilter(this)" onblur="participantBlur(this)"><div class="combo-list"></div></div>
+    <div class="field"><label>Resolution note</label><textarea id="deNoteText" rows="3" placeholder="Optional — visible to staff only"></textarea></div>
+  </div>
+  <div class="modal-ft"><button class="btn btn-primary" id="deSaveBtn" onclick="confirmDeviceException()">Save</button><button class="btn" onclick="dismissModal()">Cancel</button></div>
+</div>
+
+<!-- Participant preview -->
+<div class="modal" id="mPreview">
+  <div class="modal-hd"><h3>Participant view</h3><p>Exactly what a participant sees right now on Day 2. Hidden items never appear in navigation, search, notifications or direct links.</p></div>
+  <div class="modal-bd">
+    <div class="preview">
+      <div class="preview-hd"><span class="pill p-visible"><i class="dot"></i>Live</span> Day 2</div>
+      <div class="preview-bd">
+        <div class="pv-item"><div class="t">Day 2 Letter</div><div class="d">Visible · released 6:58 pm</div></div>
+        <div class="pv-item" style="border-left-color:#d8d4c9;opacity:.55;"><div class="t"><span class="v-na">Nothing further is visible</span></div><div class="d">Remaining Day 2 items are hidden and do not appear anywhere in the participant experience.</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-ft"><button class="btn" onclick="dismissModal()">Close preview</button></div>
+</div>
+
+<!-- Event selector — limited to events this Contact is authorized for (brief §2 event selector rule) -->
+<div class="modal" id="mEvents">
+  <div class="modal-hd"><h3>Switch event</h3><p>Lists only Events for which this Contact satisfies the Event Leader or Course Supervisor condition — access to one Event never implies access to another.</p></div>
+  <div class="modal-bd">
+    <div style="display:grid;gap:8px;">
+      <div class="match top"><div class="mi"><div class="mn">North America Forum — August</div><div class="mp">The Landmark Forum · San Francisco · Fri 31 Jul – Sun 2 Aug · Tue 5 Aug</div></div><span class="pill p-visible live"><i class="dot"></i>Live</span></div>
+      <div class="match" style="opacity:.5;cursor:not-allowed;" onclick="event.stopPropagation();toast('Not accessible — no Event Leader or Course Supervisor relationship on this Contact for this Event.','err')">
+        <div class="mi"><div class="mn">North America Forum — September</div><div class="mp">The Landmark Forum · Los Angeles · Fri 11 – Sun 13 Sep</div></div>
+        <span class="pill p-neutral">🔒 No relationship</span>
+      </div>
+    </div>
+  </div>
+  <div class="modal-ft"><button class="btn" onclick="dismissModal()">Close</button></div>
+</div>
+
+<!-- Pre-Forum readiness roster (§0x) — a distinct, read-only view from
+     the Event Management roster (§0q dropped TOS/18+/ENG from that
+     in-session surface; this is a separate purpose-built gate check
+     before the Forum starts, not a reversal of that decision). Same
+     188 registrations, reduced to exactly the columns this check
+     needs. Show Exceptions reuses this same modal/markup filtered to
+     NEEDS ATTENTION rows only (openHomeRoster(true)), not a second copy. -->
+<div class="modal" id="mHomeRoster">
+  <div class="modal-hd"><h3 id="hrTitle">Roster — The Landmark Forum - Online</h3><p id="hrSub">188 on oRegistrations for this Event · showing 12.</p></div>
+  <div class="modal-bd">
+    <div class="home-roster" id="homeRosterList">
+      <div class="hr-row hd"><span>Participant</span><span>TOS</span><span>FIF</span><span>Notes</span><span>&nbsp;</span></div>
+      <!-- LOOP: repeat: registrations.rows (current Event only) — same
+           records as the Event Management roster, reduced columns.
+           data-fif drives openParticipantQuickView()'s Information
+           Form branch (§0x); Notes/participant icons reuse
+           .ev-notesbtn/.kebab-btn rather than new components. -->
+      <div class="hr-row" data-reg-id="REG-40470" data-email="emily.k.maddox@gmail.com" data-phone="(555) 010-0470" data-fif="1" data-search="emily maddox 40470">
+        <div class="hr-name"><div class="hr-name-row"><b>Emily Maddox</b><span class="status-sep">–</span><span class="pill p-ready">READY</span></div><span>Legal: Emily Maddox · PID-40470</span></div>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>TOS</span>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>FIF</span>
+        <button class="ev-notesbtn" onclick="openNotes(this)" title="Add a note" aria-label="Add a note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button>
+        <button class="kebab-btn" onclick="openParticipantQuickView(this)" title="Participant details" aria-label="Participant details"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3M12 4h4v4M16 4l-6.5 6.5"/></svg></button>
+      </div>
+      <div class="hr-row" data-reg-id="REG-40507" data-email="mankowski.mike@gmail.com" data-phone="(555) 010-0507" data-fif="1" data-search="michael mankowski 40507">
+        <div class="hr-name"><div class="hr-name-row"><b>Michael Mankowski</b><span class="status-sep">–</span><span class="pill p-ready">READY</span></div><span>Legal: Michael Mankowski · PID-40507</span></div>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>TOS</span>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>FIF</span>
+        <button class="ev-notesbtn" onclick="openNotes(this)" title="Add a note" aria-label="Add a note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button>
+        <button class="kebab-btn" onclick="openParticipantQuickView(this)" title="Participant details" aria-label="Participant details"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3M12 4h4v4M16 4l-6.5 6.5"/></svg></button>
+      </div>
+      <div class="hr-row needsattn" data-reg-id="REG-40581" data-email="acaciablyth@gmail.com" data-phone="(555) 010-0581" data-fif="0" data-search="acacia blyth 40581">
+        <div class="hr-name"><div class="hr-name-row"><b>Acacia Blyth</b><span class="status-sep">–</span><span class="pill p-needsattn" title="Missing: Forum Information Form (FIF)">NEEDS ATTENTION</span></div><span>Legal: Acacia Blyth · PID-40581</span></div>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>TOS</span>
+        <span class="togchip" style="cursor:default;"><span class="dot"></span>FIF</span>
+        <button class="ev-notesbtn" onclick="openNotes(this)" title="Add a note" aria-label="Add a note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button>
+        <button class="kebab-btn" onclick="openParticipantQuickView(this)" title="Participant details" aria-label="Participant details"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3M12 4h4v4M16 4l-6.5 6.5"/></svg></button>
+      </div>
+      <div class="hr-row" data-reg-id="REG-40618" data-email="galahadblyth@gmail.com" data-phone="(555) 010-0618" data-fif="1" data-search="galahad blyth 40618">
+        <div class="hr-name"><div class="hr-name-row"><b>Galahad Blyth</b><span class="status-sep">–</span><span class="pill p-ready">READY</span></div><span>Legal: Galahad Blyth · PID-40618</span></div>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>TOS</span>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>FIF</span>
+        <button class="ev-notesbtn" onclick="openNotes(this)" title="Add a note" aria-label="Add a note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button>
+        <button class="kebab-btn" onclick="openParticipantQuickView(this)" title="Participant details" aria-label="Participant details"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3M12 4h4v4M16 4l-6.5 6.5"/></svg></button>
+      </div>
+      <div class="hr-row" data-reg-id="REG-40729" data-email="gabesham@gmail.com" data-phone="(555) 010-0729" data-fif="1" data-search="gabe shamash 40729">
+        <div class="hr-name"><div class="hr-name-row"><b>Gabe Shamash</b><span class="status-sep">–</span><span class="pill p-ready">READY</span></div><span>Legal: Gabe Shamash · PID-40729</span></div>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>TOS</span>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>FIF</span>
+        <button class="ev-notesbtn" onclick="openNotes(this)" title="Add a note" aria-label="Add a note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button>
+        <button class="kebab-btn" onclick="openParticipantQuickView(this)" title="Participant details" aria-label="Participant details"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3M12 4h4v4M16 4l-6.5 6.5"/></svg></button>
+      </div>
+      <div class="hr-row" data-reg-id="REG-41136" data-email="henrykay87@gmail.com" data-phone="(555) 010-1136" data-fif="1" data-search="henry kay 41136">
+        <div class="hr-name"><div class="hr-name-row"><b>Henry Kay</b><span class="status-sep">–</span><span class="pill p-ready">READY</span></div><span>Legal: Henry Kay · PID-41136</span></div>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>TOS</span>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>FIF</span>
+        <button class="ev-notesbtn" onclick="openNotes(this)" title="Add a note" aria-label="Add a note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button>
+        <button class="kebab-btn" onclick="openParticipantQuickView(this)" title="Participant details" aria-label="Participant details"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3M12 4h4v4M16 4l-6.5 6.5"/></svg></button>
+      </div>
+      <div class="hr-row needsattn" data-reg-id="REG-41173" data-email="pschurch555@gmail.com" data-phone="(555) 010-1173" data-fif="1" data-search="paul schurch 41173">
+        <div class="hr-name"><div class="hr-name-row"><b>Paul Schurch</b><span class="status-sep">–</span><span class="pill p-needsattn" title="Missing: Terms of Service (TOS)">NEEDS ATTENTION</span></div><span>Legal: Paul Schurch · PID-41173</span></div>
+        <span class="togchip" style="cursor:default;"><span class="dot"></span>TOS</span>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>FIF</span>
+        <button class="ev-notesbtn" onclick="openNotes(this)" title="Add a note" aria-label="Add a note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button>
+        <button class="kebab-btn" onclick="openParticipantQuickView(this)" title="Participant details" aria-label="Participant details"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3M12 4h4v4M16 4l-6.5 6.5"/></svg></button>
+      </div>
+      <div class="hr-row" data-reg-id="REG-41247" data-email="morenolisa188@gmail.com" data-phone="(555) 010-1247" data-fif="1" data-search="lisa moreno 41247">
+        <div class="hr-name"><div class="hr-name-row"><b>Lisa Moreno</b><span class="status-sep">–</span><span class="pill p-ready">READY</span></div><span>Legal: Lisa Moreno · PID-41247</span></div>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>TOS</span>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>FIF</span>
+        <button class="ev-notesbtn" onclick="openNotes(this)" title="Add a note" aria-label="Add a note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button>
+        <button class="kebab-btn" onclick="openParticipantQuickView(this)" title="Participant details" aria-label="Participant details"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3M12 4h4v4M16 4l-6.5 6.5"/></svg></button>
+      </div>
+      <div class="hr-row" data-reg-id="REG-41284" data-email="alestephillips@gmail.com" data-phone="(555) 010-1284" data-fif="1" data-search="annamarie phillips 41284">
+        <div class="hr-name"><div class="hr-name-row"><b>Annamarie Phillips</b><span class="status-sep">–</span><span class="pill p-ready">READY</span></div><span>Legal: Annamarie Phillips · PID-41284</span></div>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>TOS</span>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>FIF</span>
+        <button class="ev-notesbtn" onclick="openNotes(this)" title="Add a note" aria-label="Add a note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button>
+        <button class="kebab-btn" onclick="openParticipantQuickView(this)" title="Participant details" aria-label="Participant details"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3M12 4h4v4M16 4l-6.5 6.5"/></svg></button>
+      </div>
+      <div class="hr-row" data-reg-id="REG-41321" data-email="Greteldetel73@gmail.com" data-phone="(555) 010-1321" data-fif="1" data-search="gretchen leaton 41321">
+        <div class="hr-name"><div class="hr-name-row"><b>Gretchen Leaton</b><span class="status-sep">–</span><span class="pill p-ready">READY</span></div><span>Legal: Gretchen Leaton · PID-41321</span></div>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>TOS</span>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>FIF</span>
+        <button class="ev-notesbtn" onclick="openNotes(this)" title="Add a note" aria-label="Add a note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button>
+        <button class="kebab-btn" onclick="openParticipantQuickView(this)" title="Participant details" aria-label="Participant details"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3M12 4h4v4M16 4l-6.5 6.5"/></svg></button>
+      </div>
+      <div class="hr-row" data-reg-id="REG-41358" data-email="suzanne.kronisch@gmail.com" data-phone="(555) 010-1358" data-fif="1" data-note="Dietary needs flagged for catering." data-search="suzanne kronisch 41358">
+        <div class="hr-name"><div class="hr-name-row"><b>Suzanne Kronisch</b><span class="status-sep">–</span><span class="pill p-ready">READY</span></div><span>Legal: Suzanne Kronisch · PID-41358</span></div>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>TOS</span>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>FIF</span>
+        <button class="ev-notesbtn has-note" onclick="openNotes(this)" title="Add a note" aria-label="Add a note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button>
+        <button class="kebab-btn" onclick="openParticipantQuickView(this)" title="Participant details" aria-label="Participant details"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3M12 4h4v4M16 4l-6.5 6.5"/></svg></button>
+      </div>
+      <div class="hr-row" data-reg-id="REG-41395" data-email="melissa.clark88@icloud.com" data-phone="(555) 010-1395" data-fif="1" data-search="melissa clark 41395">
+        <div class="hr-name"><div class="hr-name-row"><b>Melissa Clark</b><span class="status-sep">–</span><span class="pill p-ready">READY</span></div><span>Legal: Melissa Clark · PID-41395</span></div>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>TOS</span>
+        <span class="togchip on" style="cursor:default;"><span class="dot"></span>FIF</span>
+        <button class="ev-notesbtn" onclick="openNotes(this)" title="Add a note" aria-label="Add a note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button>
+        <button class="kebab-btn" onclick="openParticipantQuickView(this)" title="Participant details" aria-label="Participant details"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3M12 4h4v4M16 4l-6.5 6.5"/></svg></button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-ft"><button class="btn" onclick="dismissModal()">Close</button></div>
+</div>
+
+<!-- Participant quick-view popout (§0x) — triggered from the Home
+     roster's per-row participant-details icon (top-right corner of
+     each record). Read-only: Name, Contact, Preferred Communication,
+     and Information Form answers, or a notice that it hasn't been
+     submitted (openParticipantQuickView() branches on data-fif). -->
+<div class="modal" id="mParticipantQuickView">
+  <div class="modal-hd"><h3 id="qvName">Participant details</h3><p id="qvLegalPid" style="font-family:var(--mono);font-size:11px;color:var(--gray);margin-top:4px;"></p></div>
+  <div class="modal-bd">
+    <div class="kv" style="margin-bottom:20px;">
+      <span class="k">Email</span><span class="v"><a id="qvEmail" href="#" style="color:var(--green);font-weight:600;">—</a></span>
+      <span class="k">Phone</span><span class="v"><a id="qvPhone" href="#">—</a></span>
+      <span class="k">Preferred Communication</span><span class="v" id="qvPreferredComm">Email</span>
+    </div>
+    <div class="ev-l" style="margin-bottom:11px;">Forum Information Form</div>
+    <div class="kv" id="qvFormKv"></div>
+    <div class="warnbox" id="qvFormNotice" style="display:none;">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 6v5M10 14h.01"/><circle cx="10" cy="10" r="8"/></svg>
+      <div><div class="t">Information form not submitted</div><div class="d">This participant has not completed the Forum Information Form yet.</div></div>
+    </div>
+  </div>
+  <div class="modal-ft"><button class="btn" onclick="dismissModal()">Close</button></div>
+</div>
+
+<!-- Course materials browse list for the pre-Forum "View Assignments"
+     card action (§0x) — same items as Course Materials (#ms-release)
+     but purely a browse-and-open list here: no release/hide toggle,
+     no write path. Clicking an item doesn't close the modal, so more
+     than one can be opened before the CS closes it manually. -->
+<div class="modal" id="mAssignments">
+  <div class="modal-hd"><h3>Course materials — The Landmark Forum - Online</h3><p>Browse what's assigned across the Forum. Click an item to open it.</p></div>
+  <div class="modal-bd flush">
+    <div class="al-row" onclick="toast('Opening Day 1 Assignments…')"><div><div class="t">Day 1 Assignments</div><div class="k">Assignment · Day 1</div></div></div>
+    <div class="al-row" onclick="toast('Opening Day 1 Agreements…')"><div><div class="t">Day 1 Agreements</div><div class="k">Agreement · Day 1</div></div></div>
+    <div class="al-row" onclick="toast('Opening Day 1 Letter…')"><div><div class="t">Day 1 Letter</div><div class="k">Letter · Day 1</div></div></div>
+    <div class="al-row" onclick="toast('Opening Day 2 Letter…')"><div><div class="t">Day 2 Letter</div><div class="k">Letter · Day 2</div></div></div>
+    <div class="al-row" onclick="toast('Opening Day 3 Follow-Through…')"><div><div class="t">Day 3 Follow-Through</div><div class="k">Assignment · Day 3</div></div></div>
+    <div class="al-row" onclick="toast('Opening Registration Table Link…')"><div><div class="t">Registration Table Link</div><div class="k">Link · Graduation</div></div></div>
+  </div>
+  <div class="modal-ft"><button class="btn" onclick="dismissModal()">Close</button></div>
+</div>
+
+<div class="toast" id="toast"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5 6.5 12 13 4.5"/></svg><span id="toastMsg"></span></div>
+
+<footer class="foot"><div class="wrap">
+  <div class="foot-l">
+    <img src="https://res.cloudinary.com/mynd/image/upload/v1785903675/wordmark-white_rssmyv.png" alt="Landmark" style="height:24px;width:auto;display:block;">
+    <span>Master Stats &amp; KPI Dashboard · pilot revision demo · internal staff tool</span>
+  </div>
+  <div class="foot-contact">info@landmarkworldwide.com &nbsp;·&nbsp; +1 (800) 888-9590</div>
+  <div>&copy; 2026 Landmark Worldwide. All rights reserved.</div>
+</div></footer>
+
+<script src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/dashboard-engine.js"></script>
+
+</body>
+</html>
