@@ -1818,17 +1818,21 @@ function confirmReshow(){
        makes a second open dashboard tab/device reflect a change live,
        and is part of what backs the client's locked "no Recalculate
        button anywhere" decision.
-     Direction 2 — subscribes to attendance.changed. The original 14
-       attendance/presence fields (f2853, the 12 session ATTENDED fields
-       f3193-f3203/f3055, f3062) publish from inside CS Dashboard : Take
-       Attendance / Attendance Reconcile Sweep / LM | Zoom | Live
-       Attendance Poller right after each write. The classification/LDP
-       fields added 2026-08-12 (f2801-f2803, f3206, f3044, f3046, f2882,
-       f2887, f2303, f2302, f2293, f3056, f3059, f2688, f3191) publish
-       from client-built native Ontraport automation rules instead —
-       see ONTRAPORT-ATTENDANCE-AUTOMATION-RULES.md — since those fields
-       are meant to be editable directly in Ontraport for the walkthrough,
-       not just through this dashboard's own actions.
+     Direction 2 — subscribes to attendance.changed, whitelist of 28
+       fields on PORTAL : Ably Publish (f2853, the 12 session ATTENDED
+       fields f3193-f3203/f3055, f3062, f2801-f2803, f3206, f3044,
+       f3046, f2882, f2887, f2303, f2302, f2293, f3056, f3059, f2688,
+       f3191). The first 14 ALSO publish automatically from inside CS
+       Dashboard : Take Attendance / Attendance Reconcile Sweep / LM |
+       Zoom | Live Attendance Poller right after each write, but that's
+       NOT sufficient on its own — a direct manual edit in Ontraport
+       (confirmed 2026-08-12: shows correctly on next refresh, does NOT
+       push live) bypasses those workflows entirely. Every one of the 28
+       needs its own native Ontraport automation rule for a manual edit
+       to push live — see ONTRAPORT-ATTENDANCE-AUTOMATION-RULES.md. For
+       the 14 original fields the rule is redundant once real attendance
+       flows through the workflows above instead of manual edits, but
+       harmless to leave in place.
 
    Mirrors the subscribe-only shape of Portal.realtime in
    portal-engine.js conceptually (same dynamic-SDK-load pattern, same
