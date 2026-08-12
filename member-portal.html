@@ -1414,6 +1414,19 @@
         // Graduation: no toggle exists — renderer already has a real
         // empty-state.
         graduation: []
+      },
+
+      // Announcements — added 2026-08-12, same shape/pattern as materials
+      // above: events.f3104/f3105/f3167 (Seminar Reg Open/AC Reg Open/
+      // "Gift a Forum" Open) via their registrations-side related_data
+      // mirrors (f3168/f3169/f3170), read bare (no Event// prefix, same
+      // as the materials checkboxes) since this Page's own base object is
+      // Registrations. "This Weekend" 4-card section (Portal.render.during's
+      // actionsHtml): Invite card always renders, these 3 conditionally.
+      announcements: {
+        seminarOpen: '[Page//Seminar Announcement##checkediftrue]' === 'true',
+        acOpen: '[Page//AC Announcement##checkediftrue]' === 'true',
+        giftOpen: '[Page//Gift a Forum Announcement##checkediftrue]' === 'true'
       }
       // seminarNext, acNext, graduationGuests: still blocked on
       // Ontraport-side setup that doesn't exist yet (punchlist items

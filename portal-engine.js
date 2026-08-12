@@ -1405,6 +1405,7 @@ Portal.render.during = function(data){
   var guests = data.graduationGuests || []; // Data Contract gap — see 2026-08-07 plan note (Gap 4)
   var hasSeminarReg = !!(data.post && data.post.hasSeminarReg); // registrations.f2303
   var hasACReg = !!(data.post && data.post.hasACReg); // registrations.f2302
+  var announcements = data.announcements || {}; // events.f3104/f3105/f3167 via registrations mirrors — see PORTAL_DATA
 
   function escapeHtml(s){
     return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
@@ -1492,20 +1493,29 @@ Portal.render.during = function(data){
       '</aside>' +
     '</div></header>';
 
-  // ---- action CTAs — generic/static, not participant-specific,
-  // same as the Pre-event flip tips. "Invite guests" has a real
-  // destination (the Graduation section below); the rest were
-  // already inert in the source mockup (no href/handler), same
-  // "vestigial, nothing to silently drop" treatment as Pre-event's
-  // "Finish now" link. ----
+  // ---- action CTAs — "Invite Friends & Family" always renders (real
+  // destination: the Graduation section below); Seminar/AC/Gift cards
+  // are announcement-gated (2026-08-12) — each only renders once the CS
+  // has toggled its Course Materials > Announcements switch on
+  // (events.f3104/f3105/f3167 via the registrations mirrors in
+  // PORTAL_DATA.announcements). Plain show/hide, no strikethrough or
+  // disabled state for the hidden ones — they're just not in the DOM.
+  // The remaining CTAs inside each card were already inert in the source
+  // mockup (no href/handler), same "vestigial, nothing to silently drop"
+  // treatment as Pre-event's "Finish now" link. ----
+  var inviteCardHtml =
+    '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-invite.jpg" alt=""></div><div class="abody"><div class="aeye">Graduation</div><h4>Invite Friends &amp; Family</h4><p>Tuesday evening is a celebration of what you’ve created. Invite the people who matter most to be there.</p><a href="#graduation" class="go">Invite guests &rarr;</a></div></div>';
+  var seminarCardHtml = announcements.seminarOpen ?
+    '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-seminar.jpg" alt=""><span class="abadge">Free</span></div><div class="abody"><div class="aeye">On Us</div><h4>Claim Your Complimentary Seminar</h4><p>Your next seminar is on us. Reserve your spot and keep exploring what’s possible.</p><span class="go">Claim your seminar &rarr;</span></div></div>' : '';
+  var acCardHtml = announcements.acOpen ?
+    '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-ac.jpg" alt=""><span class="abadge">Save $300</span></div><div class="abody"><div class="aeye">Keep Going</div><h4>Advanced Course &mdash; Reserve Your Spot</h4><p>Continue your momentum into the Advanced Course. Register before Friday to save $300.</p><span class="go">Reserve your spot &rarr;</span></div></div>' : '';
+  var giftCardHtml = announcements.giftOpen ?
+    '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-gift.jpg" alt=""></div><div class="abody"><div class="aeye serif-it" style="text-transform:none;letter-spacing:.02em;font-size:14px;">Give transformation.</div><h4 class="serif-it" style="color:var(--green);font-weight:300;font-size:20px;">Gift someone their ' + courseType + '.</h4><p>Many people are here this weekend because of the generosity of someone who came before them. If you feel moved, here’s an opportunity to make it possible for someone else.</p><a class="go serif-it" style="font-style:italic;font-weight:300;font-size:14px;" href="https://transformationfoundation.org/" target="_blank" rel="noopener">Contribute &rarr;</a></div></div>' : '';
   var actionsHtml =
     '<section class="block paper" id="programs"><div class="wrap">' +
       '<div class="sec-head"><div class="eyebrow">This Weekend</div><h2>A few things to take advantage of</h2></div>' +
       '<div class="actions">' +
-        '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-invite.jpg" alt=""></div><div class="abody"><div class="aeye">Graduation</div><h4>Invite Friends &amp; Family</h4><p>Tuesday evening is a celebration of what you’ve created. Invite the people who matter most to be there.</p><a href="#graduation" class="go">Invite guests &rarr;</a></div></div>' +
-        '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-seminar.jpg" alt=""><span class="abadge">Free</span></div><div class="abody"><div class="aeye">On Us</div><h4>Claim Your Complimentary Seminar</h4><p>Your next seminar is on us. Reserve your spot and keep exploring what’s possible.</p><span class="go">Claim your seminar &rarr;</span></div></div>' +
-        '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-ac.jpg" alt=""><span class="abadge">Save $300</span></div><div class="abody"><div class="aeye">Keep Going</div><h4>Advanced Course &mdash; Reserve Your Spot</h4><p>Continue your momentum into the Advanced Course. Register before Friday to save $300.</p><span class="go">Reserve your spot &rarr;</span></div></div>' +
-        '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-gift.jpg" alt=""></div><div class="abody"><div class="aeye serif-it" style="text-transform:none;letter-spacing:.02em;font-size:14px;">Give transformation.</div><h4 class="serif-it" style="color:var(--green);font-weight:300;font-size:20px;">Gift someone their ' + courseType + '.</h4><p>Many people are here this weekend because of the generosity of someone who came before them. If you feel moved, here’s an opportunity to make it possible for someone else.</p><a class="go serif-it" style="font-style:italic;font-weight:300;font-size:14px;" href="https://transformationfoundation.org/" target="_blank" rel="noopener">Contribute &rarr;</a></div></div>' +
+        inviteCardHtml + seminarCardHtml + acCardHtml + giftCardHtml +
       '</div>' +
     '</div></section>';
 
@@ -2241,6 +2251,19 @@ Portal.realtime = (function(){
     data.currentReleasedSession = msg.day;
   }
 
+  // announcement.changed — 2026-08-12, mirrors material.changed's shape.
+  // PORTAL : Ably Publish sends msg.key as one of seminar-open/ac-open/
+  // gift-open (lowercase-hyphenated, normalized server-side even though
+  // the Ontraport automation's own field key for AC is capitalized
+  // "AC-open" — see CS Dashboard build notes) — map straight to the
+  // matching PORTAL_DATA.announcements boolean.
+  var ANNOUNCEMENT_KEY_MAP = { 'seminar-open': 'seminarOpen', 'ac-open': 'acOpen', 'gift-open': 'giftOpen' };
+  function applyAnnouncementChanged(data, msg){
+    data.announcements = data.announcements || {};
+    var prop = ANNOUNCEMENT_KEY_MAP[msg && msg.key];
+    if(prop) data.announcements[prop] = !!(msg && msg.open);
+  }
+
   function init(data){
     if(!data || !data.eventId) return;
     var contactId = (window.dcParam && window.dcParam.contact_id) || '';
@@ -2254,6 +2277,7 @@ Portal.realtime = (function(){
       var channel = client.channels.get('event:' + data.eventId);
       channel.subscribe('material.changed', function(msg){ applyMaterialChanged(data, msg.data); Portal.render.during(data); });
       channel.subscribe('day.advanced', function(msg){ applyDayAdvanced(data, msg.data); Portal.render.during(data); });
+      channel.subscribe('announcement.changed', function(msg){ applyAnnouncementChanged(data, msg.data); Portal.render.during(data); });
     });
   }
 
