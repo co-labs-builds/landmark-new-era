@@ -144,7 +144,7 @@ function rosterBuildAttendanceTick(reg, dayNum, attendedField, minutesField, cur
     cls = 'tk-absent';
     kv = [['Attended','No'], ['Minutes', rosterFmtMinutes(minutes)], ['Match', ROSTER_MATCH_METHOD_MAP[String(reg.f2808 || '')] || 'No Zoom connection recorded for this day']];
   }
-  return '<button class="tick ' + cls + '" onclick="openDetailPop(this)" data-pop-title="' + rosterEscAttr(title) + '" data-pop-kv=\'' + rosterEscAttr(JSON.stringify(kv)) + '\'>D' + dayNum + '</button>';
+  return '<button class="tick ' + cls + '" data-day-num="' + dayNum + '" onclick="openDetailPop(this)" data-pop-title="' + rosterEscAttr(title) + '" data-pop-kv=\'' + rosterEscAttr(JSON.stringify(kv)) + '\'>D' + dayNum + '</button>';
 }
 function rosterBuildChkpntTick(attended, dayLabel, tickLabel, field){
   var fieldAttr = field ? (' data-field="' + rosterEscAttr(field) + '"') : '';
@@ -158,6 +158,32 @@ function rosterClassPill(classtype, isOn, onClass, label, title, editable, kvOn,
   return '<button class="pill ' + cls + ' ev-clickable" data-classtype="' + classtype + '" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="' + rosterEscAttr(title) + '"' + editAttr + ' data-pop-kv=\'' + rosterEscAttr(JSON.stringify(kv)) + '\'>' + label + '</button>';
 }
 
+/* rosterNameBadge() — added 2026-08-12: the name-row badge previously
+   only ever showed ACTIVE/CANCELLED (registration status, f2424). Client
+   wants it to also surface live attendance/course-status signals so a
+   CS can see at a glance without opening a card: LIVE (green, f2853
+   Currently Present), LATE (amber, f3062 FS Late Arrival), LDP (red,
+   f2293 Left The Course — once someone's left they stay LDP for the
+   rest of the event, no day-matching needed here unlike the per-day
+   tick's LDP check), ABSENT - EXCUSED/NCNS (f3191 Attendance Status,
+   the Correct Attendance manual-resolution field). Precedence, most
+   authoritative first: CANCELLED (registration itself isn't active) >
+   LDP (they've left, nothing else matters) > manually-resolved absence
+   (f3191) > LIVE > LATE > default ACTIVE. Reused by both the initial
+   card render and the attendance.changed live-patch handler so the two
+   can never drift apart. */
+function rosterNameBadge(reg){
+  var statusActive = String(reg.f2424) === '154';
+  if(!statusActive) return {label:'CANCELLED', cls:'p-active'};
+  if(rosterIsTrue(reg.f2293)) return {label:'LDP', cls:'p-ldp'};
+  var attStatus = String(reg.f3191 || '');
+  if(attStatus === '467') return {label:'ABSENT - EXCUSED', cls:'p-excused'};
+  if(attStatus === '468') return {label:'ABSENT - NCNS', cls:'p-absent'};
+  if(rosterIsTrue(reg.f2853)) return {label:'LIVE', cls:'p-present'};
+  if(rosterIsTrue(reg.f3062)) return {label:'LATE', cls:'p-late'};
+  return {label:'ACTIVE', cls:'p-active'};
+}
+
 function rosterBuildCardHtml(reg, currentDayRaw, localeAbbr){
   var first = reg['f2213//firstname'] || '';
   var last = reg['f2213//lastname'] || '';
@@ -166,8 +192,8 @@ function rosterBuildCardHtml(reg, currentDayRaw, localeAbbr){
   var displayFirst = nameLikes || first;
   var displayName = (displayFirst + ' ' + last).trim() || legalName;
   var pid = 'PID-' + (reg.f2794 || reg.id);
-  var statusActive = String(reg.f2424) === '154';
-  var statusLabel = statusActive ? 'ACTIVE' : 'CANCELLED';
+  var nameBadge = rosterNameBadge(reg);
+  var statusLabel = nameBadge.label;
   var searchStr = (displayName + ' ' + legalName + ' ' + (reg.f2794 || '') + ' ' + reg.id).toLowerCase();
 
   var mnrOn = rosterIsTrue(reg.f3206);
@@ -205,7 +231,7 @@ function rosterBuildCardHtml(reg, currentDayRaw, localeAbbr){
   return '<div class="ev-card" data-search="' + rosterEscAttr(searchStr) + '" data-reg-id="' + rosterEscAttr(reg.id) + '">' +
     '<div class="ev-row1">' +
       '<div class="ev-field ev-identity">' +
-        '<div class="ev-name"><div class="ev-name-row"><b>' + rosterEscHtml(displayName) + '</b> <span class="status-sep">–</span> <span class="pill p-active">' + statusLabel + '</span></div><span>Legal: ' + rosterEscHtml(legalName) + ' · ' + rosterEscHtml(pid) + '</span></div>' +
+        '<div class="ev-name"><div class="ev-name-row"><b>' + rosterEscHtml(displayName) + '</b> <span class="status-sep">–</span> <span class="pill ' + nameBadge.cls + '" data-name-badge="1">' + rosterEscHtml(statusLabel) + '</span></div><span>Legal: ' + rosterEscHtml(legalName) + ' · ' + rosterEscHtml(pid) + '</span></div>' +
         '<div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv=\'' + rosterEscAttr(JSON.stringify([['Value', localeAbbr.full]])) + '\'>' + localeAbbr.abbr + '</button></div>' +
       '</div>' +
       '<div class="ev-field ev-classification">' +
@@ -1792,11 +1818,17 @@ function confirmReshow(){
        makes a second open dashboard tab/device reflect a change live,
        and is part of what backs the client's locked "no Recalculate
        button anywhere" decision.
-     Direction 2 — subscribes to attendance.changed, newly published by
-       CS Dashboard : Take Attendance / Attendance Reconcile Sweep / LM |
-       Zoom | Live Attendance Poller right after each of the 14
-       whitelisted attendance-field writes (registrations.f2853, the 12
-       session ATTENDED fields f3193-f3203/f3055, and f3062).
+     Direction 2 — subscribes to attendance.changed. The original 14
+       attendance/presence fields (f2853, the 12 session ATTENDED fields
+       f3193-f3203/f3055, f3062) publish from inside CS Dashboard : Take
+       Attendance / Attendance Reconcile Sweep / LM | Zoom | Live
+       Attendance Poller right after each write. The classification/LDP
+       fields added 2026-08-12 (f2801-f2803, f3206, f3044, f3046, f2882,
+       f2887, f2303, f2302, f2293, f3056, f3059, f2688, f3191) publish
+       from client-built native Ontraport automation rules instead —
+       see ONTRAPORT-ATTENDANCE-AUTOMATION-RULES.md — since those fields
+       are meant to be editable directly in Ontraport for the walkthrough,
+       not just through this dashboard's own actions.
 
    Mirrors the subscribe-only shape of Portal.realtime in
    portal-engine.js conceptually (same dynamic-SDK-load pattern, same
@@ -1902,18 +1934,20 @@ function dashboardApplyDayAdvanced(msg){
   dashboardFetchRoster();
 }
 
-/* Attendance — targeted in-place patch, not a full dashboardFetchRoster()
-   refetch (these can fire often during a live session). f3203/f3055 have
-   a dedicated tick (S3/S4 checkpoint) patched directly; f2853 (Currently
-   Present) feeds the Master Stats "attendingNow" tile, recomputed cheaply
-   from the already-fetched roster rather than hitting the server again.
-   The other 10 session fields (f3193-f3202) have no dedicated per-card
-   UI in this prototype today (the D1/D2/D3 ticks read the separate
-   f2801-f2803 Day-level aggregates the Live Attendance Poller computes
-   independently — see rosterBuildAttendanceTick) — those still get their
-   in-memory dashboardLastRoster value kept in sync for correctness on
-   the next re-render/detail-pop, just no live DOM patch target exists
-   for this pass. */
+/* Attendance/classification — targeted in-place patch, not a full
+   dashboardFetchRoster() refetch (these can fire often during a live
+   session). Extended 2026-08-12 to cover the broader classification/LDP
+   whitelist alongside the original 14 attendance/presence fields.
+   f3191/f3056/f3059 are dropdown fields — PORTAL : Ably Publish now
+   sends their raw option-ID string, not a collapsed boolean (fixed
+   2026-08-12, see that workflow's Extract & Build Ably Message note) —
+   everything else on the whitelist is a real checkbox field and still
+   arrives as a boolean. The 10 of 12 session fields with no dedicated
+   per-card tick (f3193-f3202) still get dashboardLastRoster kept in
+   sync for correctness on the next re-render/detail-pop, just no live
+   DOM patch target exists for those specifically. */
+var DASHBOARD_ATTENDANCE_DROPDOWN_FIELDS = ['f3191', 'f3056', 'f3059'];
+var DASHBOARD_DAY_TICK_FIELDS = { f2801: 1, f2802: 2, f2803: 3 };
 function dashboardApplyAttendanceChanged(msg){
   var data = (msg && msg.data) || {};
   var regId = data.registrationId;
@@ -1925,19 +1959,87 @@ function dashboardApplyAttendanceChanged(msg){
     if(Number(list[i].id) === Number(regId)){ reg = list[i]; break; }
   }
   if(!reg) return;
-  var newVal = data.value ? 1 : 0;
-  if(Number(reg[field] || 0) === newVal) return;
+  var isDropdown = DASHBOARD_ATTENDANCE_DROPDOWN_FIELDS.indexOf(field) !== -1;
+  var newVal = isDropdown ? String(data.value || '') : (data.value ? 1 : 0);
+  if(String(reg[field] == null ? '' : reg[field]) === String(newVal)) return;
   reg[field] = newVal;
+
+  var card = document.querySelector('#rosterList .ev-card[data-reg-id="' + regId + '"]');
+  if(!card) return;
+
+  // Name badge: LIVE/LATE/LDP/ABSENT — any of these 4 fields can flip it.
+  if(field === 'f2853' || field === 'f3062' || field === 'f2293' || field === 'f3191'){
+    var badge = card.querySelector('[data-name-badge="1"]');
+    if(badge){
+      var nb = rosterNameBadge(reg);
+      badge.className = 'pill ' + nb.cls;
+      badge.textContent = nb.label;
+    }
+  }
+
+  // S3/S4 checkpoint ticks (existing behavior, unchanged).
   var tickMeta = DASHBOARD_ATTENDANCE_TICK_FIELDS[field];
   if(tickMeta){
-    var card = document.querySelector('#rosterList .ev-card[data-reg-id="' + regId + '"]');
-    var oldTick = card ? card.querySelector('.tick[data-field="' + field + '"]') : null;
+    var oldTick = card.querySelector('.tick[data-field="' + field + '"]');
     if(oldTick){
       var wrap = document.createElement('div');
       wrap.innerHTML = rosterBuildChkpntTick(newVal === 1, tickMeta.title, tickMeta.label, field);
       oldTick.replaceWith(wrap.firstChild);
     }
-  } else if(field === 'f2853'){
+  }
+
+  // D1/D2/D3 attendance ticks — f2801-f2803 directly, or f2293/f3059
+  // since LDP overrides whichever day's tick matches (rebuild all 3,
+  // simplest correct approach given the day match can shift).
+  if(DASHBOARD_DAY_TICK_FIELDS[field] || field === 'f2293' || field === 'f3059'){
+    [1, 2, 3].forEach(function(dayNum){
+      var attendedField = 'f280' + dayNum, minutesField = 'f280' + (dayNum + 4);
+      var oldDayTick = card.querySelector('.tick[data-day-num="' + dayNum + '"]');
+      if(oldDayTick){
+        var dwrap = document.createElement('div');
+        dwrap.innerHTML = rosterBuildAttendanceTick(reg, dayNum, attendedField, minutesField, DASHBOARD_DATA.todaysSessionRaw);
+        oldDayTick.replaceWith(dwrap.firstChild);
+      }
+    });
+  }
+
+  // REV / SE / MNR classification pills.
+  var CLASS_PILL_FIELDS = {
+    f3044: { classtype: 'reviewer', onClass: 'p-review', label: 'REV', title: 'Reviewer', editable: true, kvOn: [['Reviewer','Yes'],['Source','Participant history']], kvOff: [['Reviewer','No']] },
+    f3046: { classtype: 'se', onClass: 'p-excluded', label: 'SE', title: 'Statistical Exclusion', editable: true, kvOn: [['Status','Excluded'],['Reason', ROSTER_SE_REASON_MAP[String(reg.f3053 || '')] || '—']], kvOff: [['Status','Not excluded']] },
+    f3206: { classtype: 'mnr', onClass: 'p-minor', label: 'MNR', title: 'Minor', editable: false, kvOn: [['Status','Yes']], kvOff: [['Status','No']] }
+  };
+  var pillMeta = CLASS_PILL_FIELDS[field];
+  if(pillMeta){
+    var oldPill = card.querySelector('[data-classtype="' + pillMeta.classtype + '"]');
+    if(oldPill){
+      var pwrap = document.createElement('div');
+      pwrap.innerHTML = rosterClassPill(pillMeta.classtype, newVal === 1, pillMeta.onClass, pillMeta.label, pillMeta.title, pillMeta.editable, pillMeta.kvOn, pillMeta.kvOff);
+      oldPill.replaceWith(pwrap.firstChild);
+    }
+  }
+
+  // Seminar/AC NP-POT-REG pills — update the data-* attrs updateProgramPills()
+  // already reads, then let it (and applyFollowOnLadder/syncNpFlag) do the
+  // actual re-render, same as a full page load already does.
+  if(field === 'f2882' || field === 'f2303'){
+    var semEl = card.querySelector('.prog-seminar');
+    if(semEl){
+      semEl.dataset.pot = String(reg.f2882) === '371' ? '1' : '0';
+      semEl.dataset.reg = rosterIsTrue(reg.f2303) ? '1' : '0';
+      updateProgramPills(card);
+    }
+  }
+  if(field === 'f2887' || field === 'f2302'){
+    var acEl = card.querySelector('.prog-ac');
+    if(acEl){
+      acEl.dataset.pot = String(reg.f2887) === '382' ? '1' : '0';
+      acEl.dataset.reg = rosterIsTrue(reg.f2302) ? '1' : '0';
+      updateProgramPills(card);
+    }
+  }
+
+  if(field === 'f2853'){
     dashboardRenderSnapshot(dashboardLastRoster, dashboardLastEventFields, dashboardLastStaffCount);
   }
 }
