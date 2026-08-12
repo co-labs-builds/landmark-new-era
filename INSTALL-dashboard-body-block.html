@@ -1683,6 +1683,31 @@
   <div>&copy; 2026 Landmark Worldwide. All rights reserved.</div>
 </div></footer>
 
+
+<!-- DASHBOARD_DATA must stay INLINE (pasted directly, not in the jsDelivr-hosted
+     dashboard-engine.js) — Ontraport only resolves [Page//...] merge tags in content
+     it directly serves (this Custom HTML Block). Anything loaded via <script src>
+     from an external CDN is fetched by the browser, bypassing Ontraport entirely, so
+     merge tags inside it are NEVER resolved. Mirrors member-portal.html's PORTAL_DATA
+     pattern exactly — learned this the hard way on first install, 2026-08-12. -->
+<script>
+var DASHBOARD_DATA = {
+  csFirstName: "[Page//Contact//First Name]",
+  csRoleRaw: "[Page//Role]",
+  eventTitle: "[Page//Event//Event Title]",
+  eventStartDate: "[Page//Event//Event Start Date]",
+  eventEndDate: "[Page//Event//Event End Date]",
+  eventFormatRaw: "[Page//Event//Format (in person, online, Hybrid)]",
+  todaysSessionRaw: "[Page//Event//Todays Session (Day)]",
+  eventId: "[Page//Event//ID]",
+  eventTeamId: "[Page//ID]",
+  // Not resolvable via merge tag — needs dashboardFetchBootstrap():
+  participantCount: null,
+  notReadyCount: null,
+  eventLeaderName: null,
+  courseName: null
+};
+</script>
 <script src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/dashboard-engine.js"></script>
 
 </body>

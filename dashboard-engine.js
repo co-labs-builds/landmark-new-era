@@ -26,22 +26,6 @@ var ROLE_MAP = { '306':'Course Supervisor', '478':'Event Leader' };
 var FORMAT_MAP = { '124':'Hybrid', '125':'In Person', '126':'Online' };
 var DAY_MAP = { '404':'Day 1 of 3', '405':'Day 2 of 3', '406':'Day 3 of 3', '456':'Graduation' };
 var SHORT_DAY_MAP = { '404':'Day 1', '405':'Day 2', '406':'Day 3', '456':'Graduation' };
-var DASHBOARD_DATA = {
-  csFirstName: "[Page//Contact//First Name]",
-  csRoleRaw: "[Page//Role]",
-  eventTitle: "[Page//Event//Event Title]",
-  eventStartDate: "[Page//Event//Event Start Date]",
-  eventEndDate: "[Page//Event//Event End Date]",
-  eventFormatRaw: "[Page//Event//Format (in person, online, Hybrid)]",
-  todaysSessionRaw: "[Page//Event//Todays Session (Day)]",
-  eventId: "[Page//Event//ID]",
-  eventTeamId: "[Page//ID]",
-  // Not resolvable via merge tag — needs dashboardFetchBootstrap():
-  participantCount: null,
-  notReadyCount: null,
-  eventLeaderName: null,
-  courseName: null
-};
 
 function dashboardCsRole(){ return ROLE_MAP[DASHBOARD_DATA.csRoleRaw] || DASHBOARD_DATA.csRoleRaw; }
 function dashboardEventFormat(){ return FORMAT_MAP[DASHBOARD_DATA.eventFormatRaw] || DASHBOARD_DATA.eventFormatRaw; }
