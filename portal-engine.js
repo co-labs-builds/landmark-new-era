@@ -1513,7 +1513,7 @@ Portal.render.during = function(data){
     '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-gift.jpg" alt=""></div><div class="abody"><div class="aeye serif-it" style="text-transform:none;letter-spacing:.02em;font-size:14px;">Give transformation.</div><h4 class="serif-it" style="color:var(--green);font-weight:300;font-size:20px;">Gift someone their ' + courseType + '.</h4><p>Many people are here this weekend because of the generosity of someone who came before them. If you feel moved, here’s an opportunity to make it possible for someone else.</p><a class="go serif-it" style="font-style:italic;font-weight:300;font-size:14px;" href="https://transformationfoundation.org/" target="_blank" rel="noopener">Contribute &rarr;</a></div></div>' : '';
   var actionsHtml =
     '<section class="block paper" id="programs"><div class="wrap">' +
-      '<div class="sec-head"><div class="eyebrow">This Weekend</div><h2>A few things to take advantage of</h2></div>' +
+      '<div class="sec-head"><div class="eyebrow">This Weekend</div><h2>Take your next steps</h2></div>' +
       '<div class="actions">' +
         inviteCardHtml + seminarCardHtml + acCardHtml + giftCardHtml +
       '</div>' +
