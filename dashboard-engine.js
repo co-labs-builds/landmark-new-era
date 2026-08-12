@@ -55,10 +55,33 @@ function dashboardFetchBootstrap(){
     DASHBOARD_DATA.eventLeaderName = r.result.eventLeaderName;
     DASHBOARD_DATA.courseName = r.result.courseName;
     if(r.result.eventId != null) DASHBOARD_DATA.eventId = r.result.eventId;
+    dashboardApplyToggleState(r.result.materials, r.result.announcements);
     dashboardRenderHome();
     dashboardInitRealtime();
   }).catch(function(err){
     console.error('dashboardFetchBootstrap failed:', err);
+  });
+}
+
+/* dashboardApplyToggleState() — added 2026-08-12: Materials/Announcements
+   toggles previously showed whatever "on" class happened to be hardcoded
+   in the static prototype markup, regardless of real Ontraport state
+   (confirmed bug — the write side was real, but nothing ever set the
+   initial on/off state from a real read). Bootstrap now additively
+   returns materials/announcements (see Compute Bootstrap Response on
+   CS Dashboard : Bootstrap), keyed the same way as data-key, lowercased
+   to dodge the known AC-open/ac-open casing mismatch already handled
+   elsewhere this session. Every real toggle gets its class set from
+   this on page load — no more static demo default. */
+function dashboardApplyToggleState(materials, announcements){
+  document.querySelectorAll('.tog[data-toggle="materials"], .tog[data-toggle="announcements"]').forEach(function(btn){
+    var key = String(btn.dataset.key || '').toLowerCase();
+    if(!key) return;
+    var source = btn.dataset.toggle === 'materials' ? materials : announcements;
+    if(!source) return;
+    var on = false;
+    for(var k in source){ if(k.toLowerCase() === key){ on = !!source[k]; break; } }
+    if(on){ btn.classList.add('on'); } else { btn.classList.remove('on'); }
   });
 }
 
