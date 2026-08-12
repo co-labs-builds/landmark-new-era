@@ -2043,7 +2043,14 @@ function dashboardApplyAttendanceChanged(msg){
     }
   }
 
-  if(field === 'f2853'){
+  // Master Stats/Reporting aggregate tiles (Attendance Now %, Seminar/AC
+  // Registrant %, etc.) read dashboardLastRoster directly at render time —
+  // the underlying per-card data above is already kept live-accurate by
+  // this same function, these tiles just need to be told to recompute.
+  // No new automation rule needed, f2853/f2882/f2887/f2303/f2302 are
+  // already on the whitelist and already patch their own per-card pill.
+  var SNAPSHOT_RECOMPUTE_FIELDS = ['f2853', 'f2882', 'f2887', 'f2303', 'f2302'];
+  if(SNAPSHOT_RECOMPUTE_FIELDS.indexOf(field) !== -1){
     dashboardRenderSnapshot(dashboardLastRoster, dashboardLastEventFields, dashboardLastStaffCount);
   }
 }
