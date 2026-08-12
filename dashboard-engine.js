@@ -1659,6 +1659,27 @@ function dashboardWriteToggle(btn, value, onSuccess, onError){
     if(onError) onError(err);
   });
 }
+/* directToggle() — added 2026-08-12 for the stakeholder walkthrough: client
+   wants every toggle to write immediately on click, no confirm-are-you-sure
+   modal first ("simply toggle on checks the box, toggle off unchecks the
+   box"). Supersedes relToggle()'s modal flow below for Materials/
+   Announcements; relToggle()/confirmRelease()/confirmRehide()/
+   confirmReshow() are left in place but unused rather than deleted, given
+   the time pressure — safe to clean up later, nothing else calls them. */
+function directToggle(btn){
+  if(btn.disabled) return;
+  var isOn = btn.classList.contains('on');
+  var newVal = !isOn;
+  if(newVal){ btn.classList.add('on'); } else { btn.classList.remove('on'); }
+  btn.disabled = true;
+  dashboardWriteToggle(btn, newVal, function(){
+    btn.disabled = false;
+  }, function(){
+    if(newVal){ btn.classList.remove('on'); } else { btn.classList.add('on'); }
+    btn.disabled = false;
+    toast('Could not save — try again.', 'err');
+  });
+}
 function relToggle(btn){
   if(btn.disabled) return;
   pendingRel = btn;

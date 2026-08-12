@@ -838,33 +838,32 @@
     <div class="relview" id="rel-day1">
       <h4 class="daysec-hd">Day 1</h4>
       <div class="res-row">
-        <div><button class="tog on" data-key="day1-assignments" data-toggle="materials" data-title="Day 1 Assignments" data-kind="Assignment" data-notified="1" data-notifat="Sat 2:14 pm" disabled></button></div>
+        <div><button class="tog on" data-key="day1-assignments" data-toggle="materials" data-title="Day 1 Assignments" data-kind="Assignment" data-notified="1" data-notifat="Sat 2:14 pm" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Day 1 Assignments</div><div class="mt"><span>Assignment</span></div></div>
         <div class="res-time">First shown <b>Sat 2:14 pm</b></div>
       </div>
       <div class="res-row">
-        <div><button class="tog on" data-key="day1-agreements" data-toggle="materials" data-title="Day 1 Agreements" data-kind="Agreement" data-notified="1" data-notifat="Sat 2:14 pm" disabled></button></div>
+        <div><button class="tog on" data-key="day1-agreements" data-toggle="materials" data-title="Day 1 Agreements" data-kind="Agreement" data-notified="1" data-notifat="Sat 2:14 pm" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Day 1 Agreements</div><div class="mt"><span>Agreement</span></div></div>
         <div class="res-time">First shown <b>Sat 2:14 pm</b></div>
       </div>
       <div class="res-row">
-        <div><button class="tog on" data-key="day1-letter" data-toggle="materials" data-title="Day 1 Letter" data-kind="Letter" data-notified="1" data-notifat="Sat 2:14 pm" disabled></button></div>
+        <div><button class="tog on" data-key="day1-letter" data-toggle="materials" data-title="Day 1 Letter" data-kind="Letter" data-notified="1" data-notifat="Sat 2:14 pm" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Day 1 Letter</div><div class="mt"><span>Letter</span></div></div>
         <div class="res-time">First shown <b>Sat 2:14 pm</b></div>
       </div>
-      <div class="tokline" style="padding:12px 20px;">Day 1 is complete — 3 of 3 released. Kept read-only here; re-hide is still possible per §8.2 but is not demoed on a closed day.</div>
     </div>
 
     <div class="relview" id="rel-day2">
       <h4 class="daysec-hd">Day 2 (today)</h4>
       <!-- LOOP: repeat: content.subjects (Day 2) — each resource carries its own release state -->
       <div class="res-row">
-        <div><button class="tog on" data-key="day2-assignments" data-toggle="materials" data-title="Day 2 Assignments" data-kind="Assignment" data-notified="1" data-notifat="6:58 pm" onclick="relToggle(this)"></button></div>
+        <div><button class="tog on" data-key="day2-assignments" data-toggle="materials" data-title="Day 2 Assignments" data-kind="Assignment" data-notified="1" data-notifat="6:58 pm" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Day 2 Assignments</div><div class="mt"><span>Assignment</span></div></div>
         <div class="res-time">First shown <b>6:58 pm</b></div>
       </div>
       <div class="res-row">
-        <div><button class="tog on" data-key="day2-letter" data-toggle="materials" data-title="Day 2 Letter" data-kind="Letter" data-notified="1" data-notifat="6:58 pm" onclick="relToggle(this)"></button></div>
+        <div><button class="tog on" data-key="day2-letter" data-toggle="materials" data-title="Day 2 Letter" data-kind="Letter" data-notified="1" data-notifat="6:58 pm" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Day 2 Letter</div><div class="mt"><span>Letter</span></div></div>
         <div class="res-time">First shown <b>6:58 pm</b></div>
       </div>
@@ -874,7 +873,7 @@
     <div class="relview" id="rel-day3">
       <h4 class="daysec-hd">Day 3</h4>
       <div class="res-row">
-        <div><button class="tog" data-key="day3-follow-through" data-toggle="materials" data-title="Day 3 Follow-Through" data-kind="Assignment" data-notified="0" disabled title="Day 3 has not started"></button></div>
+        <div><button class="tog" data-key="day3-follow-through" data-toggle="materials" data-title="Day 3 Follow-Through" data-kind="Assignment" data-notified="0" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Day 3 Follow-Through</div><div class="mt"><span>Assignment</span></div></div>
         <div class="res-time">—</div>
       </div>
@@ -905,17 +904,17 @@
     </div>
     <div class="relview">
       <div class="res-row">
-        <div><button class="tog" data-key="seminar-open" data-toggle="announcements" data-title="Seminar announcement" data-kind="Announcement" data-notified="0" onclick="relToggle(this)"></button></div>
+        <div><button class="tog" data-key="seminar-open" data-toggle="announcements" data-title="Seminar announcement" data-kind="Announcement" data-notified="0" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Seminar</div><div class="mt"><span>Registration announcement</span></div></div>
         <div class="res-time">—</div>
       </div>
       <div class="res-row">
-        <div><button class="tog" data-key="AC-open" data-toggle="announcements" data-title="Advanced Course announcement" data-kind="Announcement" data-notified="0" onclick="relToggle(this)"></button></div>
+        <div><button class="tog" data-key="AC-open" data-toggle="announcements" data-title="Advanced Course announcement" data-kind="Announcement" data-notified="0" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Advanced Course</div><div class="mt"><span>Registration announcement</span></div></div>
         <div class="res-time">—</div>
       </div>
       <div class="res-row">
-        <div><button class="tog" data-key="gift-open" data-toggle="announcements" data-title="Gift a Forum announcement" data-kind="Announcement" data-notified="0" onclick="relToggle(this)"></button></div>
+        <div><button class="tog" data-key="gift-open" data-toggle="announcements" data-title="Gift a Forum announcement" data-kind="Announcement" data-notified="0" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Gift a Forum</div><div class="mt"><span>Gifting announcement</span></div></div>
         <div class="res-time">—</div>
       </div>
