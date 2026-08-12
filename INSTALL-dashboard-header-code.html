@@ -141,8 +141,8 @@ main{padding:22px 0 60px;flex:1 0 auto;}
 .btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:6px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:border-color .15s,background .15s;display:inline-flex;align-items:center;gap:7px;}
 .btn:hover{border-color:var(--muted);background:var(--paper);}
 .btn svg{width:13px;height:13px;}
-.btn-primary{background:#2dae0e;border-color:#2dae0e;color:#fff;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:11px;padding:9px 16px;}
-.btn-primary:hover{background:var(--green);border-color:var(--green);}
+.btn-primary{background:#2dae0e !important;border-color:#2dae0e !important;color:#fff !important;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:11px;padding:9px 16px;}
+.btn-primary:hover{background:var(--green) !important;border-color:var(--green) !important;}
 .btn-dark{background:var(--teal);border-color:var(--teal);color:#fff;}
 .btn-dark:hover{background:var(--teal-deep);border-color:var(--teal-deep);}
 .btn-sm{padding:5px 10px;font-size:11px;border-radius:5px;}
@@ -456,8 +456,8 @@ main{padding:22px 0 60px;flex:1 0 auto;}
 /* ============================================================
    DRAWERS / MODALS
    ============================================================ */
-.scrim{position:fixed;inset:0;background:rgba(6,16,15,.45);z-index:80;opacity:0;pointer-events:none;transition:opacity .2s;}
-.scrim.open{opacity:1;pointer-events:auto;}
+.scrim{position:fixed !important;inset:0;background:rgba(6,16,15,.45);z-index:80;opacity:0;pointer-events:none;transition:opacity .2s;display:block !important;}
+.scrim.open{opacity:1 !important;pointer-events:auto !important;visibility:visible !important;}
 .dw-layer{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:85;}
 .dw{position:absolute;top:0;right:0;height:100%;width:min(540px,94vw);background:#fff;transform:translateX(101%);transition:transform .2s ease;box-shadow:-20px 0 60px rgba(0,0,0,.22);display:flex;flex-direction:column;pointer-events:auto;visibility:hidden;}
 .dw.open{visibility:visible;}
@@ -476,8 +476,17 @@ main{padding:22px 0 60px;flex:1 0 auto;}
 .kv .v{color:var(--ink);}
 .dw-ft{padding:14px 24px;border-top:1px solid var(--line);background:#fcfbf8;display:flex;gap:9px;flex-wrap:wrap;}
 
-.modal{position:fixed;z-index:86;top:50%;left:50%;transform:translate(-50%,-47%);width:min(600px,94vw);max-height:86vh;overflow-y:auto;background:#fff;border-radius:16px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;}
-.modal.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%);}
+/* !important on the properties below: .modal/.btn/.btn-primary are common
+   enough class names that Ontraport's own site-wide CSS framework may
+   also define them, and depending on specificity/load order its rules
+   can win for individual properties even though this stylesheet loads
+   correctly (confirmed via an isolated Playwright reconstruction of
+   this exact file — the code itself renders right in isolation, so a
+   collision on the live page is the most likely explanation). Forcing
+   these specific properties defends against that without needing to
+   know exactly what the competing rule looks like. Added 2026-08-12. */
+.modal{position:fixed !important;z-index:86;top:50%;left:50%;transform:translate(-50%,-47%);width:min(600px,94vw);max-height:86vh;overflow-y:auto;background:#fff;border-radius:16px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;display:block !important;visibility:visible !important;}
+.modal.open{opacity:1 !important;pointer-events:auto !important;transform:translate(-50%,-50%);}
 .modal-hd{padding:20px 24px 0;}
 .modal-hd h3{font-size:18px;font-weight:800;letter-spacing:-.02em;}
 .modal-hd p{font-size:13px;color:var(--gray);margin-top:6px;line-height:1.5;}
@@ -550,8 +559,8 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
 .evt-card-dates{font-size:12.5px;color:var(--gray);margin-top:4px;}
 .evt-card-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none;}
 .evt-card-caption{font-size:11.5px;color:var(--gray);margin-top:12px;}
-.evt-card-ft{padding:14px 22px;border-top:1px solid var(--line);background:#fcfbf8;border-radius:0 0 13px 13px;}
-.evt-card-ft .btn-primary{width:100%;justify-content:center;padding:11px 16px;}
+.evt-card-ft{padding:14px 22px !important;border-top:1px solid var(--line);background:#fcfbf8;border-radius:0 0 13px 13px;}
+.evt-card-ft .btn-primary{width:100%;justify-content:center;padding:11px 16px !important;}
 .p-ready{background:#f6f5f1;color:#a9a49a;}
 .p-needsattn{background:var(--coral-bg);color:var(--coral-ink);cursor:help;}
 .p-inprogress{background:var(--amber-bg);color:var(--amber);}
