@@ -1,4 +1,11 @@
 </head>
+<!-- Ontraport strips this <body> tag and its attributes entirely when it
+     assembles the live page (confirmed 2026-08-12 via live page-source
+     diff) -- the real <body> is Ontraport's own. The "cs-dashboard" class
+     that every scoped CSS rule below depends on is applied at runtime
+     instead, in dashboard-engine.js, the same way "home" already is via
+     go(). This tag is kept only so local/offline test builds (which treat
+     this file as a standalone document) still get a body element. -->
 <body class="home cs-dashboard">
 <!-- ============================================================
      PERSISTENT HEADER (brief §4.1) — event name/course/format/dates/

@@ -1992,6 +1992,16 @@ function dashboardInitRealtime(){
   });
 }
 
+/* Ontraport strips our body-block.html's <body class="home cs-dashboard">
+   opening tag entirely -- the page already has its own real <body
+   opt-version="..."> from Ontraport's own template, and a browser can't
+   have two <body> tags, so ours never survives parsing. 'home' has always
+   worked because go() below sets it on the real body via classList at
+   runtime; cs-dashboard needs the same treatment, or every
+   body.cs-dashboard-scoped rule (button colors, modal/scrim scoping, the
+   button/heading font-family collision fix) silently never applies. */
+document.body.classList.add('cs-dashboard');
+
 go('home');
 dashboardRenderHome();
 dashboardRenderSessionStrip();
