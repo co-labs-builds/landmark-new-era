@@ -72,9 +72,42 @@ If a fresh session doesn't have persistent memory of this build, these docs plus
 ## Access needed to resume work
 
 - **Git**: `https://github.com/co-labs-builds/landmark-new-era.git` — this folder is the `Portal Build` subfolder of that repo.
-- **n8n MCP** (`n8n-mcp`): connects to `landmarkworldwide.awesomate.io`. Needed for any workflow read/edit/test.
-- **Ontraport MCP**: needed for any live field/record read or write-verification.
+- **n8n MCP** (`n8n-mcp`): connects to `landmarkworldwide.awesomate.io`. Needed for any workflow read/edit/test. **The connection config is committed to this repo as `.mcp.json`** — Claude Code picks it up automatically when started in this folder, so a fresh machine needs no manual MCP setup beyond the token below.
+- **Ontraport MCP**: needed for any live field/record read or write-verification. Not yet captured in `.mcp.json` — still set up by hand.
 - Both were connected and working as of this session — if a fresh machine/session doesn't have them, that's the first thing to set up before attempting any live-data work (everything in this build has been verified against real Ontraport data and real n8n executions, not assumed from code alone — that rigor depends on having this access).
+
+### Setting up `n8n-mcp` on a new machine
+
+`.mcp.json` deliberately contains **no credential** — it references `${N8N_MCP_TOKEN}`, which Claude Code expands from the environment at startup. **This repo is public**, so the bearer token must never be committed here (same rule as the n8n Public API key in `.env`, see `.gitignore`).
+
+Two steps on a fresh machine:
+
+1. Get the token: n8n (`landmarkworldwide.awesomate.io`) → Settings → n8n API / MCP access → create or copy an MCP server token. It's a JWT with audience `mcp-server-api`. The one issued 2026-08-13 has **no `exp` claim** — it does not expire on its own, so rotating it in n8n is the only way to revoke it.
+2. Set it as a persistent user environment variable named `N8N_MCP_TOKEN`:
+
+   ```powershell
+   # Windows (PowerShell) — persists across reboots; restart the terminal afterward
+   [Environment]::SetEnvironmentVariable("N8N_MCP_TOKEN", "<paste-token>", "User")
+   ```
+
+   ```bash
+   # macOS / Linux — add to ~/.zshrc or ~/.bashrc
+   export N8N_MCP_TOKEN="<paste-token>"
+   ```
+
+Then start Claude Code from this folder and run `/mcp` — `n8n-mcp` should show as connected. MCP servers are loaded at startup, so a config or token change always needs a restart, not just a new session.
+
+Verify the endpoint independently of Claude Code with a raw handshake — a healthy server returns HTTP 200 and `"serverInfo":{"name":"n8n MCP Server"}`:
+
+```bash
+curl -sS -X POST https://landmarkworldwide.awesomate.io/mcp-server/http \
+  -H "Authorization: Bearer $N8N_MCP_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"check","version":"1.0"}}}'
+```
+
+A `401`/`403` means the token is bad or rotated; a connection error means the n8n host is down or the URL changed.
 
 ## If you have access to the Claude memory files from the prior machine
 
