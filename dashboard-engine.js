@@ -717,25 +717,30 @@ function openParticipantQuickView(btn){
   var phoneEl = document.getElementById('qvPhone');
   phoneEl.textContent = row.dataset.phone || '—';
   phoneEl.href = row.dataset.phone ? 'tel:' + row.dataset.phone.replace(/[^\d+]/g, '') : '#';
-  document.getElementById('qvPreferredComm').textContent = 'Email';
+  document.getElementById('qvPreferredComm').textContent = '—';
   var submitted = row.dataset.fif === '1';
   document.getElementById('qvFormKv').style.display = submitted ? '' : 'none';
   document.getElementById('qvFormNotice').style.display = submitted ? 'none' : '';
-  if(submitted) document.getElementById('qvFormKv').innerHTML = buildInformationFormKv(name);
+  if(submitted) document.getElementById('qvFormKv').innerHTML = buildInformationFormKv();
   openModal('mParticipantQuickView');
 }
-function buildInformationFormKv(name){
-  return '<span class="k">Emergency Contact Name</span><span class="v">Jordan Ellis</span>' +
-    '<span class="k">Emergency Contact Phone</span><span class="v">(555) 019-2044</span>' +
-    '<span class="k">Emergency Contact Relationship</span><span class="v">Spouse</span>' +
-    '<span class="k">Coaching Call Availability</span><span class="v">Weekday evenings</span>' +
-    '<span class="k">Agreed to Registration Policies</span><span class="v">Yes</span>' +
-    '<span class="k">Agreed to Privacy Policy</span><span class="v">Yes</span>' +
-    '<span class="k">Agreed to Terms of Use</span><span class="v">Yes</span>' +
-    '<span class="k">Anything you’d like us to know?</span><span class="v">n/a</span>' +
-    '<span class="k">Dietary Restrictions / Special Needs</span><span class="v">None</span>' +
-    '<span class="k">Forum Participants You Know</span><span class="v">None listed</span>' +
-    '<span class="k">What I Want to Accomplish</span><span class="v">' + name + ' would like to build on what they got from the Forum and apply it more consistently.</span>';
+/* Home roster popout's form block. Every value here was fixture data too
+   (same fabricated emergency contact as the drawer). Unlike the drawer this
+   surface has no registration record to read from — #homeRosterList's rows
+   are static prototype markup in INSTALL-dashboard-body-block.html that
+   openHomeRoster() only shows/hides, so there is no regId to look up. Until
+   that roster is rendered from real data, this reports the values as
+   unavailable rather than inventing them. */
+function buildInformationFormKv(){
+  var rows = [
+    'Emergency Contact Name', 'Emergency Contact Phone', 'Emergency Contact Relationship',
+    'Coaching Call Availability', 'Agreed to Registration Policies', 'Agreed to Privacy Policy',
+    'Agreed to Terms of Use', 'Anything you’d like us to know?',
+    'Dietary Restrictions / Special Needs', 'Forum Participants You Know', 'What I Want to Accomplish'
+  ];
+  return rows.map(function(k){
+    return '<span class="k">' + k + '</span><span class="v">—</span>';
+  }).join('');
 }
 
 /* ---------- profile chip: logout-only, no role switching ---------- */
@@ -1613,15 +1618,25 @@ function openParticipantDrawer(card){
     '<span class="k">Status</span><span class="v">' + status + '</span>' +
     '<span class="k">Seminar</span><span class="v">' + seminarText + '</span>' +
     '<span class="k">AC</span><span class="v">' + acText + '</span>';
-  var email = card.dataset.email || '—';
+  /* Read straight off the registration record rather than card.dataset:
+     nothing in this file ever SET data-email/data-phone, so those lookups
+     silently resolved to '—' for every participant. f3252/f3253 are
+     registration-level mirrors of the Contact's email and SMS number
+     (Ontraport returns them paired with f2213//email and
+     f2213//sms_number), so no extern hop is needed here. */
+  var infoReg = rosterFindRegById(card.dataset.regId) || {};
+  var email = rosterFieldText(infoReg.f3252);
   var emailEl = document.getElementById('dwEmail');
-  emailEl.textContent = email;
-  emailEl.href = card.dataset.email ? 'mailto:' + card.dataset.email : '#';
-  var phone = card.dataset.phone || '—';
+  emailEl.textContent = email || '—';
+  emailEl.href = email ? 'mailto:' + email : '#';
+  var phone = rosterFieldText(infoReg.f3253);
   var phoneEl = document.getElementById('dwPhone');
-  phoneEl.textContent = phone;
-  phoneEl.href = card.dataset.phone ? 'tel:' + card.dataset.phone.replace(/[^\d+]/g, '') : '#';
-  document.getElementById('dwPreferredComm').textContent = 'Email';
+  phoneEl.textContent = phone || '—';
+  phoneEl.href = phone ? 'tel:' + phone.replace(/[^\d+]/g, '') : '#';
+  /* Was hardcoded 'Email'. No Preferred Communication field has been
+     identified on the registration or contact yet, so show '—' rather than
+     assert a preference nobody recorded. */
+  document.getElementById('dwPreferredComm').textContent = '—';
   document.getElementById('dwJoinLink').textContent = EVENT_ZOOM_JOIN_BASE + (card.dataset.regId ? '&tk=' + card.dataset.regId : '');
   populateInformationForm(card);
   openDrawer('dwParticipant');
@@ -1647,20 +1662,37 @@ function copyJoinLink(){
    submission, read-only in this drawer. Demo uses the same fictional
    placeholder set for every participant; production would merge each
    participant's actual submitted responses. ---------- */
+/* rosterFieldText() — normalises an Ontraport text value for display,
+   collapsing both empty string and the documented "0" blank sentinel to ''.
+   Returns '' rather than '—' so callers can distinguish "nothing to show"
+   from the dash they render. */
+function rosterFieldText(v){
+  if(v === undefined || v === null) return '';
+  var s = String(v).trim();
+  return (s === '' || s === '0') ? '' : s;
+}
+/* Every value here was previously hardcoded fixture data — the same
+   "Jordan Ellis / (555) 019-2044 / Spouse" shown for every participant,
+   with fabricated dietary, policy and free-text answers. Missing data
+   reading as missing is safe; a fabricated emergency contact number
+   presented as real is not, which is why this now renders the actual
+   registration fields and an em dash where they are genuinely blank. */
 function populateInformationForm(card){
-  var name = cardName(card);
-  document.getElementById('dwEcName').textContent = 'Jordan Ellis';
-  document.getElementById('dwEcPhone').textContent = '(555) 019-2044';
-  document.getElementById('dwEcRel').textContent = 'Spouse';
-  document.getElementById('dwCoaching').textContent = 'Weekday evenings';
-  document.getElementById('dwAgreeReg').textContent = 'Yes';
-  document.getElementById('dwAgreePriv').textContent = 'Yes';
-  document.getElementById('dwAgreeTerms').textContent = 'Yes';
-  document.getElementById('dwFormComplete').textContent = 'Yes';
-  document.getElementById('dwAnythingKnow').textContent = 'n/a';
-  document.getElementById('dwDietary').textContent = 'None';
-  document.getElementById('dwParticipantsKnow').textContent = 'None listed';
-  document.getElementById('dwWantAccomplish').textContent = name + ' would like to build on what they got from the Forum and apply it more consistently.';
+  var reg = rosterFindRegById(card.dataset.regId) || {};
+  function show(id, v){ document.getElementById(id).textContent = rosterFieldText(v) || '—'; }
+  function showYesNo(id, v){ document.getElementById(id).textContent = rosterIsTrue(v) ? 'Yes' : 'No'; }
+  show('dwEcName', reg.f2574);
+  show('dwEcPhone', reg.f2575);
+  show('dwEcRel', reg.f2576);
+  show('dwCoaching', reg.f2578);
+  showYesNo('dwAgreeReg', reg.f2585);
+  showYesNo('dwAgreePriv', reg.f2584);
+  showYesNo('dwAgreeTerms', reg.f2586);
+  showYesNo('dwFormComplete', reg.f2579);
+  show('dwAnythingKnow', reg.f2676);
+  show('dwDietary', reg.f2580);
+  show('dwParticipantsKnow', reg.f2582);
+  show('dwWantAccomplish', reg.f2583);
 }
 
 /* ---------- Take Attendance (§0m) — REAL BUILD 2026-08-12. Attendance
