@@ -1,0 +1,7 @@
+# core.autocrlf is true on the Windows machines this repo is worked on, which
+# would otherwise check these out with CRLF line endings. Shell scripts and git
+# hooks with CRLF fail under Git Bash ("bad interpreter: /bin/sh^M", or every
+# line erroring with "\r: command not found"), so the pin tooling would break
+# on a fresh clone while looking perfectly fine in the diff. Force LF.
+*.sh text eol=lf
+.githooks/* text eol=lf
