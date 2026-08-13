@@ -48,7 +48,14 @@
 html{scroll-behavior:smooth;overflow-x:clip;height:100%;}
 body{font-family:var(--sans);font-weight:400;font-synthesis:none;color:var(--ink);background:var(--paper);-webkit-font-smoothing:antialiased;line-height:1.55;font-size:14px;min-height:100vh;display:flex;flex-direction:column;}
 a{color:inherit;text-decoration:none;}
-button{font-family:var(--sans);}
+/* Same collision class as .modal/.btn/.btn-primary below: Ontraport's own
+   site-wide CSS declares its own font-family on bare button/heading
+   selectors (Segoe UI on buttons, Poppins on headings, confirmed live via
+   the client's DevTools inspector 2026-08-13) and wins over our own
+   same-specificity bare-element rules purely on load order. Scoped under
+   body.cs-dashboard (higher specificity, can't lose to load order) plus
+   !important, matching the established fix pattern in this file. */
+body.cs-dashboard button,body.cs-dashboard h1,body.cs-dashboard h2,body.cs-dashboard h3,body.cs-dashboard h4,body.cs-dashboard h5,body.cs-dashboard h6{font-family:var(--sans) !important;}
 .wrap{width:100%;max-width:1560px;margin:0 auto;padding:0 32px;}
 .eyebrow{font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--green-bright);}
 .serif-it{font-family:var(--serif);font-style:italic;font-weight:300;}
@@ -144,7 +151,7 @@ main{padding:22px 0 60px;flex:1 0 auto;}
 .card-bd{padding:18px 20px;}
 .card-bd.flush{padding:0;}
 .card-ft{padding:12px 20px;border-top:1px solid var(--line);background:#fcfbf8;border-radius:0 0 13px 13px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-.sechd{display:flex;align-items:flex-end;gap:16px;margin-bottom:16px;}
+.sechd{display:flex;flex-direction:column;gap:4px;margin-bottom:16px;}
 .sechd h2{font-size:20px;font-weight:650;letter-spacing:-.02em;}
 .sechd .lede{color:var(--gray);font-family:var(--serif);font-style:italic;font-weight:300;font-size:15px;}
 .sechd .r{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
@@ -515,17 +522,21 @@ body.cs-dashboard .modal.open{opacity:1 !important;pointer-events:auto !importan
    CS is on Home rather than just scrolled past.
    ============================================================ */
 body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.home .evt-meta{display:none;}
-.home-events{max-width:520px;margin:0 auto;}
+.home-events{max-width:600px;margin:0 auto;}
 .home-cards{display:grid;gap:16px;}
-.evt-card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;}
-.evt-card-bd{padding:20px 22px;}
+/* Resized/restyled 2026-08-13 to match the Member Portal During-page hero
+   card (.progcard: 20px radius, 30px/34px padding, generous title size) --
+   client feedback: card was too cramped for the event title, button was
+   too narrow/wrong color. */
+.evt-card{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);display:flex;flex-direction:column;}
+.evt-card-bd{padding:28px 32px;}
 .evt-card-top{display:flex;align-items:flex-start;gap:14px;}
-.evt-card-title{font-family:var(--serif);font-weight:600;font-size:19px;letter-spacing:-.01em;color:var(--ink);}
-.evt-card-dates{font-size:12.5px;color:var(--gray);margin-top:4px;}
+.evt-card-title{font-family:var(--serif);font-weight:600;font-size:23px;letter-spacing:-.01em;color:var(--ink);line-height:1.2;}
+.evt-card-dates{font-size:13px;color:var(--gray);margin-top:6px;}
 .evt-card-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none;}
-.evt-card-caption{font-size:11.5px;color:var(--gray);margin-top:12px;}
-.evt-card-ft{padding:14px 22px !important;border-top:1px solid var(--line);background:#fcfbf8;border-radius:0 0 13px 13px;}
-.evt-card-ft .btn-primary{width:100%;justify-content:center;padding:11px 16px !important;}
+.evt-card-caption{font-size:12px;color:var(--gray);margin-top:16px;}
+.evt-card-ft{padding:20px 32px !important;border-top:1px solid var(--line);background:#fcfbf8;border-radius:0 0 19px 19px;}
+.evt-card-ft .btn-primary{width:100%;justify-content:center;align-items:center;padding:15px 18px !important;font-size:12.5px;}
 .p-ready{background:var(--paper-2);color:var(--gray-2);}
 .p-needsattn{background:var(--coral-bg);color:var(--coral-ink);cursor:help;}
 .p-inprogress{background:var(--amber-bg);color:var(--amber);}

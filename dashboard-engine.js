@@ -101,6 +101,8 @@ function dashboardApplyToggleState(materials, announcements){
 var DASHBOARD_ROSTER_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-roster';
 var ROSTER_LOCALE_ABBR = { 'Hybrid':'HYB', 'In Person':'IP', 'Online':'ONL' };
 var ROSTER_SE_REASON_MAP = { '420':'LEI Scholarship [India only]', '421':'Resides in China', '422':'Resides in Iran', '423':'Panda Restaurant Group employee', '424':'Banking unavailable in country', '425':'Under 18', '426':'Deaf/Hard of Hearing' };
+var ROSTER_SEM_NP_REASON_MAP = { '372':'Other', '373':'Already Registered', '374':'Reviewer', '375':'Minor' };
+var ROSTER_AC_NP_REASON_MAP = { '383':'Other', '384':'Reviewer', '385':'Already Registered for AC', '386':'Already Took AC', '387':'Minor' };
 var ROSTER_LEFT_TYPE_MAP = { '427':'LDP 2 — Sleep or transient type (WBO)(Refund)', '428':'LDP 1 — Left course no communication (No Refund)', '453':'LDP 5 — Request transfer to future course (No refund)', '454':'LDP 4 — May not participate until leader states (Refund)(WBO)', '455':'LDP 3 — Customer Service (Refund)' };
 var ROSTER_LEFT_DAY_TO_NUM = { '431':1, '430':2, '429':3 };
 var ROSTER_WBO_REASON_MAP = { '432':'Other (not WBO)', '433':'Program Leader has a health concern and is unwilling for the person to continue', '434':'Said they are thinking of ending their own life / have attempted / thinking of harming self or another', '435':'Insufficient sleep in the days preceding or while taking the program (incl. between last day and the evening session)', '436':'Suffered a serious long-term health problem during the program (e.g., epileptic seizures, heart problems, spinal problems making it impossible to sit)', '437':'Now see they should heed the Health Warnings in their Program Information Form', '438':'Informed us they do not think they can "handle" what they are experiencing' };
@@ -173,8 +175,15 @@ function rosterClassPill(classtype, isOn, onClass, label, title, editable, kvOn,
    card render and the attendance.changed live-patch handler so the two
    can never drift apart. */
 function rosterNameBadge(reg){
-  var statusActive = String(reg.f2424) === '154';
-  if(!statusActive) return {label:'CANCELLED', cls:'p-active'};
+  // f2424 (Registration Status) is blank/unset on most real registrations
+  // (confirmed live against event 218: 0 explicit Cancelled, 45 explicit
+  // Active, 93 blank) -- the field is apparently only set by a later
+  // confirmation step, not at registration creation. Blank must read as
+  // the normal/active state; only the explicit Cancelled option (153)
+  // should show the CANCELLED badge. The prior "anything that isn't
+  // literally Active (154) counts as cancelled" check incorrectly flagged
+  // the majority of a real event's roster as cancelled. Fixed 2026-08-13.
+  if(String(reg.f2424) === '153') return {label:'CANCELLED', cls:'p-active'};
   if(rosterIsTrue(reg.f2293)) return {label:'LDP', cls:'p-ldp'};
   var attStatus = String(reg.f3191 || '');
   if(attStatus === '467') return {label:'ABSENT - EXCUSED', cls:'p-excused'};
@@ -204,8 +213,14 @@ function rosterBuildCardHtml(reg, currentDayRaw, localeAbbr){
   var mnrPill = rosterClassPill('mnr', mnrOn, 'p-minor', 'MNR', 'Minor', false, [['Status','Yes']], [['Status','No']]);
   var revPill = rosterClassPill('reviewer', revOn, 'p-review', 'REV', 'Reviewer', true, [['Reviewer','Yes'],['Source','Participant history']], [['Reviewer','No']]);
   var sePill = rosterClassPill('se', seOn, 'p-excluded', 'SE', 'Statistical Exclusion', true, [['Status','Excluded'],['Reason', seReason || '—']], [['Status','Not excluded']]);
-  var acNpPill = '<button class="pill p-slot-off ev-clickable" data-classtype="ac-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Advanced Course — Not Potential" data-pop-kv=\'' + rosterEscAttr(JSON.stringify([['AC Potential', rosterIsTrue(reg.f2887 === '381') ? 'Non-Potential' : 'Pending']])) + '\'>AC-NP</button>';
-  var semNpPill = '<button class="pill p-slot-off ev-clickable" data-classtype="sem-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Seminar — Not Potential" data-pop-kv=\'' + rosterEscAttr(JSON.stringify([['Seminar Potential', String(reg.f2882) === '370' ? 'Non-Potential' : 'Pending']])) + '\'>SEM NP</button>';
+  var acNpIsNonPotential = String(reg.f2887) === '381';
+  var acNpKv = [['AC Potential', acNpIsNonPotential ? 'Non-Potential' : 'Pending']];
+  if(acNpIsNonPotential) acNpKv.push(['Reason', ROSTER_AC_NP_REASON_MAP[String(reg.f2888 || '')] || '—']);
+  var acNpPill = '<button class="pill p-slot-off ev-clickable" data-classtype="ac-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Advanced Course — Not Potential" data-pop-kv=\'' + rosterEscAttr(JSON.stringify(acNpKv)) + '\'>AC-NP</button>';
+  var semNpIsNonPotential = String(reg.f2882) === '370';
+  var semNpKv = [['Seminar Potential', semNpIsNonPotential ? 'Non-Potential' : 'Pending']];
+  if(semNpIsNonPotential) semNpKv.push(['Reason', ROSTER_SEM_NP_REASON_MAP[String(reg.f2883 || '')] || '—']);
+  var semNpPill = '<button class="pill p-slot-off ev-clickable" data-classtype="sem-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Seminar — Not Potential" data-pop-kv=\'' + rosterEscAttr(JSON.stringify(semNpKv)) + '\'>SEM NP</button>';
 
   var d1Tick = rosterBuildAttendanceTick(reg, 1, 'f2801', 'f2805', currentDayRaw);
   var d2Tick = rosterBuildAttendanceTick(reg, 2, 'f2802', 'f2806', currentDayRaw);
@@ -284,7 +299,9 @@ function dashboardRenderSnapshot(registrations, eventFields, staffCount){
   staffCount = Number(staffCount || 0);
   var total = registrations.length;
   var ldpRows = registrations.filter(function(r){ return String(r.f2293) === '1'; });
-  var current = registrations.filter(function(r){ return String(r.f2424) === '154' && String(r.f3046) !== '1' && String(r.f2293) !== '1'; }).length;
+  // f2424 blank must count as active, not excluded -- see the matching
+  // fix/explanation in rosterNameBadge() above (2026-08-13).
+  var current = registrations.filter(function(r){ return String(r.f2424) !== '153' && String(r.f3046) !== '1' && String(r.f2293) !== '1'; }).length;
   var ldp = ldpRows.length;
   var wbo = registrations.filter(function(r){ return String(r.f2688) === '1'; }).length;
   var completions = registrations.filter(function(r){ return String(r.f2809) === '1'; }).length;
@@ -546,7 +563,8 @@ function dashboardFetchGuests(){
 
 function dashboardRenderHome(){
   var first = DASHBOARD_DATA.csFirstName;
-  document.getElementById('pcName').textContent = first;
+  var last = DASHBOARD_DATA.csLastName;
+  document.getElementById('pcName').textContent = [first, last].filter(Boolean).join(' ');
   document.getElementById('pcRole').textContent = dashboardCsRole();
   document.getElementById('homeGreetName').textContent = first;
   document.getElementById('evtSelName').textContent = DASHBOARD_DATA.eventTitle;
