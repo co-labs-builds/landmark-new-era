@@ -50,7 +50,21 @@ If a fresh session doesn't have persistent memory of this build, these docs plus
 
 ## Critical operating rules — read before touching anything
 
-**CDN pinning (dashboard-engine.js and portal-engine.js).** jsDelivr has repeatedly gotten stuck serving stale content in this project. `dashboard-engine.js` is currently SHA-pinned (not `@main`) — **every time you edit it, you must get the new commit SHA (`git rev-parse HEAD`) and manually update the `<script src>` tag in `INSTALL-dashboard-body-block.html`, then commit/push that too.** Forgetting this step means the live site silently keeps serving old JS with no error. `portal-engine.js` is currently on `@main` — check that project's memory for the current pin state before assuming either way, and always verify via `curl` (compare byte count/hash against `raw.githubusercontent.com`) rather than trusting a jsDelivr purge response alone.
+**CDN pinning (dashboard-engine.js and portal-engine.js).** `dashboard-engine.js` is SHA-pinned (not `@main`), and must stay that way. **Every time you edit it: commit the engine, then run `sh scripts/repin.sh`, then push.** That script rewrites the `<script src>` in `INSTALL-dashboard-body-block.html` to the new HEAD SHA and commits it. Forgetting the re-pin means the live site silently keeps serving old JS with no error anywhere — so `scripts/verify-pin.sh` exists to catch exactly that, and `.githooks/pre-push` runs it on every push once you've set `git config core.hooksPath .githooks` (one-time, per clone).
+
+Why pinning rather than `@main` — measured from the live response headers 2026-08-13, so this is settled, not folklore:
+
+| | `@main` | `@<sha>` |
+| --- | --- | --- |
+| `Cache-Control` | `max-age=604800, s-maxage=43200` | `max-age=31536000, immutable` |
+| jsDelivr edge | 12 hours | 1 year (immutable) |
+| **Visitor's browser** | **up to 7 days** | 1 year (immutable) |
+
+The historical "jsDelivr got stuck serving stale content" experience is that contract, not a jsDelivr fault — it will never "resolve itself," and a purge only clears the edge, never the 7-day browser cache. Don't move back to `@main` because a spot-check looked fresh; a fresh read just means that POP happened to revalidate recently (check the `Age:` header).
+
+**`portal-engine.js` is still on `@main`** and therefore still exposed to exactly that staleness. It has not been pinned — treat that as an open risk, not a decision.
+
+When verifying by hand, compare **git blob hashes** (`git hash-object dashboard-engine.js` vs `git rev-parse <sha>:dashboard-engine.js`), not raw byte counts or md5 of the files on disk. `core.autocrlf=true` here, so the working copy is CRLF while the committed blob is LF — a raw byte compare reports a false mismatch of exactly one byte per line (confirmed 2026-08-13: 119,387 local vs 117,302 on the CDN, 2,085 lines, identical content).
 
 **Ontraport strips pasted `<body>` tags.** `INSTALL-dashboard-body-block.html`'s `<body class="home cs-dashboard">` tag never survives Ontraport's page assembly (its own page already has a real `<body>` tag; a browser can't have two). Any CSS scoped under `body.cs-dashboard` will silently never apply unless the class is also applied via `document.body.classList.add('cs-dashboard')` at runtime in JS — already done in `dashboard-engine.js`, but remember this if a future body-scoped selector "isn't taking" despite correct code and a confirmed re-paste.
 

@@ -1,0 +1,12 @@
+#!/bin/sh
+# Blocks a push whose dashboard-engine.js does not match the SHA pinned in
+# INSTALL-dashboard-body-block.html — the silent failure this project has
+# hit repeatedly (live page keeps serving the old engine, no error anywhere).
+#
+# Enable once per clone:
+#   git config core.hooksPath .githooks
+#
+# Bypass for a genuinely unrelated push:
+#   git push --no-verify
+
+exec sh "$(git rev-parse --show-toplevel)/scripts/verify-pin.sh"
