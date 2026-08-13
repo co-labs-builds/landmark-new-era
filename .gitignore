@@ -8,3 +8,12 @@ INSTALL-body-block.html
 
 # n8n Public API key — S2S credential, never commit
 .env
+
+# Claude Code state carried over from the previous build machine during the
+# 2026-08-13 migration (see HANDOFF.md). The archive and its unpacked folder
+# both contain .claude/.credentials.json — a live OAuth credential — plus the
+# full session transcript history. This repo is PUBLIC: a stray `git add -A`
+# would publish all of it. Neither belongs in the repo at all; these entries
+# are a backstop, not permission to keep them here.
+claude old machine.zip
+claude old machine/
