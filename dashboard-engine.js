@@ -121,11 +121,33 @@ var ROSTER_LEFT_DAY_TO_NUM = { '431':1, '430':2, '429':3 };
 var ROSTER_WBO_REASON_MAP = { '432':'Other (not WBO)', '433':'Program Leader has a health concern and is unwilling for the person to continue', '434':'Said they are thinking of ending their own life / have attempted / thinking of harming self or another', '435':'Insufficient sleep in the days preceding or while taking the program (incl. between last day and the evening session)', '436':'Suffered a serious long-term health problem during the program (e.g., epileptic seizures, heart problems, spinal problems making it impossible to sit)', '437':'Now see they should heed the Health Warnings in their Program Information Form', '438':'Informed us they do not think they can "handle" what they are experiencing' };
 var ROSTER_WBO_TRIGGER_TYPES = ['427','454'];
 var ROSTER_MATCH_METHOD_MAP = { '311':'Manual', '312':'Email', '313':'Zoom Registrant ID' };
+var ROSTER_PREFERRED_COMM_MAP = { '398':'Both', '399':'Email', '400':'Call' };
 var ROSTER_DAY_OPTION_ORDER = ['404','405','406','456'];
 
 function rosterEscAttr(s){ return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/'/g, '&#39;').replace(/"/g, '&quot;'); }
 function rosterEscHtml(s){ return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function rosterIsTrue(v){ return v === '1' || v === 1 || v === true; }
+// rosterListLabels() — decodes an Ontraport `list`-type field, which is NOT a
+// bare option ID the way a `drop` field is. Values arrive wrapped and joined
+// by a */* delimiter: a single selection reads as */*398*/* and a multi-select
+// as */*399*/*400*/*. Both confirmed live against registration 1164 on
+// 2026-08-13, not inferred. (Line comments deliberately — the delimiter
+// contains */ and would close a block comment early.)
+// Returns '' for empty/unset, including the documented "0" blank sentinel, so
+// callers render their own em dash rather than this asserting a value.
+// Unrecognised IDs are dropped rather than printed raw.
+function rosterListLabels(v, map){
+  if(v === undefined || v === null) return '';
+  var raw = String(v).trim();
+  if(raw === '' || raw === '0') return '';
+  var out = [];
+  var parts = raw.split('*/*');
+  for(var i = 0; i < parts.length; i++){
+    var id = parts[i].trim();
+    if(id && map[id] && out.indexOf(map[id]) === -1) out.push(map[id]);
+  }
+  return out.join(', ');
+}
 function rosterDayOptionIndex(raw){ var i = ROSTER_DAY_OPTION_ORDER.indexOf(String(raw)); return i === -1 ? 0 : i; }
 function rosterFmtEpochTime(sec){
   var n = Number(sec || 0);
@@ -717,6 +739,12 @@ function openParticipantQuickView(btn){
   var phoneEl = document.getElementById('qvPhone');
   phoneEl.textContent = row.dataset.phone || '—';
   phoneEl.href = row.dataset.phone ? 'tel:' + row.dataset.phone.replace(/[^\d+]/g, '') : '#';
+  /* Deliberately still '—', unlike the Event Management drawer which now
+     reads registrations.f2993. This popout hangs off the Home roster, which
+     is still static prototype markup with no registration binding — .hr-row
+     has no data-reg-id, and the data-email/data-phone read above resolve to
+     nothing for the same reason. Wiring f2993 here is blocked on rebuilding
+     the Home roster from real data, not on the field mapping. */
   document.getElementById('qvPreferredComm').textContent = '—';
   var submitted = row.dataset.fif === '1';
   document.getElementById('qvFormKv').style.display = submitted ? '' : 'none';
@@ -1633,10 +1661,22 @@ function openParticipantDrawer(card){
   var phoneEl = document.getElementById('dwPhone');
   phoneEl.textContent = phone || '—';
   phoneEl.href = phone ? 'tel:' + phone.replace(/[^\d+]/g, '') : '#';
-  /* Was hardcoded 'Email'. No Preferred Communication field has been
-     identified on the registration or contact yet, so show '—' rather than
-     assert a preference nobody recorded. */
-  document.getElementById('dwPreferredComm').textContent = '—';
+  /* Was hardcoded 'Email' — a fabricated default, since the source export's
+     Preferred Communication column was blank on every row and only the header
+     implied Email. The real field is registrations.f2993, a `list` (not
+     `drop`) type, so it is delimiter-wrapped and can hold more than one value.
+     Renders '—' when unset rather than assuming a preference.
+
+     Worth knowing when reading this on the floor: as of 2026-08-13 the field
+     was populated account-wide, and every one of the 171 populated records
+     holds 398 "Both" — zero "Email", zero "Call", none left empty on event
+     218. So this row will read "Both" for every participant. That is the real
+     stored value and is reported as-is, but a uniform value across the whole
+     roster is consistent with a bulk default rather than a preference each
+     participant actually expressed; don't treat it as an individual choice
+     until someone confirms how it was set. */
+  document.getElementById('dwPreferredComm').textContent =
+    rosterListLabels(infoReg.f2993, ROSTER_PREFERRED_COMM_MAP) || '—';
   document.getElementById('dwJoinLink').textContent = EVENT_ZOOM_JOIN_BASE + (card.dataset.regId ? '&tk=' + card.dataset.regId : '');
   populateInformationForm(card);
   openDrawer('dwParticipant');
