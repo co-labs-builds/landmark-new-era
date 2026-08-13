@@ -1220,25 +1220,58 @@ function onCsLeftTypeOrReasonChange(){
    cue points at and the field that blocks saving can never disagree.
    Note Day is required by the server whenever leftCourse is true, but Time
    is not — Time is genuinely optional and never carries the cue. */
-function csFieldOf(id){
+/* Shared by all three progressive modals so their cue behaviour cannot
+   drift apart. attnFieldOf() matches .field and .ev-field because the
+   Device Exception participant combo uses the latter. */
+function attnFieldOf(id){
   var el = document.getElementById(id);
-  return el ? el.closest('.field') : null;
+  return el ? el.closest('.field,.ev-field') : null;
 }
+function attnApply(modalId, nextFn){
+  var modal = document.getElementById(modalId);
+  if(!modal) return null;
+  modal.querySelectorAll('.attn').forEach(function(f){ f.classList.remove('attn'); });
+  var next = nextFn();
+  if(next) next.classList.add('attn');
+  return next;
+}
+/* Each next*UnsetField() lists that modal's required answers in the order
+   the form reveals them, returning the first still outstanding or null.
+   Each is the single source of truth for both its highlight and its
+   save-time guard, so the field the cue points at and the field that
+   blocks saving can never disagree. Optional inputs (Course Status Time,
+   Device Exception note, the attendance Override note) are deliberately
+   absent — the cue only ever points at something actually required. */
 function csNextUnsetField(){
   if(document.getElementById('csLeftCourse').value !== 'yes') return null;
   var type = document.getElementById('csLeftType').value;
-  if(!type) return csFieldOf('csLeftType');
-  if(!document.getElementById('csDay').value) return csFieldOf('csDay');
-  if(ROSTER_WBO_TRIGGER_TYPES.indexOf(type) !== -1 && !document.getElementById('csLeaveReason').value) return csFieldOf('csLeaveReason');
+  if(!type) return attnFieldOf('csLeftType');
+  if(!document.getElementById('csDay').value) return attnFieldOf('csDay');
+  if(ROSTER_WBO_TRIGGER_TYPES.indexOf(type) !== -1 && !document.getElementById('csLeaveReason').value) return attnFieldOf('csLeaveReason');
   return null;
 }
-function csUpdateAttention(){
-  var modal = document.getElementById('mCourseStatus');
-  if(!modal) return;
-  modal.querySelectorAll('.field.attn').forEach(function(f){ f.classList.remove('attn'); });
-  var next = csNextUnsetField();
-  if(next) next.classList.add('attn');
+function csUpdateAttention(){ return attnApply('mCourseStatus', csNextUnsetField); }
+function corrAttNextUnsetField(){
+  if(!document.getElementById('corrAttDay').value) return attnFieldOf('corrAttDay');
+  if(!document.getElementById('corrAttSession').value) return attnFieldOf('corrAttSession');
+  var status = document.getElementById('corrAttStatus').value;
+  if(!status) return attnFieldOf('corrAttStatus');
+  /* Reason is required only for Absent - Excused (467), matching the
+     existing guard in confirmCorrectAttendance(). */
+  if(status === '467' && !document.getElementById('corrAttNote').value.trim()) return attnFieldOf('corrAttNote');
+  return null;
 }
+function corrAttUpdateAttention(){ return attnApply('mCorrectAttendance', corrAttNextUnsetField); }
+function deNextUnsetField(){
+  var type = document.getElementById('deExceptionType').value;
+  if(!type) return attnFieldOf('deExceptionType');
+  /* Shared device (475) needs a resolved partner. The dataset flag, not the
+     visible text, is what confirmDeviceException() sends, so typing a name
+     without picking from the list correctly still counts as unanswered. */
+  if(type === '475' && !document.getElementById('deOtherParticipant').dataset.otherRegId) return attnFieldOf('deOtherParticipant');
+  return null;
+}
+function deUpdateAttention(){ return attnApply('mDeviceException', deNextUnsetField); }
 function confirmCourseStatus(){
   var card = pendingCourseStatusCard;
   if(!card){ dismissModal(); return; }
@@ -1387,9 +1420,14 @@ var CORR_ATT_STATUS_LABELS = {'469':'Present', '467':'Absent - Excused', '468':'
 function openCorrectAttendance(card){
   pendingCorrectAttCard = card;
   document.getElementById('attName').textContent = cardName(card);
-  document.getElementById('corrAttDay').value = '2';
-  document.getElementById('corrAttSession').value = '1';
-  document.getElementById('corrAttStatus').value = '469';
+  /* Previously defaulted to Day 2 / Session 1 / Present. Attendance
+     correction is an action rather than a stored state, so there is no
+     "current value" these could legitimately reflect — they were pure
+     fabricated defaults, and Present being pre-selected meant a mis-click
+     could record attendance nobody chose. Blank + placeholder now. */
+  document.getElementById('corrAttDay').value = '';
+  document.getElementById('corrAttSession').value = '';
+  document.getElementById('corrAttStatus').value = '';
   document.getElementById('corrAttNote').value = '';
   document.getElementById('corrAttOverrideNote').value = '';
   onCorrAttStatusChange();
@@ -1398,6 +1436,7 @@ function openCorrectAttendance(card){
 function onCorrAttStatusChange(){
   var isExcused = document.getElementById('corrAttStatus').value === '467';
   document.getElementById('corrAttNoteField').style.display = isExcused ? 'block' : 'none';
+  corrAttUpdateAttention();
 }
 function confirmCorrectAttendance(){
   var card = pendingCorrectAttCard;
@@ -1406,7 +1445,14 @@ function confirmCorrectAttendance(){
   var session = document.getElementById('corrAttSession').value;
   var status = document.getElementById('corrAttStatus').value;
   var note = document.getElementById('corrAttNote').value.trim();
-  if(status === '467' && !note){ toast('A reason is required for Absent - Excused.', 'err'); return; }
+  var attMissing = corrAttNextUnsetField();
+  if(attMissing){
+    corrAttUpdateAttention();
+    var attCtl = attMissing.querySelector('select,input,textarea');
+    if(attCtl) attCtl.focus();
+    toast(attMissing.id === 'corrAttNoteField' ? 'A reason is required for Absent - Excused.' : 'Choose an option for the highlighted field.', 'err');
+    return;
+  }
   var overrideNote = document.getElementById('corrAttOverrideNote').value.trim();
   var saveBtn = document.getElementById('corrAttSaveBtn');
   var originalLabel = saveBtn.textContent;
@@ -1459,17 +1505,21 @@ function dashboardParticipantDisplayName(reg){
 function openDeviceException(card){
   pendingDeCard = card;
   document.getElementById('deName').textContent = cardName(card);
-  document.getElementById('deExceptionType').value = '473';
+  /* Was pre-selected to 473 "Other Zoom exception" — a fabricated default
+     that could be saved through untouched. Blank + placeholder now. */
+  document.getElementById('deExceptionType').value = '';
   document.getElementById('deOtherParticipantField').style.display = 'none';
   var otherInput = document.getElementById('deOtherParticipant');
   otherInput.value = '';
   delete otherInput.dataset.otherRegId;
   document.getElementById('deNoteText').value = '';
+  deUpdateAttention();
   openModal('mDeviceException');
 }
 function onDeExceptionTypeChange(){
   var isShared = document.getElementById('deExceptionType').value === '475';
   document.getElementById('deOtherParticipantField').style.display = isShared ? 'block' : 'none';
+  deUpdateAttention();
 }
 function deviceParticipantFilter(input){
   var q = input.value.toLowerCase().trim();
@@ -1494,19 +1544,28 @@ function selectDeviceParticipant(el, regId, name){
   input.value = name;
   input.dataset.otherRegId = regId;
   wrapper.querySelector('.combo-list').classList.remove('open');
+  /* Clears the cue the moment a partner is actually resolved — the input's
+     own oninput can't do this, since typing alone never sets otherRegId. */
+  deUpdateAttention();
 }
 function confirmDeviceException(){
   var card = pendingDeCard;
   if(!card){ dismissModal(); return; }
   var saveBtn = document.getElementById('deSaveBtn');
   var originalLabel = saveBtn.textContent;
+  var deMissing = deNextUnsetField();
+  if(deMissing){
+    deUpdateAttention();
+    var deCtl = deMissing.querySelector('select,input,textarea');
+    if(deCtl) deCtl.focus();
+    toast(deMissing.id === 'deOtherParticipantField' ? 'Select who this participant is sharing a device with.' : 'Choose an option for the highlighted field.', 'err');
+    return;
+  }
   var exceptionType = document.getElementById('deExceptionType').value;
   var note = document.getElementById('deNoteText').value.trim();
   var payload = { eventTeamId: DASHBOARD_DATA.eventTeamId, registrationId: Number(card.dataset.regId), exceptionType: exceptionType, note: note };
   if(exceptionType === '475'){
-    var otherRegId = document.getElementById('deOtherParticipant').dataset.otherRegId;
-    if(!otherRegId){ toast('Select who this participant is sharing a device with.', 'err'); return; }
-    payload.otherRegistrationId = Number(otherRegId);
+    payload.otherRegistrationId = Number(document.getElementById('deOtherParticipant').dataset.otherRegId);
   }
   saveBtn.disabled = true;
   saveBtn.textContent = 'Saving…';

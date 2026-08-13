@@ -854,14 +854,16 @@
   <div class="modal-bd">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
       <div class="field"><label>Day</label>
-        <select id="corrAttDay">
+        <select id="corrAttDay" onchange="corrAttUpdateAttention()">
+          <option value="">Choose an option…</option>
           <option value="1">Day 1</option>
-          <option value="2" selected>Day 2</option>
+          <option value="2">Day 2</option>
           <option value="3">Day 3</option>
         </select>
       </div>
       <div class="field"><label>Session</label>
-        <select id="corrAttSession">
+        <select id="corrAttSession" onchange="corrAttUpdateAttention()">
+          <option value="">Choose an option…</option>
           <option value="1">Session 1</option>
           <option value="2">Session 2</option>
           <option value="3">Session 3</option>
@@ -871,13 +873,14 @@
     </div>
     <div class="field"><label>Status</label>
       <select id="corrAttStatus" onchange="onCorrAttStatusChange()">
+        <option value="">Choose an option…</option>
         <option value="469">Present</option>
         <option value="467">Absent - Excused</option>
         <option value="468">Absent - NCNS</option>
       </select>
     </div>
     <div class="field"><label>Override note</label><textarea id="corrAttOverrideNote" rows="3" placeholder="Optional — why is this being manually corrected?"></textarea></div>
-    <div class="field" id="corrAttNoteField"><label>Reason</label><textarea id="corrAttNote" rows="3" placeholder="Required — why is this excused?"></textarea></div>
+    <div class="field" id="corrAttNoteField"><label>Reason</label><textarea id="corrAttNote" rows="3" placeholder="Required — why is this excused?" oninput="corrAttUpdateAttention()"></textarea></div>
   </div>
   <div class="modal-ft"><button class="btn btn-primary" id="corrAttSaveBtn" onclick="confirmCorrectAttendance()">Save</button><button class="btn" onclick="dismissModal()">Cancel</button></div>
 </div>
@@ -1011,6 +1014,7 @@
   <div class="modal-bd">
     <div class="field"><label>What's the exception?</label>
       <select id="deExceptionType" onchange="onDeExceptionTypeChange()">
+        <option value="">Choose an option…</option>
         <option value="473">Other Zoom exception</option>
         <option value="474">Participant using multiple devices</option>
         <option value="475">Shared device with another participant</option>
