@@ -727,6 +727,20 @@ function buildInformationFormKv(name){
 
 /* ---------- profile chip: logout-only, no role switching ---------- */
 function toggleProfileMenu(e){ e.stopPropagation(); document.getElementById('profileMenu').classList.toggle('open'); }
+/* dashboardLogout() — same mechanism as the Member Portal's logoutBtn
+   handler (portal-engine.js), added there first since no documented
+   public API exists for a custom-page Ontraport logout link. Directly
+   expiring the OPWSESS_* session cookie client-side was rejected by
+   Ontraport's Custom HTML editor as "suspicious" on save (its own
+   scanner catching the read-cookie-then-reassign-with-widened-domain
+   shape, which looks like session hijacking even though it wasn't).
+   logout=true is a real, server-recognized signal instead (found live
+   in Ontraport's own generated "already logged in" form on /login) --
+   surfaces Ontraport's native confirmation screen, not an instant
+   single-step logout, but it does correctly clear the session. */
+function dashboardLogout(){
+  window.location.href = window.location.origin + '/login?logout=true';
+}
 document.addEventListener('click', function(e){
   var menu = document.getElementById('profileMenu');
   if(menu && menu.classList.contains('open') && !e.target.closest('#profileMenu') && !e.target.closest('#profileChip')) menu.classList.remove('open');
