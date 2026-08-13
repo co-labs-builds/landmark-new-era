@@ -193,6 +193,25 @@ function rosterNameBadge(reg){
   return {label:'ACTIVE', cls:'p-active'};
 }
 
+/* rosterDeviceExceptionPill() — added 2026-08-13. Surfaces Device Exception
+   (f3208/f3184/f3207) as a badge under the name/PID line, per client spec:
+   MULTI-DEVICE when f3184 (Multi-Device) is set, SHARED DEVICE when f3207
+   (Shared Device — the paired participant's name, written bidirectionally
+   by CS Dashboard : Device Exception) is non-empty. f3184 checked first —
+   the two are independent fields and shouldn't both be set from a single
+   exceptionType selection, but if they ever are, Multi-Device is the more
+   direct/current signal. No badge at all for the plain "Other" exception
+   (f3208=473 with neither flag set) — that case has no dedicated visual
+   per the locked spec beyond the kebab-menu note itself. */
+function rosterDeviceExceptionPill(reg){
+  var isMulti = rosterIsTrue(reg.f3184);
+  var sharedWith = String(reg.f3207 || '').trim();
+  if(!isMulti && !sharedWith) return '';
+  var label = isMulti ? 'MULTI-DEVICE' : 'SHARED DEVICE';
+  var kv = isMulti ? [['Status', 'Participant using multiple devices']] : [['Shared with', sharedWith]];
+  return '<button class="pill p-needsattn ev-clickable" data-devexc="1" onclick="openDetailPop(this)" data-pop-eyebrow="Device / Zoom Exception" data-pop-title="' + rosterEscAttr(label) + '" data-pop-kv=\'' + rosterEscAttr(JSON.stringify(kv)) + '\'>' + label + '</button>';
+}
+
 function rosterBuildCardHtml(reg, currentDayRaw, localeAbbr){
   var first = reg['f2213//firstname'] || '';
   var last = reg['f2213//lastname'] || '';
@@ -221,6 +240,7 @@ function rosterBuildCardHtml(reg, currentDayRaw, localeAbbr){
   var semNpKv = [['Seminar Potential', semNpIsNonPotential ? 'Non-Potential' : 'Pending']];
   if(semNpIsNonPotential) semNpKv.push(['Reason', ROSTER_SEM_NP_REASON_MAP[String(reg.f2883 || '')] || '—']);
   var semNpPill = '<button class="pill p-slot-off ev-clickable" data-classtype="sem-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Seminar — Not Potential" data-pop-kv=\'' + rosterEscAttr(JSON.stringify(semNpKv)) + '\'>SEM NP</button>';
+  var devExcPill = rosterDeviceExceptionPill(reg);
 
   var d1Tick = rosterBuildAttendanceTick(reg, 1, 'f2801', 'f2805', currentDayRaw);
   var d2Tick = rosterBuildAttendanceTick(reg, 2, 'f2802', 'f2806', currentDayRaw);
@@ -247,7 +267,7 @@ function rosterBuildCardHtml(reg, currentDayRaw, localeAbbr){
     '<div class="ev-row1">' +
       '<div class="ev-field ev-identity">' +
         '<div class="ev-name"><div class="ev-name-row"><b>' + rosterEscHtml(displayName) + '</b> <span class="status-sep">–</span> <span class="pill ' + nameBadge.cls + '" data-name-badge="1">' + rosterEscHtml(statusLabel) + '</span></div><span>Legal: ' + rosterEscHtml(legalName) + ' · ' + rosterEscHtml(pid) + '</span></div>' +
-        '<div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv=\'' + rosterEscAttr(JSON.stringify([['Value', localeAbbr.full]])) + '\'>' + localeAbbr.abbr + '</button></div>' +
+        '<div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv=\'' + rosterEscAttr(JSON.stringify([['Value', localeAbbr.full]])) + '\'>' + localeAbbr.abbr + '</button>' + devExcPill + '</div>' +
       '</div>' +
       '<div class="ev-field ev-classification">' +
         '<div class="ev-l">Classification</div>' +
@@ -1138,6 +1158,7 @@ function openCourseStatus(card){
   document.getElementById('csDay').value = ROSTER_LEFT_DAY_TO_NUM[String(reg.f3059 || '')] ? String(reg.f3059) : '430';
   document.getElementById('csTime').value = csEpochToTimeInput(reg.f3060) || '15:42';
   document.getElementById('csLeaveReason').value = ROSTER_WBO_REASON_MAP[String(reg.f3061 || '')] ? String(reg.f3061) : '432';
+  document.getElementById('csWboNote').value = reg.f3235 || '';
   onCsLeftCourseChange();
   onCsLeftTypeOrReasonChange();
   openModal('mCourseStatus');
@@ -1147,7 +1168,9 @@ function onCsLeftCourseChange(){
 }
 function onCsLeftTypeOrReasonChange(){
   var type = document.getElementById('csLeftType').value;
-  document.getElementById('csWboDerived').textContent = ROSTER_WBO_TRIGGER_TYPES.indexOf(type) !== -1 ? 'Yes' : 'No';
+  var isWbo = ROSTER_WBO_TRIGGER_TYPES.indexOf(type) !== -1;
+  document.getElementById('csWboDerived').textContent = isWbo ? 'Yes' : 'No';
+  document.getElementById('csWboFields').style.display = isWbo ? 'block' : 'none';
 }
 function confirmCourseStatus(){
   var card = pendingCourseStatusCard;
@@ -1156,13 +1179,15 @@ function confirmCourseStatus(){
   var originalLabel = saveBtn.textContent;
   var left = document.getElementById('csLeftCourse').value === 'yes';
   var payload = { eventTeamId: DASHBOARD_DATA.eventTeamId, registrationId: Number(card.dataset.regId), leftCourse: left };
-  var type = '', reason = '';
+  var type = '', reason = '', isWbo = false;
   if(left){
     type = document.getElementById('csLeftType').value;
-    reason = document.getElementById('csLeaveReason').value;
+    isWbo = ROSTER_WBO_TRIGGER_TYPES.indexOf(type) !== -1;
+    reason = isWbo ? document.getElementById('csLeaveReason').value : '';
     payload.leftType = type;
     payload.leftDay = document.getElementById('csDay').value;
     payload.wboReason = reason;
+    payload.wboNote = isWbo ? document.getElementById('csWboNote').value.trim() : '';
     var timeEpoch = csTimeInputToEpoch(document.getElementById('csTime').value);
     if(timeEpoch) payload.leftTime = timeEpoch;
   }
@@ -1179,7 +1204,7 @@ function confirmCourseStatus(){
     saveBtn.disabled = false;
     saveBtn.textContent = originalLabel;
     if(left){
-      logAudit('staff', currentActorName() + ' set course status = ' + (ROSTER_LEFT_TYPE_MAP[type] || type) + ' · ' + (ROSTER_WBO_REASON_MAP[reason] || reason) + (r.result.wbo ? ' · WBO' : ''));
+      logAudit('staff', currentActorName() + ' set course status = ' + (ROSTER_LEFT_TYPE_MAP[type] || type) + (reason ? ' · ' + (ROSTER_WBO_REASON_MAP[reason] || reason) : '') + (r.result.wbo ? ' · WBO' : ''));
       toast('Course status saved.');
     } else {
       logAudit('staff', currentActorName() + ' set course status = ACTIVE');
@@ -1283,6 +1308,7 @@ function openCorrectAttendance(card){
   document.getElementById('corrAttSession').value = '1';
   document.getElementById('corrAttStatus').value = '469';
   document.getElementById('corrAttNote').value = '';
+  document.getElementById('corrAttOverrideNote').value = '';
   onCorrAttStatusChange();
   openModal('mCorrectAttendance');
 }
@@ -1298,9 +1324,10 @@ function confirmCorrectAttendance(){
   var status = document.getElementById('corrAttStatus').value;
   var note = document.getElementById('corrAttNote').value.trim();
   if(status === '467' && !note){ toast('A reason is required for Absent - Excused.', 'err'); return; }
+  var overrideNote = document.getElementById('corrAttOverrideNote').value.trim();
   var saveBtn = document.getElementById('corrAttSaveBtn');
   var originalLabel = saveBtn.textContent;
-  var payload = { eventTeamId: DASHBOARD_DATA.eventTeamId, registrationId: Number(card.dataset.regId), day: day, session: session, status: status, note: note };
+  var payload = { eventTeamId: DASHBOARD_DATA.eventTeamId, registrationId: Number(card.dataset.regId), day: day, session: session, status: status, note: note, overrideNote: overrideNote };
   saveBtn.disabled = true;
   saveBtn.textContent = 'Saving…';
   fetch(DASHBOARD_CORRECT_ATTENDANCE_WEBHOOK_URL, {
@@ -1927,6 +1954,24 @@ function dashboardApplyAttendanceChanged(msg){
       var pwrap = document.createElement('div');
       pwrap.innerHTML = rosterClassPill(pillMeta.classtype, newVal === 1, pillMeta.onClass, pillMeta.label, pillMeta.title, pillMeta.editable, pillMeta.kvOn, pillMeta.kvOff);
       oldPill.replaceWith(pwrap.firstChild);
+    }
+  }
+
+  // Device Exception pill (multi-device/shared-device) — f3184/f3207/f3208
+  // can each independently flip whether/what this shows; rebuild from
+  // scratch (remove-then-reinsert) since it can also disappear entirely
+  // (e.g. switching back to plain "Other").
+  if(field === 'f3184' || field === 'f3207' || field === 'f3208'){
+    var evSub = card.querySelector('.ev-sub');
+    if(evSub){
+      var oldDevPill = evSub.querySelector('[data-devexc="1"]');
+      if(oldDevPill) oldDevPill.remove();
+      var newDevPillHtml = rosterDeviceExceptionPill(reg);
+      if(newDevPillHtml){
+        var devWrap = document.createElement('div');
+        devWrap.innerHTML = newDevPillHtml;
+        evSub.appendChild(devWrap.firstChild);
+      }
     }
   }
 

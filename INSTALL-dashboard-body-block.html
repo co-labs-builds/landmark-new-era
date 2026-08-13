@@ -747,12 +747,18 @@
   <div class="modal-ft"><button class="btn btn-danger" id="btnConfirmEndSession" onclick="confirmEndSession()">End session — submit entries</button><button class="btn" onclick="dismissModal()">Go back and review</button></div>
 </div>
 
-<!-- Correct Attendance — REAL BUILD 2026-08-12. The manual-override tail of
-     Attendance Architecture Layer 2: CS picks Day/Session/Status, writes
-     registrations.f3191 (Attendance Status) always, f3190 (FS LATE NOTE,
-     shared with the automated resolution flow) only when Absent-Excused,
-     and the specific per-session ATTENDED checkbox (f3193-f3203/f3055)
-     to true only when Present. This is the manual path for when the
+<!-- Correct Attendance — REAL BUILD 2026-08-12, override note added 2026-08-13.
+     The manual-override tail of Attendance Architecture Layer 2: CS picks
+     Day/Session/Status, writes registrations.f3191 (Attendance Status)
+     always, f3190 (FS LATE NOTE, shared with the automated resolution
+     flow) only when Absent-Excused, and the specific per-session ATTENDED
+     checkbox (f3193-f3203/f3055 — matched to Day+Session via
+     SESSION_FIELD_MAP in CS Dashboard : Correct Attendance) to true only
+     when Present. Override note (f3237, new 2026-08-13) is a separate,
+     always-available, optional field distinct from f3190 — a general
+     "why is this being manually corrected" audit note independent of
+     status, whereas f3190 stays specifically the Excused-only reason
+     shared with the automated flow. This is the manual path for when the
      automated Zoom/Participant-ID match fails — normal attendance stays
      Zoom-sourced and read-only via the tick's popover. -->
 <div class="modal" id="mCorrectAttendance">
@@ -782,6 +788,7 @@
         <option value="468">Absent - NCNS</option>
       </select>
     </div>
+    <div class="field"><label>Override note</label><textarea id="corrAttOverrideNote" rows="3" placeholder="Optional — why is this being manually corrected?"></textarea></div>
     <div class="field" id="corrAttNoteField"><label>Reason</label><textarea id="corrAttNote" rows="3" placeholder="Required — why is this excused?"></textarea></div>
   </div>
   <div class="modal-ft"><button class="btn btn-primary" id="corrAttSaveBtn" onclick="confirmCorrectAttendance()">Save</button><button class="btn" onclick="dismissModal()">Cancel</button></div>
@@ -836,22 +843,25 @@
   <div class="modal-ft"><button class="btn btn-primary" id="ocSaveBtn" onclick="confirmOverrideClassification()">Save override</button><button class="btn" onclick="cancelOverrideClassification()">Cancel</button></div>
 </div>
 
-<!-- Update Course Status (§0l) — REAL BUILD 2026-08-12. Left Course? drives
-     Left Type (real 5-option LDP list, registrations.f3056 — NOT the old
-     LDP/NSHO binary, NSHO isn't part of this field), Day (f3059), Time
-     (f3060, optional), Leave Reason (f3061 "WBO Reason", real 7-option
-     list). WBO (f2688) is read-only/derived — auto-true when Left Type is
-     LDP 2 or LDP 4, computed both here (display) and server-side
-     (authoritative — the webhook ignores any client WBO value). The old
-     "Operational note" field was cut from this modal: Operational Notes
-     (f2886) is its own separate kebab action (#5), not part of this one's
-     locked field spec. Reverting Left Course? to No clears Left Type/Day/
-     Leave Reason/WBO server-side and restores ACTIVE — history lives in
-     the audit trail (logAudit()), not in stale fields the UI keeps around.
-     Writes via dashboardWriteCourseStatus() to CS Dashboard : Update
-     Course Status (n8n id lj3Ewx20NFYpOp3g); on success the whole roster
-     is refetched so pills/ticks reflect real server state (no live-push
-     wired for roster edits yet). -->
+<!-- Update Course Status (§0l) — REAL BUILD 2026-08-12, made progressive
+     2026-08-13 per client spec. Left Course? drives Left Type (real
+     5-option LDP list, registrations.f3056 — NOT the old LDP/NSHO binary,
+     NSHO isn't part of this field), then Day (f3059)/Time (f3060,
+     optional) always show together. WBO Reason (f3061) + Note (f3235,
+     new 2026-08-13) are gated behind #csWboFields and ONLY shown/sent
+     when Left Type is LDP 2 or LDP 4 (427/454) — WBO (f2688) itself
+     stays read-only/derived, computed both here (display) and
+     server-side (authoritative — the webhook ignores any client WBO
+     value). The old "Operational note" field is still cut from this
+     modal: Operational Notes (f2886) is its own separate kebab action
+     (#5) — f3235 is a distinct field, specific to the WBO case. Reverting
+     Left Course? to No clears Left Type/Day/WBO Reason/Note/WBO
+     server-side and restores ACTIVE — history lives in the audit trail
+     (logAudit()), not in stale fields the UI keeps around. Writes via
+     dashboardWriteCourseStatus() to CS Dashboard : Update Course Status
+     (n8n id lj3Ewx20NFYpOp3g); on success the whole roster is refetched
+     so pills/ticks reflect real server state (no live-push wired for
+     roster edits yet). -->
 <div class="modal" id="mCourseStatus">
   <div class="modal-hd"><h3>Update course status — <span class="serif-it" id="csName">this participant</span></h3><p>Writes to <span class="mf">oRegistration</span> for this Event only.</p></div>
   <div class="modal-bd">
@@ -875,18 +885,21 @@
         <div class="field"><label>Day</label><select id="csDay"><option value="431">Day 1</option><option value="430" selected>Day 2</option><option value="429">Day 3</option></select></div>
         <div class="field"><label>Time</label><input type="time" id="csTime" value="15:42"></div>
       </div>
-      <div class="field"><label>Leave reason</label>
-        <select id="csLeaveReason" onchange="onCsLeftTypeOrReasonChange()">
-          <option value="432">Other (not WBO)</option>
-          <option value="433">Program Leader has a health concern and is unwilling for the person to continue</option>
-          <option value="434">Said they are thinking of ending their own life / have attempted / thinking of harming self or another</option>
-          <option value="435">Insufficient sleep in the days preceding or while taking the program (incl. between last day and the evening session)</option>
-          <option value="436">Suffered a serious long-term health problem during the program (e.g., epileptic seizures, heart problems, spinal problems making it impossible to sit)</option>
-          <option value="437">Now see they should heed the Health Warnings in their Program Information Form</option>
-          <option value="438">Informed us they do not think they can "handle" what they are experiencing</option>
-        </select>
-      </div>
       <div class="kv"><span class="k">WBO</span><span class="v" id="csWboDerived">No</span></div>
+      <div id="csWboFields" style="display:none;">
+        <div class="field"><label>WBO reason</label>
+          <select id="csLeaveReason">
+            <option value="432">Other (not WBO)</option>
+            <option value="433">Program Leader has a health concern and is unwilling for the person to continue</option>
+            <option value="434">Said they are thinking of ending their own life / have attempted / thinking of harming self or another</option>
+            <option value="435">Insufficient sleep in the days preceding or while taking the program (incl. between last day and the evening session)</option>
+            <option value="436">Suffered a serious long-term health problem during the program (e.g., epileptic seizures, heart problems, spinal problems making it impossible to sit)</option>
+            <option value="437">Now see they should heed the Health Warnings in their Program Information Form</option>
+            <option value="438">Informed us they do not think they can "handle" what they are experiencing</option>
+          </select>
+        </div>
+        <div class="field"><label>Note</label><textarea id="csWboNote" rows="3" placeholder="Optional — visible to staff only"></textarea></div>
+      </div>
     </div>
   </div>
   <div class="modal-ft"><button class="btn btn-primary" id="csSaveBtn" onclick="confirmCourseStatus()">Save status</button><button class="btn" onclick="dismissModal()">Cancel</button></div>
