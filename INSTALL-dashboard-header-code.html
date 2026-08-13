@@ -488,6 +488,19 @@ body.cs-dashboard .modal-ft .btn-primary{font-size:11px !important;text-transfor
 .field label{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gray);display:block;margin-bottom:6px;}
 .field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:7px;padding:10px 12px;font-family:var(--sans);font-size:13px;outline:none;}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--green);}
+/* Form-control hardening 2026-08-13 — same collision class as the modal
+   button rules further down, reported live as select controls not appearing
+   at all inside the roster kebab modals. The rule above sets border/padding/
+   font but never display, appearance or visibility, so an Ontraport rule
+   that hides or collapses native form controls (its framework replaces them
+   with custom widgets) wins by default rather than by specificity: nothing
+   here contests those properties. Scoped under body.cs-dashboard + important
+   to match the established fix pattern in this file. */
+body.cs-dashboard .field input,body.cs-dashboard .field select,body.cs-dashboard .field textarea{display:block !important;visibility:visible !important;opacity:1 !important;width:100% !important;font-family:var(--sans) !important;font-size:13px !important;}
+body.cs-dashboard .field input,body.cs-dashboard .field select{min-height:38px !important;}
+body.cs-dashboard .field select{-webkit-appearance:menulist !important;appearance:menulist !important;background-color:#fff !important;color:var(--ink) !important;}
+/* Header rule replacing the old explanatory <p> in kebab-action modals. */
+.modal-hd .hd-rule{height:1px;background:var(--line);margin-top:14px;}
 .match{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:7px;cursor:pointer;transition:border-color .15s,background .15s;}
 .match:hover{border-color:var(--green);background:var(--green-bg);}
 .match.top{border-color:rgba(46,162,3,.5);background:var(--green-bg);}

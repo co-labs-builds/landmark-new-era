@@ -850,7 +850,7 @@
      automated Zoom/Participant-ID match fails — normal attendance stays
      Zoom-sourced and read-only via the tick's popover. -->
 <div class="modal" id="mCorrectAttendance">
-  <div class="modal-hd"><h3>Correct attendance — <span class="serif-it" id="attName">this participant</span></h3><p>Manual override for when the automated Zoom/Participant-ID match fails. Writes to <span class="mf">oRegistration</span> for this Event only.</p></div>
+  <div class="modal-hd"><h3>Update Attendance for <span class="serif-it" id="attName">this participant</span></h3><div class="hd-rule"></div></div>
   <div class="modal-bd">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
       <div class="field"><label>Day</label>
@@ -890,7 +890,7 @@
      numeric data-reg-id, otherwise falls back to the old demo-only behavior so a
      fixture .hr-row can't send a fake ID to the real webhook. -->
 <div class="modal" id="mNotes">
-  <div class="modal-hd"><h3>Operational note — <span class="serif-it" id="notesName">this record</span></h3><p>Visible to staff only.</p></div>
+  <div class="modal-hd"><h3>Update Operational Note for <span class="serif-it" id="notesName">this record</span></h3><div class="hd-rule"></div></div>
   <div class="modal-bd"><div class="field"><textarea id="notesText" rows="5" placeholder="Add an operational note…"></textarea></div></div>
   <div class="modal-ft"><button class="btn btn-primary" id="notesSaveBtn" onclick="confirmNotes()">Save note</button><button class="btn" onclick="dismissModal()">Cancel</button></div>
 </div>
@@ -901,7 +901,7 @@
      Kept separate from the roster's new Override Classification modal below
      — the two surfaces intentionally don't share a write flow here. -->
 <div class="modal" id="mSEReason">
-  <div class="modal-hd"><h3>Statistically Excluded — reason</h3><p>Required whenever SE is set. Writes to <span class="mf">oInvitation</span> alongside the flag.</p></div>
+  <div class="modal-hd"><h3>Update Statistical Exclusion Reason</h3><div class="hd-rule"></div></div>
   <div class="modal-bd"><div class="field"><textarea id="seReasonText" rows="4" placeholder="Why is this record statistically excluded?"></textarea></div></div>
   <div class="modal-ft"><button class="btn btn-primary" onclick="confirmSEReason()">Save reason</button><button class="btn" onclick="cancelSEReason()">Cancel</button></div>
 </div>
@@ -913,7 +913,7 @@
      a first-time-on override reverts the pill, same safety behavior as the
      old SE-only flow this replaces. -->
 <div class="modal" id="mOverrideClassification">
-  <div class="modal-hd"><h3>Override classification — <span class="serif-it" id="ocName">this participant</span></h3><p>Writes to <span class="mf">oRegistration</span> alongside the flag. A reason is required for every override.</p></div>
+  <div class="modal-hd"><h3>Update Classification for <span class="serif-it" id="ocName">this participant</span></h3><div class="hd-rule"></div></div>
   <div class="modal-bd">
     <div class="field"><label>Field</label>
       <select id="ocField">
@@ -951,7 +951,7 @@
      so pills/ticks reflect real server state (no live-push wired for
      roster edits yet). -->
 <div class="modal" id="mCourseStatus">
-  <div class="modal-hd"><h3>Update course status — <span class="serif-it" id="csName">this participant</span></h3><p>Writes to <span class="mf">oRegistration</span> for this Event only.</p></div>
+  <div class="modal-hd"><h3>Update Course Status for <span class="serif-it" id="csName">this participant</span></h3><div class="hd-rule"></div></div>
   <div class="modal-bd">
     <div class="field"><label>Left course?</label>
       <select id="csLeftCourse" onchange="onCsLeftCourseChange()">
@@ -1005,7 +1005,7 @@
      f3207 bidirectionally, so the client only ever sends a registration
      ID, never a name string. -->
 <div class="modal" id="mDeviceException">
-  <div class="modal-hd"><h3>Device / Zoom exception — <span class="serif-it" id="deName">this participant</span></h3><p>Writes to <span class="mf">oRegistration</span> for this Event only.</p></div>
+  <div class="modal-hd"><h3>Update Device / Zoom Exception for <span class="serif-it" id="deName">this participant</span></h3><div class="hd-rule"></div></div>
   <div class="modal-bd">
     <div class="field"><label>What's the exception?</label>
       <select id="deExceptionType" onchange="onDeExceptionTypeChange()">
