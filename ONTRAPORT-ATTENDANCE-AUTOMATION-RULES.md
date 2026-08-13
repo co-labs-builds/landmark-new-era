@@ -1,12 +1,53 @@
-# Ontraport Automation Rules — Attendance/Classification Live-Push (2026-08-12)
+# Ontraport Automation Rules — State-Change Live-Push (rewritten 2026-08-13)
 
-These are the native Ontraport automation rules needed so that **manually editing a field directly on a Registration record** pushes live to the CS Dashboard, no refresh needed — same idea as the Materials/Announcements rules already built, just registration-scoped instead of event-scoped.
+**This doc's old title ("Attendance/Classification") undersold its own scope — it's rewritten here to cover the full state-change family: attendance/presence, LDP/WBO, Reviewer/SE/Seminar/AC Potential overrides, and (new) Device Exception.** These are the native Ontraport automation rules needed so that **manually editing a field directly on a Registration record** pushes live to the CS Dashboard, no refresh needed — same mechanism as the Materials/Announcements rules already built and confirmed working, just registration-scoped instead of event-scoped.
 
-**Corrected 2026-08-12**: an earlier version of this doc said the original 14 attendance/presence fields (`f2853`, the 12 session ATTENDED fields, `f3062`) didn't need rules here. That was only true if all real attendance changes flow through `CS Dashboard : Take Attendance` / `Attendance Reconcile Sweep` / `LM | Zoom | Live Attendance Poller` — those workflows do publish automatically after writing. But confirmed live: manually editing `Currently Present`/`FS Late Arrival` directly on the record (the walkthrough's actual testing method) does **not** go through those workflows, so nothing publishes, and the dashboard only shows the change after a manual refresh. **If you want manual edits to any of these 28 fields to live-push, all 28 need a rule** — not just the 14 classification/LDP ones from the original version of this doc.
+## Status as of a fresh live-fire test, 2026-08-13 (supersedes all prior snapshots in this doc)
 
-## Merge tag syntax — CONFIRMED WORKING 2026-08-12
+Every prior version of this table — including the "confirmed working" claims from 2026-08-12 — was a point-in-time snapshot of automation `85` ("Untitled Automation 08/12/2026 11:40 am PDT"), which is still being hand-built in the Ontraport UI and can change from hour to hour. **Don't trust any field's status here without re-testing it** — this table reflects a real, fresh test run against the live account this morning, not an inference from execution-history timestamps.
 
-The `f2853` test rule fired live (real `mode:"webhook"` execution, `user-agent: "Ontraport Webhook"`, confirmed via n8n execution history) with `eventId:"271"` and `registrationId:"1127"` both resolved correctly — `[Event//ID]` and `[ID]` are the right syntax, no adjustment needed. **The one real gotcha found**: the rule sent `field:"Currently Present"` (the field's display label, presumably auto-filled by Ontraport's field picker) instead of the literal ID `f2853` — the webhook correctly rejected it (400) since only literal `f####` strings are whitelisted. **`field` must be typed as plain literal text (`f2853`, `f2801`, etc.), not selected via any field picker or merge tag** — same as your existing Materials rules already hardcode `"day1-assignments"` as plain text. Use the field-ID column in the table below, not the field-name column, for that value.
+**✅ Confirmed firing today** (real `mode:"webhook"` execution observed in `PORTAL : Ably Publish` immediately after a real field change):
+| Field | Name |
+|---|---|
+| `f2293` | Left The Course |
+| `f3191` | Attendance Status |
+| `f3203` | D3S3 Attended |
+
+**❌ Confirmed NOT firing today** (real, guaranteed value change made, zero automation-log enrollment, zero Ably Publish execution — not a "maybe delayed," genuinely no trigger wired):
+| Field | Name |
+|---|---|
+| `f3056` | Left Type |
+| `f3059` | Left Day |
+| `f2688` | Well Being Out |
+| `f3044` | Reviewer |
+| `f3046` | Statistical Exclusion |
+| `f2882` | Seminar Potential |
+| `f2887` | Advanced Course Potential |
+| `f2801` | Attended Day 1 |
+| `f2802` | Attended Day 2 |
+| `f2803` | Attended Day 3 |
+| `f3196` | D1S4 Attended |
+| `f3206` | Minor |
+
+**⚠️ Untested today, status unknown** (never edited during this pass — same caveat as always, don't assume working or broken):
+`f2853`, `f3062`, `f3193`, `f3194`, `f3195`, `f3197`, `f3198`, `f3199`, `f3200`, `f3201`, `f3202`, `f3055`, `f2303`, `f2302`
+
+**🆕 New fields, added to the whitelist today, never had a rule at all before**: `f3208` (Device Exception), `f3207` (Shared Device name) — previously these weren't even in `PORTAL : Ably Publish`'s recognized-field list, so a rule pointed at them would have gotten a 400 regardless. That's fixed (see engineering note below); rules can now be built for these two.
+
+## The engineering-side fix that changes how urgent this doc is
+
+As of today, 4 of the CS Dashboard's own write-back n8n workflows (`Override Classification`, `Update Course Status`, `Correct Attendance`, `Device Exception`) **self-publish directly to Ably** after every write, independent of whether a native rule exists — confirmed live for all of: `f2293`, `f3056`, `f3059`, `f2688`, `f3044`, `f3046`, `f2882`, `f2887`, `f3191`, `f3208`, `f3207`, plus the session-attended field each Correct Attendance call touches. **This means: if a CS makes these changes through the dashboard's own kebab actions (the normal path), the fields above will live-push correctly today, regardless of this doc's status.**
+
+**What native rules are still the *only* path for:**
+1. **A CS editing a field directly in raw Ontraport**, bypassing the dashboard entirely — the self-publish additions only fire when the dashboard's own webhook is called, so this case still depends 100% on the native automation.
+2. **`f2801`/`f2802`/`f2803` (Attended Day 1/2/3) and `f3206` (Minor)** — no dashboard action writes these at all (they're computed by the Zoom attendance pipeline / not exposed in any modal), so they have no self-publish path and depend entirely on either a native rule or the `LM | Zoom | Live Attendance Poller`'s own publish (which was also widened today to cover Day-Attended flips, but only fires when that poller actually runs against a live Zoom meeting).
+3. **`f3195`/`f3197`-`f3202`** (8 of the 12 session-attended fields) — same as above, no dashboard write path outside `Take Attendance`/`Correct Attendance`, and those two workflows only touch whichever single session was picked.
+
+**Bottom line for prioritizing remaining Ontraport UI work**: building/fixing rules for `f2801`/`f2802`/`f2803`/`f3206` is the highest-value remaining native-automation work, since nothing else covers those. Rules for the classification/LDP fields (Reviewer/SE/Seminar/AC Potential, the LDP cluster) are now a secondary safety net — nice to have for the direct-edit case, not blocking the dashboard's own reliability anymore.
+
+## Merge tag syntax — confirmed working
+
+`[Event//ID]` and `[ID]` are the right syntax for `eventId`/`registrationId` respectively — confirmed via a real fired rule. **The one real gotcha found**: an early rule sent `field:"Currently Present"` (the field's display label, auto-filled by Ontraport's field picker) instead of the literal ID `f2853` — the webhook correctly rejected it (400) since only literal `f####` strings are whitelisted. **`field` must be typed as plain literal text (`f2853`, `f2801`, etc.), not selected via any field picker** — same as the Materials rules already hardcode `"day1-assignments"` as plain text.
 
 ## Common setup, every rule
 
@@ -16,64 +57,55 @@ The `f2853` test rule fired live (real `mode:"webhook"` execution, `user-agent: 
 - **Method**: POST
 - **Body** (JSON): `{"eventId":"[Event//ID]","registrationId":"[ID]","field":"<literal field ID from the table below>"}`
 
-## Field name → field ID (for the `field` value — use the ID column, typed literally)
+## Full field list (30 fields, includes the 2 newly-whitelisted Device Exception fields)
 
-**Priority tier — build these first:**
-
-| Field Name (in Ontraport) | Field ID |
-|---|---|
-| Attended Day 1 | `f2801` |
-| Currently Present | `f2853` |
-| FS Late Arrival | `f3062` |
-| Attendance Status | `f3191` |
-| Left The Course | `f2293` |
-
-**Remaining fields:**
-
-| Field Name (in Ontraport) | Field ID |
-|---|---|
-| Attended Day 2 | `f2802` |
-| Attended Day 3 | `f2803` |
-| Minor | `f3206` |
-| Reviewer | `f3044` |
-| Statistical Exclusion | `f3046` |
-| Seminar Potential | `f2882` |
-| Advanced Course Potential | `f2887` |
-| Registered for Seminar | `f2303` |
-| Registered for Advanced Course | `f2302` |
-| Left Type | `f3056` |
-| Left Day | `f3059` |
-| Well Being Out | `f2688` |
-| D1S1 Attended | `f3193` |
-| D1S2 Attended | `f3194` |
-| D1S3 Attended | `f3195` |
-| D1S4 Attended | `f3196` |
-| D2S1 Attended | `f3197` |
-| D2S2 Attended | `f3198` |
-| D2S3 Attended | `f3199` |
-| D2S4 Attended | `f3200` |
-| D3S1 Attended | `f3201` |
-| D3S2 Attended | `f3202` |
-| D3S3 Attended | `f3203` |
-| D3S4 Attended | `f3055` |
-
-Field *names* above are reconstructed from this session's work, not pulled fresh from the live account — if the field picker shows a slightly different label (capitalization, a typo), trust what's on screen and match by context to the right ID. The IDs themselves came from live API reads throughout this build.
-
-That's 28 fields total. Note: `f3193`-`f3202` (10 of the 12 session fields) have no dedicated tick on the roster card today — only `f3203`/`f3055` (the CPLT CHKPNT S3/S4 ticks) do. Rules for the other 10 will correctly update the dashboard's in-memory data (visible if you open that record's detail popover) but won't flip anything visibly on the card itself. Build them for completeness if you want, but they're not worth prioritizing for the walkthrough.
+| Field Name (in Ontraport) | Field ID | Status today |
+|---|---|---|
+| Left The Course | `f2293` | ✅ firing |
+| Attendance Status | `f3191` | ✅ firing |
+| D3S3 Attended | `f3203` | ✅ firing |
+| Left Type | `f3056` | ❌ not firing |
+| Left Day | `f3059` | ❌ not firing |
+| Well Being Out | `f2688` | ❌ not firing |
+| Reviewer | `f3044` | ❌ not firing |
+| Statistical Exclusion | `f3046` | ❌ not firing |
+| Seminar Potential | `f2882` | ❌ not firing |
+| Advanced Course Potential | `f2887` | ❌ not firing |
+| Attended Day 1 | `f2801` | ❌ not firing — highest priority to fix |
+| Attended Day 2 | `f2802` | ❌ not firing — highest priority to fix |
+| Attended Day 3 | `f2803` | ❌ not firing — highest priority to fix |
+| Minor | `f3206` | ❌ not firing — highest priority to fix |
+| D1S4 Attended | `f3196` | ❌ not firing |
+| Currently Present | `f2853` | ⚠️ untested today |
+| FS Late Arrival | `f3062` | ⚠️ untested today |
+| Registered for Seminar | `f2303` | ⚠️ untested today |
+| Registered for Advanced Course | `f2302` | ⚠️ untested today |
+| D1S1/D1S2/D1S3 Attended | `f3193`/`f3194`/`f3195` | ⚠️ untested today |
+| D2S1-D2S4 Attended | `f3197`-`f3200` | ⚠️ untested today |
+| D3S1/D3S2 Attended | `f3201`/`f3202` | ⚠️ untested today |
+| D3S4 Attended | `f3055` | ⚠️ untested today |
+| Device Exception | `f3208` | 🆕 newly whitelisted, no rule built yet |
+| Shared Device (name) | `f3207` | 🆕 newly whitelisted, no rule built yet |
 
 ## What each one visibly does on the dashboard
 
 - **f2853** → name badge LIVE. **f3062** → name badge LATE. **f3191** → name badge ABSENT - EXCUSED/NCNS. **f2293/f3059** → name badge LDP (beats everything else), also overrides whichever Day tick matches.
-- **f2801/f2802/f2803** → flips that Day's attendance tick (green/red/amber) on the roster card.
-- **f3206/f3044/f3046** → flips the MNR/REV/SE classification pill.
-- **f2882/f2887/f2303/f2302** → flips the Seminar/AC NP-POT-REG pill (f2882+f2303 drive Seminar together; f2887+f2302 drive AC together — a rule on either one alone still works, it just recomputes both when either fires).
+- **f2801/f2802/f2803** → flips that Day's attendance tick (green/red/amber) on the roster card, **and** (as of today) recomputes the Current/LDP tiles on Master Stats/Reporting.
+- **f3206/f3044/f3046** → flips the MNR/REV/SE classification pill, **and** (f3044/f3046, as of today) recomputes the Reviewer/SE/Current tiles.
+- **f2688** → (as of today) recomputes the WBO tile — previously had no live consumer at all.
+- **f2882/f2887/f2303/f2302** → flips the Seminar/AC NP-POT-REG pill and recomputes the Seminar/AC tiles (f2882+f2303 drive Seminar together; f2887+f2302 drive AC together — a rule on either one alone still works, it just recomputes both when either fires).
 - **f3203/f3055** → flips the CPLT CHKPNT S3/S4 tick.
-- **f2688, f3056, f3193-f3202** → no dedicated visible target right now; in-memory data stays correct for the next full render/detail-pop.
+- **f3208/f3207** → recomputes the Device Reconciliation card's Shared/Duplicate-Device Adj. tiles live (as of today — previously had no live path at all). No dedicated roster-card visual yet, but the stat tiles update.
+- **f3056, f3193-f3202 (except f3203/f3055)** → no dedicated visible target right now; in-memory data stays correct for the next full render/detail-pop.
 
 ## Name badge precedence (for reference)
 
 CANCELLED (registration itself inactive) → LDP (f2293) → ABSENT - EXCUSED/NCNS (f3191) → LIVE (f2853) → LATE (f3062) → ACTIVE (default).
 
-## For the real pilot (not just this walkthrough)
+## Known, separate, non-buildable gap: Registration Status (`f2424`)
 
-Once real attendance flows through `Take Attendance`/`Reconcile Sweep`/the Live Poller instead of manual edits, rules for `f2853`, `f3062`, and the 12 session fields become redundant (those workflows already publish automatically) — but harmless to leave in place, they'd just fire twice for the same change. The classification/LDP fields (`f2801`-`f2803`, `f3206`, `f3044`, `f3046`, `f2882`, `f2887`, `f2303`, `f2302`, `f2293`, `f3056`, `f3059`, `f2688`, `f3191`) have no other writer, so those rules stay load-bearing for real production use, not just this walkthrough.
+Confirmed not in the Ably whitelist at all, and no dashboard action writes it (registration cancellation isn't part of any kebab action) — the roster's CANCELLED badge state only ever refreshes on a full page reload. This is a pre-existing limitation, not a regression from any of today's work. Only worth building out (whitelist `f2424` + a native rule + a small `rosterNameBadge()` client-side change) if the client confirms it's actually needed for Friday — flagging here rather than building speculatively.
+
+## 🚨 Separate, urgent, non-buildable blocker: Zoom S2S credential
+
+Confirmed via direct execution-log inspection: the Zoom Server-to-Server OAuth credential (`LM - Zoom TJC`, id `xKXhhw7jCSrKtCsE`) fails with `400 {"reason":"Bad Request","error":"invalid_request"}` **at the token-mint call itself** (`POST https://zoom.us/oauth/token`), before any meeting-specific request is ever reached — this rules out a bad/fake meeting ID as the cause (verified directly: a fake test meeting ID was sitting in memory in the failing executions but never sent anywhere, because the token call died first). The same credential minted a valid token successfully on 2026-08-11 at 19:35 UTC and has failed 100% of every real attempt since — something changed on the Zoom app/credential side in between. **This blocks all real Zoom-sourced attendance (Layers 1/2/3) for the pilot** and is not fixable from the dashboard/n8n side. Needs the owner of the Zoom Marketplace S2S app to check: has the client secret been regenerated/rotated recently, is the app still active (not deactivated/suspended), and was any new IP restriction added. A second, unused credential (`Zoom S2S - Test`, id `DgBbyDhAx9Iqpsgl`) exists in the same credential store — worth a quick check in case it's the intended replacement, but this hasn't been confirmed.

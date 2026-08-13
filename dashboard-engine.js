@@ -579,7 +579,6 @@ function formatEventDateRange(startRaw, endRaw){
 }
 
 var currentView = 'home';
-var pendingRel = null;
 var pageState = { roster: 1, guest: 1 };
 
 function currentActorName(){ return DASHBOARD_DATA.csFirstName; }
@@ -813,7 +812,6 @@ document.addEventListener('keydown', function(e){ if(e.key === 'Escape') dismiss
    are meant to be audited server-side in production; there is no on-page
    sink for either anymore. */
 function logAudit(kind, text){ /* no on-page sink — write is still audited server-side in production */ }
-function logAuditRelease(text){ /* no on-page sink — write is still audited server-side in production */ }
 function flashSaved(afterEl){
   var span = document.createElement('span');
   span.className = 'savestate ok';
@@ -853,17 +851,6 @@ function inlineSave(el){
   }, 650);
 }
 
-function toggleChip(el, isSE){
-  el.classList.toggle('on');
-  var on = el.classList.contains('on');
-  flashSaved(el);
-  logAudit('staff', currentActorName() + ' set ' + (el.dataset.action || 'flag') + ' = ' + on);
-  if(el.dataset.action === 'set_guest_potential'){
-    updateProgramPills(el.closest('.ev-card'));
-  }
-  if(isSE && on) openSEReason(el);
-}
-
 /* ---------- SE reason popup — Guests tab only (§0t, unchanged, out of
    scope for this revision). Required whenever a guest's SE chip is turned
    on; cancelling reverts the chip since SE=on with no reason isn't valid.
@@ -892,12 +879,6 @@ function cancelSEReason(){
   pendingSEChip = null;
   dismissModal();
 }
-
-/* ---------- Guests tab only (unchanged, out of scope): classification
-   pills collapse behind the chevron since they're prepopulated and rarely
-   need a second look. The roster retired this pattern entirely — see
-   field dictionary §0q. ---------- */
-function toggleCardExpand(btn){ btn.closest('.ev-card').classList.toggle('expanded'); }
 
 /* ---------- Seminar / ADV. CRS — state-priority ladder (§0p). Roster pills
    carry their own data-pot/data-confirmed/data-reg/data-desig/data-alt and
@@ -1064,14 +1045,11 @@ function onEditFromPop(){
 
 /* ---------- Per-row ••• kebab menu — Registration-contextual (§0t): every
    action resolves against pendingRowMenuCard's data-reg-id, not just the
-   Contact. Resolve Zoom Match only renders when the card carries the
-   elevated .zoom-flag (Needs Review), never for a passive .device-flag. ---------- */
+   Contact. ---------- */
 var pendingRowMenuCard = null;
 function openRowMenu(btn){
   closeDetailPop();
   pendingRowMenuCard = btn.closest('.ev-card');
-  var hasZoomFlag = !!pendingRowMenuCard.querySelector('.zoom-flag');
-  document.getElementById('rowMenuResolveZoom').style.display = hasZoomFlag ? '' : 'none';
   var menu = document.getElementById('rowMenu');
   positionFloating(menu, btn);
   menu.classList.add('open');
@@ -1088,7 +1066,6 @@ function kebabAction(which){
   else if(which === 'overrideClassification') openOverrideClassification(card);
   else if(which === 'correctAttendance') openCorrectAttendance(card);
   else if(which === 'addNote') openNotes(card.querySelector('.kebab-btn'));
-  else if(which === 'resolveZoom') openDeviceException(card, 'resolve_duplicate_identity');
   else if(which === 'viewDetails') openParticipantDrawer(card);
 }
 function cardName(card){
@@ -1571,17 +1548,6 @@ function selectSpouse(el, name){
 }
 function spouseBlur(input){ comboBlur(input); }
 
-function participantFilter(input){ renderCombo(input, PARTICIPANT_NAMES, 'selectParticipant'); }
-function selectParticipant(el, name){
-  var wrapper = el.closest('.participant-combo');
-  var input = wrapper.querySelector('.participant-input');
-  input.value = name;
-  wrapper.querySelector('.combo-list').classList.remove('open');
-  var card = wrapper.closest('.ev-card');
-  if(card) card.querySelectorAll('[disabled]').forEach(function(elm){ elm.removeAttribute('disabled'); });
-  if(card) inlineSave(input);
-  toast('Associated with ' + name + '.');
-}
 function participantBlur(input){ comboBlur(input); }
 
 /* ---------- Roster & Guests: search + 10-per-page pagination ---------- */
@@ -1711,10 +1677,8 @@ function dashboardWriteToggle(btn, value, onSuccess, onError){
 /* directToggle() — added 2026-08-12 for the stakeholder walkthrough: client
    wants every toggle to write immediately on click, no confirm-are-you-sure
    modal first ("simply toggle on checks the box, toggle off unchecks the
-   box"). Supersedes relToggle()'s modal flow below for Materials/
-   Announcements; relToggle()/confirmRelease()/confirmRehide()/
-   confirmReshow() are left in place but unused rather than deleted, given
-   the time pressure — safe to clean up later, nothing else calls them. */
+   box"). The old relToggle()/confirmRelease()/confirmRehide()/
+   confirmReshow() modal flow (superseded by this) was removed 2026-08-13. */
 function directToggle(btn){
   if(btn.disabled) return;
   var isOn = btn.classList.contains('on');
@@ -1728,85 +1692,6 @@ function directToggle(btn){
     btn.disabled = false;
     toast('Could not save — try again.', 'err');
   });
-}
-function relToggle(btn){
-  if(btn.disabled) return;
-  pendingRel = btn;
-  var isOn = btn.classList.contains('on');
-  if(!isOn){
-    if(btn.dataset.notified === '1'){
-      document.getElementById('reshowTitle').textContent = btn.dataset.title;
-      document.getElementById('reshowSentAt').textContent = btn.dataset.notifat || 'earlier';
-      openModal('mReshow');
-    } else {
-      document.getElementById('relItemTitle').textContent = btn.dataset.title;
-      document.getElementById('relItemTitle2').textContent = btn.dataset.title;
-      document.getElementById('relItemKind').textContent = btn.dataset.kind || '';
-      document.getElementById('relActor').textContent = currentActorName() + ' · ' + currentRoleLabel();
-      openModal('mRelease');
-    }
-  } else {
-    document.getElementById('rehideTitle').textContent = btn.dataset.title;
-    openModal('mRehide');
-  }
-}
-function cancelRelToggle(){ pendingRel = null; dismissModal(); }
-function resTimeCell(btn){ return btn.closest('.res-row').children[2]; }
-function confirmRelease(){
-  if(!pendingRel){ dismissModal(); return; }
-  var btn = pendingRel;
-  btn.classList.add('on');
-  var timeCell = resTimeCell(btn);
-  var willFail = btn.dataset.demofail === '1' && btn.dataset.retried !== '1';
-  if(willFail){
-    timeCell.innerHTML = '<span class="res-time fail" onclick="retryFirstShow(this)">Send failed — retry</span>';
-    logAuditRelease(currentActorName() + ' released "' + btn.dataset.title + '" · Hidden → Visible · notification FAILED, queued for retry');
-    toast('Released, but the notification failed to send — queued for retry.', 'err');
-  } else {
-    btn.dataset.notified = '1';
-    btn.dataset.notifat = 'just now';
-    timeCell.innerHTML = 'First shown <b>just now</b>';
-    logAuditRelease(currentActorName() + ' released "' + btn.dataset.title + '" · Hidden → Visible · email sent to 184, SMS sent to 96 consented');
-    toast('Released. Participants notified, audit entry recorded.');
-  }
-  dashboardWriteToggle(btn, true, null, function(){
-    btn.classList.remove('on');
-    timeCell.innerHTML = '—';
-    toast('Could not save — the release did not persist. Try again.', 'err');
-  });
-  pendingRel = null; dismissModal();
-}
-function retryFirstShow(el){
-  var row = el.closest('.res-row');
-  var btn = row.querySelector('.tog');
-  btn.dataset.retried = '1'; btn.dataset.notified = '1'; btn.dataset.notifat = 'just now';
-  row.children[2].innerHTML = 'First shown <b>just now</b>';
-  logAuditRelease(currentActorName() + ' retried the notification for "' + btn.dataset.title + '" · succeeded');
-  toast('Notification sent on retry.');
-}
-function confirmRehide(){
-  if(!pendingRel){ dismissModal(); return; }
-  var btn = pendingRel;
-  btn.classList.remove('on');
-  logAuditRelease(currentActorName() + ' re-hid "' + btn.dataset.title + '" · Visible → Hidden · no message sent');
-  dashboardWriteToggle(btn, false, null, function(){
-    btn.classList.add('on');
-    toast('Could not save — the re-hide did not persist. Try again.', 'err');
-  });
-  pendingRel = null; dismissModal();
-  toast('Re-hidden. No message sent — see the warning about copies already opened.');
-}
-function confirmReshow(){
-  if(!pendingRel){ dismissModal(); return; }
-  var btn = pendingRel;
-  btn.classList.add('on');
-  logAuditRelease(currentActorName() + ' re-showed "' + btn.dataset.title + '" · Hidden → Visible · already notified, no duplicate message sent');
-  dashboardWriteToggle(btn, true, null, function(){
-    btn.classList.remove('on');
-    toast('Could not save — the re-show did not persist. Try again.', 'err');
-  });
-  pendingRel = null; dismissModal();
-  toast('Re-shown — already notified, no duplicate message sent.');
 }
 
 /* ---------- CS Dashboard : Ably Realtime (added 2026-08-12) ----------
@@ -2047,9 +1932,16 @@ function dashboardApplyAttendanceChanged(msg){
   // Registrant %, etc.) read dashboardLastRoster directly at render time —
   // the underlying per-card data above is already kept live-accurate by
   // this same function, these tiles just need to be told to recompute.
-  // No new automation rule needed, f2853/f2882/f2887/f2303/f2302 are
-  // already on the whitelist and already patch their own per-card pill.
-  var SNAPSHOT_RECOMPUTE_FIELDS = ['f2853', 'f2882', 'f2887', 'f2303', 'f2302'];
+  // No new automation rule needed, all 9 fields below are already on the
+  // whitelist and already patch their own per-card pill/badge above.
+  // f2293/f2688/f3044/f3046 added 2026-08-13 — these drive the Current/LDP/
+  // WBO/Reviewer/SE tiles, which previously sat stale after a live-pushed
+  // change until some unrelated field happened to trigger a recompute.
+  // f3208/f3207 also added 2026-08-13, alongside newly whitelisting and
+  // self-publishing them from CS Dashboard : Device Exception — drives the
+  // Device Reconciliation card's Shared/Duplicate-Device Adj. tiles, which
+  // previously had no live path under any code path at all.
+  var SNAPSHOT_RECOMPUTE_FIELDS = ['f2853', 'f2882', 'f2887', 'f2303', 'f2302', 'f2293', 'f2688', 'f3044', 'f3046', 'f3208', 'f3207'];
   if(SNAPSHOT_RECOMPUTE_FIELDS.indexOf(field) !== -1){
     dashboardRenderSnapshot(dashboardLastRoster, dashboardLastEventFields, dashboardLastStaffCount);
   }
