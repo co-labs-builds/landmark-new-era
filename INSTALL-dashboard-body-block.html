@@ -413,6 +413,54 @@
       </div>
     </div>
   </div>
+
+  <!-- Emails — added 2026-08-13. Four manual toggles that exist purely to
+       fire Ontraport email triggers (events.f3239-f3242). Deliberately NOT
+       a visibility change anywhere: nothing in the participant portal reads
+       these fields, and unlike the 3 Announcements fields above there are
+       no Ontraport automation rules watching them to POST to PORTAL : Ably
+       Publish — so no live push happens, by design.
+
+       data-toggle="announcements" is intentional and is NOT a copy-paste
+       slip. That attribute only selects which webhook dashboardWriteToggle()
+       POSTs to, and CS Dashboard : Announcements (Td3jYarPK7VX11ba) is
+       really a generic "write a boolean field on this CS's own Event"
+       endpoint — its FIELD_MAP now carries all 7 keys. Reusing it means
+       these rows also pick up their real on/off state from Bootstrap's
+       announcements object for free (dashboardApplyToggleState only
+       queries data-toggle="materials"/"announcements"), which matters more
+       here than for a visibility flag: these are one-shot email triggers,
+       so a toggle stuck showing OFF after a reload invites a second send.
+       Keeping it on the existing channel also meant no dashboard-engine.js
+       change, hence no CDN re-pin. -->
+  <div class="card msec" id="ms-emails">
+    <div class="card-hd">
+      <h3>Emails</h3>
+      <span class="sub">Manual triggers — send each participant email when the Forum Leader calls for it</span>
+    </div>
+    <div class="relview">
+      <div class="res-row">
+        <div><button class="tog" data-key="invite-guests-email" data-toggle="announcements" data-title="Invite Your Guests email" data-kind="Email" data-notified="0" onclick="directToggle(this)"></button></div>
+        <div class="res-t"><div class="nm">Invite Your Guests</div><div class="mt"><span>Email</span></div></div>
+        <div class="res-time">—</div>
+      </div>
+      <div class="res-row">
+        <div><button class="tog" data-key="day1-complete-email" data-toggle="announcements" data-title="Day 1 Complete email" data-kind="Email" data-notified="0" onclick="directToggle(this)"></button></div>
+        <div class="res-t"><div class="nm">Day 1 Complete</div><div class="mt"><span>Email</span></div></div>
+        <div class="res-time">—</div>
+      </div>
+      <div class="res-row">
+        <div><button class="tog" data-key="day2-complete-email" data-toggle="announcements" data-title="Day 2 Complete email" data-kind="Email" data-notified="0" onclick="directToggle(this)"></button></div>
+        <div class="res-t"><div class="nm">Day 2 Complete</div><div class="mt"><span>Email</span></div></div>
+        <div class="res-time">—</div>
+      </div>
+      <div class="res-row">
+        <div><button class="tog" data-key="forum-complete-email" data-toggle="announcements" data-title="Forum Complete email" data-kind="Email" data-notified="0" onclick="directToggle(this)"></button></div>
+        <div class="res-t"><div class="nm">Forum Complete</div><div class="mt"><span>Email</span></div></div>
+        <div class="res-time">—</div>
+      </div>
+    </div>
+  </div>
   </div><!-- /#em-materials -->
 
   <!-- ============ GUESTS ============ -->
