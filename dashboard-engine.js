@@ -567,11 +567,15 @@ function dashboardRenderHome(){
   document.getElementById('pcName').textContent = [first, last].filter(Boolean).join(' ');
   document.getElementById('pcRole').textContent = dashboardCsRole();
   document.getElementById('homeGreetName').textContent = first;
-  document.getElementById('evtSelName').textContent = DASHBOARD_DATA.eventTitle;
+  // Event Title (f3040) is an optional field and is blank on most real
+  // events (confirmed live on event 218) -- fall back to the Course name
+  // so the card/selector never render an empty headline.
+  var displayEventTitle = DASHBOARD_DATA.eventTitle || DASHBOARD_DATA.courseName || '—';
+  document.getElementById('evtSelName').textContent = displayEventTitle;
   document.getElementById('evtSelCourseFormat').textContent =
     (DASHBOARD_DATA.courseName || '—') + ' · ' + dashboardEventFormat();
   document.getElementById('evtLeaderName').textContent = DASHBOARD_DATA.eventLeaderName || '—';
-  document.getElementById('evtCardTitle').textContent = DASHBOARD_DATA.eventTitle;
+  document.getElementById('evtCardTitle').textContent = displayEventTitle;
   document.getElementById('evtCardDates').textContent =
     formatEventDateRange(DASHBOARD_DATA.eventStartDate, DASHBOARD_DATA.eventEndDate);
   document.getElementById('evtCardParticipants').textContent =
