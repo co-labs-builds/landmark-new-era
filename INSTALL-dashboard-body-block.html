@@ -962,6 +962,7 @@
     <div id="csLeftFields" style="display:none;">
       <div class="field"><label>Left type</label>
         <select id="csLeftType" onchange="onCsLeftTypeOrReasonChange()">
+          <option value="">Choose an option…</option>
           <option value="428">LDP 1 — Left course no communication (No Refund)</option>
           <option value="427">LDP 2 — Sleep or transient type (WBO)(Refund)</option>
           <option value="455">LDP 3 — Customer Service (Refund)</option>
@@ -970,13 +971,14 @@
         </select>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="field"><label>Day</label><select id="csDay"><option value="431">Day 1</option><option value="430" selected>Day 2</option><option value="429">Day 3</option></select></div>
+        <div class="field"><label>Day</label><select id="csDay" onchange="csUpdateAttention()"><option value="">Choose an option…</option><option value="431">Day 1</option><option value="430">Day 2</option><option value="429">Day 3</option></select></div>
         <div class="field"><label>Time</label><input type="time" id="csTime" value="15:42"></div>
       </div>
       <div class="kv"><span class="k">WBO</span><span class="v" id="csWboDerived">No</span></div>
       <div id="csWboFields" style="display:none;">
         <div class="field"><label>WBO reason</label>
-          <select id="csLeaveReason">
+          <select id="csLeaveReason" onchange="csUpdateAttention()">
+            <option value="">Choose an option…</option>
             <option value="432">Other (not WBO)</option>
             <option value="433">Program Leader has a health concern and is unwilling for the person to continue</option>
             <option value="434">Said they are thinking of ending their own life / have attempted / thinking of harming self or another</option>

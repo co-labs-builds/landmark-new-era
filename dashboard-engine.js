@@ -1180,11 +1180,23 @@ function openCourseStatus(card){
   document.getElementById('csName').textContent = cardName(card);
   var reg = rosterFindRegById(card.dataset.regId) || {};
   var isLeft = rosterIsTrue(reg.f2293);
+  /* Left course? reflects a real stored boolean (f2293 is always either set
+     or the documented "0" sentinel), so showing it is current state, not a
+     fabricated default — it keeps no placeholder. The three below are
+     genuinely unset until a CS chooses, and previously fell back to
+     428/430/432, which silently pre-answered the question and could be
+     saved through untouched. They now fall back to '' so the placeholder
+     option shows and csNextUnsetField() can see they still need input. */
   document.getElementById('csLeftCourse').value = isLeft ? 'yes' : 'no';
-  document.getElementById('csLeftType').value = ROSTER_LEFT_TYPE_MAP[String(reg.f3056 || '')] ? String(reg.f3056) : '428';
-  document.getElementById('csDay').value = ROSTER_LEFT_DAY_TO_NUM[String(reg.f3059 || '')] ? String(reg.f3059) : '430';
-  document.getElementById('csTime').value = csEpochToTimeInput(reg.f3060) || '15:42';
-  document.getElementById('csLeaveReason').value = ROSTER_WBO_REASON_MAP[String(reg.f3061 || '')] ? String(reg.f3061) : '432';
+  document.getElementById('csLeftType').value = ROSTER_LEFT_TYPE_MAP[String(reg.f3056 || '')] ? String(reg.f3056) : '';
+  document.getElementById('csDay').value = ROSTER_LEFT_DAY_TO_NUM[String(reg.f3059 || '')] ? String(reg.f3059) : '';
+  /* Was hardcoded '15:42' — a prototype artefact that wrote a fabricated
+     leave time to Ontraport on any save where the CS never touched the
+     field. Blank instead: the workflow only writes f3060 when leftTime is
+     non-empty, so an untouched Time now records nothing rather than a
+     wrong timestamp. */
+  document.getElementById('csTime').value = csEpochToTimeInput(reg.f3060) || '';
+  document.getElementById('csLeaveReason').value = ROSTER_WBO_REASON_MAP[String(reg.f3061 || '')] ? String(reg.f3061) : '';
   document.getElementById('csWboNote').value = reg.f3235 || '';
   onCsLeftCourseChange();
   onCsLeftTypeOrReasonChange();
@@ -1192,12 +1204,40 @@ function openCourseStatus(card){
 }
 function onCsLeftCourseChange(){
   document.getElementById('csLeftFields').style.display = document.getElementById('csLeftCourse').value === 'yes' ? 'block' : 'none';
+  csUpdateAttention();
 }
 function onCsLeftTypeOrReasonChange(){
   var type = document.getElementById('csLeftType').value;
   var isWbo = ROSTER_WBO_TRIGGER_TYPES.indexOf(type) !== -1;
   document.getElementById('csWboDerived').textContent = isWbo ? 'Yes' : 'No';
   document.getElementById('csWboFields').style.display = isWbo ? 'block' : 'none';
+  csUpdateAttention();
+}
+/* Progressive attention cue. csNextUnsetField() returns the single field
+   the CS still has to answer, in the order the form reveals them, or null
+   when nothing is outstanding. It is deliberately the one source of truth
+   for both the highlight and the save-time guard below, so the field the
+   cue points at and the field that blocks saving can never disagree.
+   Note Day is required by the server whenever leftCourse is true, but Time
+   is not — Time is genuinely optional and never carries the cue. */
+function csFieldOf(id){
+  var el = document.getElementById(id);
+  return el ? el.closest('.field') : null;
+}
+function csNextUnsetField(){
+  if(document.getElementById('csLeftCourse').value !== 'yes') return null;
+  var type = document.getElementById('csLeftType').value;
+  if(!type) return csFieldOf('csLeftType');
+  if(!document.getElementById('csDay').value) return csFieldOf('csDay');
+  if(ROSTER_WBO_TRIGGER_TYPES.indexOf(type) !== -1 && !document.getElementById('csLeaveReason').value) return csFieldOf('csLeaveReason');
+  return null;
+}
+function csUpdateAttention(){
+  var modal = document.getElementById('mCourseStatus');
+  if(!modal) return;
+  modal.querySelectorAll('.field.attn').forEach(function(f){ f.classList.remove('attn'); });
+  var next = csNextUnsetField();
+  if(next) next.classList.add('attn');
 }
 function confirmCourseStatus(){
   var card = pendingCourseStatusCard;
@@ -1205,6 +1245,22 @@ function confirmCourseStatus(){
   var saveBtn = document.getElementById('csSaveBtn');
   var originalLabel = saveBtn.textContent;
   var left = document.getElementById('csLeftCourse').value === 'yes';
+  /* Guard added alongside the placeholder options. leftType/leftDay — and
+     wboReason on an LDP 2/4 type — are genuinely empty until chosen now,
+     and the server rejects empties with a 400. Catching it here means the
+     CS gets the field highlighted and focused instead of a generic failure
+     toast. Reuses csNextUnsetField() so this can never diverge from the
+     cue. */
+  if(left){
+    var missing = csNextUnsetField();
+    if(missing){
+      csUpdateAttention();
+      var ctl = missing.querySelector('select,input,textarea');
+      if(ctl) ctl.focus();
+      toast('Choose an option for the highlighted field.', 'err');
+      return;
+    }
+  }
   var payload = { eventTeamId: DASHBOARD_DATA.eventTeamId, registrationId: Number(card.dataset.regId), leftCourse: left };
   var type = '', reason = '', isWbo = false;
   if(left){

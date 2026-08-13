@@ -501,6 +501,14 @@ body.cs-dashboard .field input,body.cs-dashboard .field select{min-height:38px !
 body.cs-dashboard .field select{-webkit-appearance:menulist !important;appearance:menulist !important;background-color:#fff !important;color:var(--ink) !important;}
 /* Header rule replacing the old explanatory <p> in kebab-action modals. */
 .modal-hd .hd-rule{height:1px;background:var(--line);margin-top:14px;}
+/* Progressive-field attention cue 2026-08-13. As each stage of a kebab
+   modal reveals itself, exactly one field carries .attn — the one the CS
+   needs to act on next. Deliberately restrained per the client: a softened
+   dark-green border (--green #217a00 at 55%) plus a faint 9% halo, with no
+   fill and no label recolour, so it reads as "you are here" rather than as
+   a validation error. Only ever applied to one field at a time; marking
+   several would defeat the whole point of the cue. */
+body.cs-dashboard .field.attn input,body.cs-dashboard .field.attn select,body.cs-dashboard .field.attn textarea{border-color:rgba(33,122,0,.55) !important;box-shadow:0 0 0 3px rgba(33,122,0,.09) !important;}
 .match{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:7px;cursor:pointer;transition:border-color .15s,background .15s;}
 .match:hover{border-color:var(--green);background:var(--green-bg);}
 .match.top{border-color:rgba(46,162,3,.5);background:var(--green-bg);}
