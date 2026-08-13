@@ -1795,19 +1795,63 @@ function applyToggleWrite(btn, newVal){
    server-verified by CS Dashboard : Bootstrap and the same number shown
    on the Home card — falls back to a neutral phrase if Bootstrap failed,
    so the dialog never shows a confident wrong number. */
+/* Copy is per-card, keyed by the containing .card's id, because the three
+   sections do genuinely different things and a single generic warning read
+   as vague. Keyed on card id rather than data-toggle since Announcements
+   and Emails deliberately share data-toggle="announcements" (they post to
+   the same webhook — see the Emails card comment in the body block), so
+   data-toggle alone cannot tell them apart. */
+var TOGGLE_CONFIRM_COPY = {
+  'ms-release': {
+    warn: 'This releases material to participants',
+    heading: function(name){ return 'Release ' + name + '?'; },
+    body: function(name){
+      return 'Confirming will release ' + name + ' and may also be accompanied by an email notification. '
+           + 'Only proceed if you are ready to release the material.';
+    },
+    cta: 'Confirm and Release'
+  },
+  'ms-announcements': {
+    warn: 'This releases content to every registrant’s member portal',
+    heading: function(name){ return 'Release The “' + name + '” Announcement?'; },
+    body: function(name, recipients){
+      return 'Confirming will release ' + name + ' content to the member portal of all ' + recipients
+           + ' and may also be accompanied by an email notification. '
+           + 'Only proceed if you are ready to release the ' + name + ' announcement.';
+    },
+    cta: 'Confirm and Release'
+  },
+  'ms-emails': {
+    warn: 'This sends an email to every registrant of this event',
+    heading: function(name){ return 'Send The “' + name + '” Email?'; },
+    body: function(name, recipients){
+      return 'Confirming will send the ' + name + ' email to ' + recipients + ' of this event. '
+           + 'Only proceed if you are ready to send the email now.';
+    },
+    cta: 'Confirm & Send'
+  }
+};
 var pendingToggleConfirm = null;
 function openToggleConfirm(btn){
   pendingToggleConfirm = btn;
-  var label = btn.dataset.title || 'this item';
-  var nameEls = [document.getElementById('tcName'), document.getElementById('tcNameBody')];
-  nameEls.forEach(function(el){ if(el) el.textContent = label; });
-  var evEl = document.getElementById('tcEventName');
-  if(evEl) evEl.textContent = DASHBOARD_DATA.eventTitle || 'this event';
-  var cntEl = document.getElementById('tcRecipients');
-  if(cntEl){
-    var n = DASHBOARD_DATA.participantCount;
-    cntEl.textContent = (n === null || n === undefined || n === '') ? 'every registrant' : (n + (Number(n) === 1 ? ' registrant' : ' registrants'));
-  }
+  /* Prefer the row's visible .nm text over data-title: data-title carries a
+     disambiguating suffix ("Seminar announcement", "Invite Your Guests
+     email") that reads as a stutter once the copy already says
+     Announcement/Email around it. */
+  var row = btn.closest('.res-row');
+  var nmEl = row ? row.querySelector('.nm') : null;
+  var name = (nmEl && nmEl.textContent.trim()) || btn.dataset.title || 'this item';
+  var card = btn.closest('.card');
+  var copy = (card && TOGGLE_CONFIRM_COPY[card.id]) || TOGGLE_CONFIRM_COPY['ms-release'];
+  var n = DASHBOARD_DATA.participantCount;
+  var recipients = (n === null || n === undefined || n === '')
+    ? 'every registrant'
+    : (n + (Number(n) === 1 ? ' registrant' : ' registrants'));
+  var set = function(id, text){ var el = document.getElementById(id); if(el) el.textContent = text; };
+  set('tcHeading', copy.heading(name, recipients));
+  set('tcWarnTitle', copy.warn);
+  set('tcBody', copy.body(name, recipients));
+  set('btnConfirmToggle', copy.cta);
   openModal('mToggleConfirm');
 }
 function cancelToggleConfirm(){ pendingToggleConfirm = null; dismissModal(); }

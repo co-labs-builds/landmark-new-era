@@ -812,22 +812,27 @@
      (Course Materials, Announcements, Emails) routes its ON write through
      here first; see openToggleConfirm() in dashboard-engine.js. Switching a
      toggle back OFF never opens this and stays a one-click action, because
-     nothing is sent on the way down. "Notification" rather than "email" is
-     deliberate: the Emails rows send an Ontraport email, but the Materials
-     and Announcements rows push live to the participant portal via Ably —
-     one word has to cover both. -->
+     nothing is sent on the way down.
+
+     Every string below is a placeholder — heading, warning line, body and
+     the confirm button label are all replaced at open time from the
+     TOGGLE_CONFIRM_COPY table, keyed by the containing .card's id, so the
+     wording is specific to Materials vs Announcements vs Emails. Text is
+     set via textContent (not innerHTML), so toggle names can't inject
+     markup; that is why there is no .serif-it/.mf styling inside the
+     substituted strings any more. -->
 <div class="modal" id="mToggleConfirm">
-  <div class="modal-hd"><h3>Turn on <span class="serif-it" id="tcName">this notification</span>?</h3><p>Turning this on notifies everyone registered for this event.</p></div>
+  <div class="modal-hd"><h3 id="tcHeading">Confirm this release?</h3></div>
   <div class="modal-bd">
     <div class="warnbox">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 1.5 15 14H1L8 1.5Z"/><path d="M8 6v3.5M8 11.5v.01"/></svg>
       <div>
-        <div class="t">This triggers a notification to all registrants of this event</div>
-        <div class="d">Confirming turns on <span class="serif-it" id="tcNameBody">this notification</span> and notifies <b class="mf" id="tcRecipients">every registrant</b> of <b class="mf" id="tcEventName">this event</b>. It goes out as soon as you confirm — there is no unsend, and switching the toggle back off afterwards does not recall it.</div>
+        <div class="t" id="tcWarnTitle">This notifies registrants of this event</div>
+        <div class="d" id="tcBody">Confirming will make this change live for participants.</div>
       </div>
     </div>
   </div>
-  <div class="modal-ft"><button class="btn btn-danger" id="btnConfirmToggle" onclick="confirmToggleConfirm()">Confirm and send</button><button class="btn" onclick="cancelToggleConfirm()">Cancel</button></div>
+  <div class="modal-ft"><button class="btn btn-danger" id="btnConfirmToggle" onclick="confirmToggleConfirm()">Confirm</button><button class="btn" onclick="cancelToggleConfirm()">Cancel</button></div>
 </div>
 
 <!-- Correct Attendance — REAL BUILD 2026-08-12, override note added 2026-08-13.
