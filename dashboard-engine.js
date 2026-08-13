@@ -57,10 +57,23 @@ function dashboardFetchBootstrap(){
     if(r.result.eventId != null) DASHBOARD_DATA.eventId = r.result.eventId;
     dashboardApplyToggleState(r.result.materials, r.result.announcements);
     dashboardRenderHome();
+    dashboardRevealEventCard();
     dashboardInitRealtime();
   }).catch(function(err){
     console.error('dashboardFetchBootstrap failed:', err);
+    dashboardRevealEventCard();
   });
+}
+/* dashboardRevealEventCard() — swaps #homeLoadingState for the real
+   #evtCard once Bootstrap settles, success or failure alike (a failed
+   fetch still reveals the card rather than leaving the loader spinning
+   forever -- title/dates already resolved via merge tag either way,
+   only the participant counts fall back to their existing "—" display). */
+function dashboardRevealEventCard(){
+  var loading = document.getElementById('homeLoadingState');
+  var card = document.getElementById('evtCard');
+  if(loading) loading.style.display = 'none';
+  if(card) card.style.display = '';
 }
 
 /* dashboardApplyToggleState() — added 2026-08-12: Materials/Announcements

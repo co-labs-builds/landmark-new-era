@@ -529,6 +529,16 @@ body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.
    client feedback: card was too cramped for the event title, button was
    too narrow/wrong color. */
 .evt-card{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);display:flex;flex-direction:column;}
+/* Home loading state — added 2026-08-13, matches .evt-card's own card
+   shell (radius/shadow/border) so the swap-in doesn't jump. */
+.home-loading{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:56px 32px;display:flex;flex-direction:column;align-items:center;gap:18px;}
+.home-loading-dots{display:flex;gap:9px;}
+.home-loading-dots span{width:11px;height:11px;border-radius:50%;background:var(--green-bright);animation:homeLoadingBounce 1.4s ease-in-out infinite both;}
+.home-loading-dots span:nth-child(1){animation-delay:-0.32s;}
+.home-loading-dots span:nth-child(2){animation-delay:-0.16s;}
+.home-loading-dots span:nth-child(3){animation-delay:0s;}
+@keyframes homeLoadingBounce{0%,80%,100%{transform:scale(.6);opacity:.5;}40%{transform:scale(1);opacity:1;}}
+.home-loading-text{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--gray);letter-spacing:.02em;}
 .evt-card-bd{padding:28px 32px;}
 .evt-card-top{display:flex;align-items:flex-start;gap:14px;}
 .evt-card-title{font-family:var(--serif);font-weight:600;font-size:23px;letter-spacing:-.01em;color:var(--ink);line-height:1.2;}

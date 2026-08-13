@@ -91,11 +91,24 @@
   <div class="home-events">
   <h3 style="font-size:13px;font-weight:800;letter-spacing:-.01em;margin:26px 0 14px;text-align:center;">Events</h3>
   <div class="home-cards">
+    <!-- Loading state — added 2026-08-13. Bootstrap (participant/not-ready
+         counts, Event Leader name, Course name fallback) is the slow leg
+         (~6s observed) of Home's initial load; showing this instead of a
+         "—"-filled card avoids the page reading as broken/blank while it's
+         in flight. Hidden by dashboardRevealEventCard(), called from both
+         the success AND catch branches of dashboardFetchBootstrap() so a
+         failed fetch still reveals the card (title/dates already resolved
+         via merge tag, only the counts fall back to "—") rather than
+         leaving the loader spinning forever. -->
+    <div class="home-loading" id="homeLoadingState">
+      <div class="home-loading-dots"><span></span><span></span><span></span></div>
+      <div class="home-loading-text">Gathering your events…</div>
+    </div>
     <!-- LOOP: repeat: events for this Contact (oEventTeam, §2) — one
          card per Event; this pilot demos a single authorized Event, so
          data-reg-id is set from DASHBOARD_DATA.eventId directly rather
          than a real loop (see dashboardActiveEventId in the script). -->
-    <div class="evt-card" data-reg-id="">
+    <div class="evt-card" data-reg-id="" id="evtCard" style="display:none;">
       <div class="evt-card-bd">
         <div class="evt-card-top">
           <div>
