@@ -1751,14 +1751,32 @@ function dashboardWriteToggle(btn, value, onSuccess, onError){
   });
 }
 /* directToggle() — added 2026-08-12 for the stakeholder walkthrough: client
-   wants every toggle to write immediately on click, no confirm-are-you-sure
+   wanted every toggle to write immediately on click, no confirm-are-you-sure
    modal first ("simply toggle on checks the box, toggle off unchecks the
    box"). The old relToggle()/confirmRelease()/confirmRehide()/
-   confirmReshow() modal flow (superseded by this) was removed 2026-08-13. */
+   confirmReshow() modal flow (superseded by this) was removed 2026-08-13.
+   Revised later the same day: ON now confirms again via openToggleConfirm()
+   because every ON write notifies registrants. OFF kept the instant
+   behaviour, so the original decision still holds in the direction that
+   can't send anything. Note this is a single shared dialog, NOT a return
+   to the old per-action relToggle()/confirmRelease() family. */
 function directToggle(btn){
   if(btn.disabled) return;
   var isOn = btn.classList.contains('on');
   var newVal = !isOn;
+  /* Switching ON is what notifies registrants — materials/announcements
+     push live via Ably, the Emails rows fire an Ontraport send — so every
+     toggle confirms first (client decision 2026-08-13, partially walking
+     back the "no confirm modal anywhere" call above). Switching back OFF
+     writes the field but notifies nobody, so it stays a one-click action;
+     a warning there would be claiming something that doesn't happen. */
+  if(newVal){ openToggleConfirm(btn); return; }
+  applyToggleWrite(btn, false);
+}
+/* applyToggleWrite() — the original directToggle() body, split out so the
+   confirm path and the instant OFF path share one implementation
+   (optimistic class flip, disable, revert + toast on failure). */
+function applyToggleWrite(btn, newVal){
   if(newVal){ btn.classList.add('on'); } else { btn.classList.remove('on'); }
   btn.disabled = true;
   dashboardWriteToggle(btn, newVal, function(){
@@ -1768,6 +1786,36 @@ function directToggle(btn){
     btn.disabled = false;
     toast('Could not save — try again.', 'err');
   });
+}
+/* Toggle confirmation — added 2026-08-13. Every ON write goes through
+   #mToggleConfirm first, warning that it notifies all registrants of the
+   event. Reuses the existing openModal/dismissModal stack and the End
+   Session modal's .warnbox styling rather than inventing a new dialog.
+   Recipient count comes from DASHBOARD_DATA.participantCount, already
+   server-verified by CS Dashboard : Bootstrap and the same number shown
+   on the Home card — falls back to a neutral phrase if Bootstrap failed,
+   so the dialog never shows a confident wrong number. */
+var pendingToggleConfirm = null;
+function openToggleConfirm(btn){
+  pendingToggleConfirm = btn;
+  var label = btn.dataset.title || 'this item';
+  var nameEls = [document.getElementById('tcName'), document.getElementById('tcNameBody')];
+  nameEls.forEach(function(el){ if(el) el.textContent = label; });
+  var evEl = document.getElementById('tcEventName');
+  if(evEl) evEl.textContent = DASHBOARD_DATA.eventTitle || 'this event';
+  var cntEl = document.getElementById('tcRecipients');
+  if(cntEl){
+    var n = DASHBOARD_DATA.participantCount;
+    cntEl.textContent = (n === null || n === undefined || n === '') ? 'every registrant' : (n + (Number(n) === 1 ? ' registrant' : ' registrants'));
+  }
+  openModal('mToggleConfirm');
+}
+function cancelToggleConfirm(){ pendingToggleConfirm = null; dismissModal(); }
+function confirmToggleConfirm(){
+  var btn = pendingToggleConfirm;
+  pendingToggleConfirm = null;
+  dismissModal();
+  if(btn) applyToggleWrite(btn, true);
 }
 
 /* ---------- CS Dashboard : Ably Realtime (added 2026-08-12) ----------
