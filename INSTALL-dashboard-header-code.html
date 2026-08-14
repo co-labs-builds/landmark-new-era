@@ -124,6 +124,28 @@ body.cs-dashboard button,body.cs-dashboard h1,body.cs-dashboard h2,body.cs-dashb
 .tabbar button.locked{color:rgba(255,255,255,.32);}
 .tabbar button .lockic{width:11px;height:11px;}
 .tabbar .tcount{background:var(--coral);color:#fff;border-radius:3px;font-size:9.5px;font-weight:700;padding:1px 5px;letter-spacing:.04em;font-family:var(--mono);text-transform:none;}
+/* Ontraport collision — the page's own stylesheet paints a filled background
+   on a clicked <button>, which lands here as a teal block behind whichever
+   tab was last clicked. Nothing above sets a background on .tabbar button in
+   any state, so this is entirely Ontraport's. It appears on click rather than
+   on load, which is what identifies it as a focus style specifically: the
+   default-active tab renders clean until someone actually clicks it, and the
+   block then persists because focus does. Neutralised across every state,
+   scoped + !important per the same defense already used for .modal/.scrim.
+   background-image and box-shadow are included because a filled look can come
+   from a gradient or an inset shadow rather than background-color.
+
+   Keyboard focus is deliberately preserved via :focus-visible, which pointer
+   clicks do not trigger in modern browsers. Killing the focus indicator
+   outright would fix the visual and leave the nav unusable without a mouse —
+   the tab bar is the only route between the three views. */
+body.cs-dashboard .tabbar button,
+body.cs-dashboard .tabbar button:hover,
+body.cs-dashboard .tabbar button:focus,
+body.cs-dashboard .tabbar button:active,
+body.cs-dashboard .tabbar button.active{background:transparent !important;background-color:transparent !important;background-image:none !important;box-shadow:none !important;}
+body.cs-dashboard .tabbar button:focus{outline:none;}
+body.cs-dashboard .tabbar button:focus-visible{outline:2px solid var(--green-bright);outline-offset:-3px;}
 
 /* In-page section nav — Event Management's sub-tabs (Roster & Classification /
    Course Materials / Guests) and Master Stats' section nav share this element.
