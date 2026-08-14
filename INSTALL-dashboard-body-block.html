@@ -271,6 +271,14 @@
         <div class="search" style="position:relative;">
           <input type="text" id="rosterSearch" oninput="filterList('roster')" placeholder="Search preferred name, legal name, PID…" style="border:1px solid var(--line);border-radius:7px;padding:8px 12px;font-size:12.5px;width:240px;">
         </div>
+        <!-- Name sort. A button rather than a <select> on purpose: this is a
+             two-state toggle, and the select/input rendering collision with
+             Ontraport's CSS is a known hazard on this page (see the header
+             code's collision fixes). .btn is already hardened against it.
+             Label states what the NEXT click gives you is the other common
+             convention; here it states the CURRENT order instead, matching
+             the sorted list the CS is looking at. -->
+        <button class="btn btn-sm" id="rosterSortBtn" onclick="rosterToggleSort()" aria-pressed="false" title="Sort the roster by participant name">Name A–Z</button>
         <!-- Take Attendance — REAL BUILD 2026-08-12. Attendance Architecture
              Layer 2. Replaces the old separate "Checkpoint Attendance" /
              "Attendance Check" buttons (formerly runCheckpointPoll(), a

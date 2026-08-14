@@ -298,7 +298,7 @@ function rosterBuildCardHtml(reg, currentDayRaw, localeAbbr){
   var acKv = acReg ? [['Registered','Yes'],['Course', reg.f3186 || '—']] : [['Potential', acPot ? 'Yes' : 'No'],['Registered','No']];
   var acPill = '<button class="pill p-neutral ev-clickable prog-ac" onclick="openDetailPop(this)" data-pot="' + acPot + '" data-confirmed="0" data-reg="' + acReg + '" data-desig="' + acDesig + '" data-alt="' + acAlt + '" data-pop-title="Advanced Course Registration" data-pop-kv=\'' + rosterEscAttr(JSON.stringify(acKv)) + '\'>—</button>';
 
-  return '<div class="ev-card" data-search="' + rosterEscAttr(searchStr) + '" data-reg-id="' + rosterEscAttr(reg.id) + '">' +
+  return '<div class="ev-card" data-search="' + rosterEscAttr(searchStr) + '" data-sort-name="' + rosterEscAttr(displayName) + '" data-reg-id="' + rosterEscAttr(reg.id) + '">' +
     '<div class="ev-row1">' +
       '<div class="ev-field ev-identity">' +
         '<div class="ev-name"><div class="ev-name-row"><b>' + rosterEscHtml(displayName) + '</b> <span class="status-sep">–</span> <span class="pill ' + nameBadge.cls + '" data-name-badge="1">' + rosterEscHtml(statusLabel) + '</span></div><span>Legal: ' + rosterEscHtml(legalName) + ' · ' + rosterEscHtml(pid) + '</span></div>' +
@@ -328,6 +328,11 @@ function dashboardRenderRoster(registrations){
   document.querySelectorAll('#rosterList .ev-card').forEach(updateProgramPills);
   var totalEl = list.closest('.card').querySelector('.card-hd .sub .mf');
   if(totalEl) totalEl.textContent = registrations.length;
+  /* Re-apply before paginating. This runs on every Ably live push as well as
+     the initial load, so without it an attendance change arriving mid-Forum
+     would silently drop the CS's chosen sort back to server order. No-ops
+     while the CS hasn't sorted. */
+  rosterApplySort();
   paginate('roster');
 }
 
@@ -1942,6 +1947,67 @@ function clearStatFilter(){
   document.getElementById('rosterFilterChip').style.display = 'none';
   pageState.roster = 1;
   paginate('roster');
+}
+/* ---------- Roster name sort ----------
+   Reorders the .ev-card elements inside #rosterList rather than re-rendering
+   from the registrations array. paginate() re-reads list.children on every
+   call, so DOM order is the single source of truth for ordering and this
+   composes with the search box and the snapshot stat filter for free —
+   neither needs to know sorting exists.
+
+   Sorts on data-sort-name, which carries the participant's DISPLAY name (the
+   "Name Likes" preferred first name where one is set, else the legal first,
+   plus last). That is deliberately the string the CS actually sees on the
+   card: sorting by surname while the card leads with a first name produces an
+   order that looks broken to the person reading it. rosterBuildCardHtml()
+   always resolves displayName to something non-empty (it falls back to the
+   legal name, then to 'Unknown Participant'), so there is no blank case.
+
+   Default is unsorted — whatever order Roster Fetch returned — until the CS
+   opts in. First click sorts A-Z, subsequent clicks flip direction. */
+var rosterSortDir = null;
+function rosterCompareNames(a, b){
+  /* localeCompare with sensitivity:'base' so accented names file under their
+     base letter (this roster really contains Schürch and Abdel-Wahab) and
+     case never decides order. Guarded: the options argument throws on some
+     older engines, and a broken sort is worse than an approximate one. */
+  try{ return a.localeCompare(b, undefined, { sensitivity:'base', numeric:true }); }
+  catch(e){
+    var al = a.toLowerCase(), bl = b.toLowerCase();
+    return al < bl ? -1 : (al > bl ? 1 : 0);
+  }
+}
+function rosterApplySort(){
+  if(!rosterSortDir) return;
+  var list = document.getElementById('rosterList');
+  if(!list) return;
+  var cards = Array.prototype.filter.call(list.children, function(c){ return c.classList.contains('ev-card'); });
+  if(cards.length < 2) return;
+  var dir = rosterSortDir === 'desc' ? -1 : 1;
+  cards.sort(function(a, b){
+    return dir * rosterCompareNames(a.dataset.sortName || '', b.dataset.sortName || '');
+  });
+  /* One fragment, one reflow — appending each card individually would thrash
+     layout across a 138-row roster. Appending every card in sorted order
+     re-seats the whole set, so no explicit removal is needed. */
+  var frag = document.createDocumentFragment();
+  cards.forEach(function(c){ frag.appendChild(c); });
+  list.appendChild(frag);
+}
+function rosterUpdateSortButton(){
+  var btn = document.getElementById('rosterSortBtn');
+  if(!btn) return;
+  btn.textContent = rosterSortDir === 'desc' ? 'Name Z–A' : 'Name A–Z';
+  btn.setAttribute('aria-pressed', rosterSortDir ? 'true' : 'false');
+}
+function rosterToggleSort(){
+  rosterSortDir = rosterSortDir === 'asc' ? 'desc' : 'asc';
+  rosterApplySort();
+  /* Back to page 1: holding the page number across a re-sort would land the
+     CS on a page of people they never asked to see. */
+  pageState.roster = 1;
+  paginate('roster');
+  rosterUpdateSortButton();
 }
 function paginate(kind){
   var list = document.getElementById(kind + 'List');
