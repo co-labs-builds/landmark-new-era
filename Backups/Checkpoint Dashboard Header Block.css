@@ -1,0 +1,2895 @@
+<link rel="preload" href="https://res.cloudinary.com/mynd/raw/upload/v1785641322/AvenirNext_Variable_wmaeay.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="https://file.ontraport.com/media/3fdc22625d3b4f91a262f71fd5245252.phpbg4i9h?Expires=4938729250&Signature=Wvo5HyxM78OtwV1Aw20xmzg-5wImCXP2O53Xc145Vi6pnfp9s-kQ0AWfhrTTzaclT8zRkOMX4s40oW5WzqOP8Dhl1BZch6CSIM0BVXN97093tElhZwKi2wMHLeMMZf4RTPsY~AVlQX91LjkCDbXsBrkCI4MyOgFlaqoLz1qfzW5jfjiSqO-snsWVEpsagiAZD2JGwajiulMP76uSuTXrrI8FWxZBQrAD9-7Mcy-MXF2EHjSSFR3R4xFaWYVZ6PCrvJ3pngv5WuZvI-ry6TZqh0ICgeKn6B0dqYdYx3MZ53YrSwWKqeFy3Tdc30-tz~idjr5bJU13K23F46pyCuODtw__&Key-Pair-Id=APKAJVAAMVW6XQYWSTNA" as="font" type="font/woff2" crossorigin><style>
+
+/* ============================================================
+   PILOT REVISION DEMO
+   Source: Landmark Admin Portal Revision Brief v2 (design/eng handoff).
+   Visual and component baseline is course-supervisor-dashboard-demo.html
+   (the full 7-destination prototype) — kept unchanged alongside this file.
+   This file reduces that prototype to the two pilot surfaces:
+     - Master Stats  (Course Supervisor working page, editable)
+     - KPI Dashboard (read-only reporting, Revenue gated to Event Leader)
+   Explicitly deferred from the full prototype (brief §12): standalone
+   Overview/Attendance/Content/Outcomes/Reports workspaces, full metric
+   drill-down, advanced alert center, report approval/versioning, Team/
+   Settings as a live destination, automated time-based content release.
+   ============================================================ */
+@font-face {
+    font-family: "Avenir Next Variable";
+    src: url("https://res.cloudinary.com/mynd/raw/upload/v1785641322/AvenirNext_Variable_wmaeay.woff2") format("woff2-variations"),
+        url("https://res.cloudinary.com/mynd/raw/upload/v1785641322/AvenirNext_Variable_wmaeay.woff2") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: block;
+}
+
+@font-face {
+    font-family: "Tiempos Headline";
+    src: url("https://file.ontraport.com/media/3fdc22625d3b4f91a262f71fd5245252.phpbg4i9h?Expires=4938729250&Signature=Wvo5HyxM78OtwV1Aw20xmzg-5wImCXP2O53Xc145Vi6pnfp9s-kQ0AWfhrTTzaclT8zRkOMX4s40oW5WzqOP8Dhl1BZch6CSIM0BVXN97093tElhZwKi2wMHLeMMZf4RTPsY~AVlQX91LjkCDbXsBrkCI4MyOgFlaqoLz1qfzW5jfjiSqO-snsWVEpsagiAZD2JGwajiulMP76uSuTXrrI8FWxZBQrAD9-7Mcy-MXF2EHjSSFR3R4xFaWYVZ6PCrvJ3pngv5WuZvI-ry6TZqh0ICgeKn6B0dqYdYx3MZ53YrSwWKqeFy3Tdc30-tz~idjr5bJU13K23F46pyCuODtw__&Key-Pair-Id=APKAJVAAMVW6XQYWSTNA") format("woff2");
+    font-weight: 300;
+    font-style: italic;
+    font-display: block;
+}
+
+:root {
+    --teal: #0d2d31;
+    --teal-deep: #0a2226;
+    --green: #217a00;
+    --green-bright: #2ea203;
+    --almond: #efede7;
+    --paper: #f7f5ef;
+    --white: #ffffff;
+    --coral: #f06449;
+    --coral-ink: #c8452a;
+    --gray: #6f6b66;
+    --muted: #8ba7a4;
+    --ink: #0e1a19;
+    --line: #e6e2d8;
+    --tabbar: #41454a;
+    --gray-2: #a9a49a;
+    --paper-2: #f6f5f1;
+    --line-2: #d8d4c9;
+    --gray-3: #c9c4b8;
+    --white-55: rgba(255, 255, 255, .55);
+    --shadow: 0 14px 44px rgba(14, 26, 25, .10);
+    --shadow-sm: 0 4px 18px rgba(14, 26, 25, .06);
+    --serif: "Tiempos Headline", Georgia, serif;
+    --sans: "Avenir Next Variable", "Helvetica Neue", Arial, sans-serif;
+    --amber: #b8730a;
+    --amber-bg: #fdf3e3;
+    --coral-bg: #fdece8;
+    --green-bg: #e9f4e5;
+    --teal-bg: #eef3f3;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --hd: 150px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+    overflow-x: clip;
+    height: 100%;
+}
+
+body {
+    font-family: var(--sans);
+    font-weight: 400;
+    font-synthesis: none;
+    color: var(--ink);
+    background: var(--paper);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.55;
+    font-size: 14px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* Same collision class as .modal/.btn/.btn-primary below: Ontraport's own
+   site-wide CSS declares its own font-family on bare button/heading
+   selectors (Segoe UI on buttons, Poppins on headings, confirmed live via
+   the client's DevTools inspector 2026-08-13) and wins over our own
+   same-specificity bare-element rules purely on load order. Scoped under
+   body.cs-dashboard (higher specificity, can't lose to load order) plus
+   !important, matching the established fix pattern in this file. */
+body.cs-dashboard button,
+body.cs-dashboard h1,
+body.cs-dashboard h2,
+body.cs-dashboard h3,
+body.cs-dashboard h4,
+body.cs-dashboard h5,
+body.cs-dashboard h6 {
+    font-family: var(--sans) !important;
+}
+
+/* Same collision, second property: the `*{margin:0;padding:0}` reset above has
+   specificity 0, so Ontraport's rules on bare h1-h6 selectors (specificity 1)
+   beat it no matter the load order — the reset never actually applied to any
+   heading on this page. That left every heading carrying Ontraport's own
+   margin, which is what inflated the card title bars well beyond their 15px
+   padding. Restoring the reset's intent for headings only; every heading in
+   this build gets its spacing from its container's padding or flex gap
+   (.card-hd, .sechd, .dw-hd), never from a heading margin. */
+body.cs-dashboard h1,
+body.cs-dashboard h2,
+body.cs-dashboard h3,
+body.cs-dashboard h4,
+body.cs-dashboard h5,
+body.cs-dashboard h6 {
+    margin: 0 !important;
+}
+
+.wrap {
+    width: 100%;
+    max-width: 1560px;
+    margin: 0 auto;
+    padding: 0 32px;
+}
+
+.eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--green-bright);
+}
+
+.serif-it {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 300;
+}
+
+::selection {
+    background: rgba(46, 162, 3, .18);
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--line-2);
+    border-radius: 6px;
+    border: 3px solid var(--paper);
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1
+    }
+
+    50% {
+        opacity: .25
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg)
+    }
+}
+
+.mf {
+    font-family: var(--mono);
+    font-size: .94em;
+    color: var(--ink);
+    letter-spacing: -.01em;
+}
+
+.mf-lg {
+    font-family: var(--mono);
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--ink);
+    letter-spacing: -.03em;
+    display: inline-block;
+    line-height: 1.1;
+}
+
+.v-zero {
+    font-family: var(--mono);
+    color: var(--ink);
+}
+
+.v-na {
+    color: var(--gray-3);
+    letter-spacing: .08em;
+}
+
+/* ============================================================
+   PERSISTENT HEADER
+   Single-logged-in-user page: role/access is resolved by whichever
+   Contact is authenticated when the page loads (this Ontraport page —
+   or a role-specific variant of it — is only reachable by the right
+   Contact type). There is no client-side role switch here; the avatar
+   is a plain profile chip with a logout action.
+   ============================================================ */
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+}
+
+.topbar .row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    height: 64px;
+}
+
+.nav-logo {
+    height: 36px;
+    width: auto;
+    display: block;
+    margin-left: -10px;
+    flex: none;
+}
+
+.evt-sel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 250px;
+    flex: none;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 7px 12px;
+    cursor: pointer;
+    transition: border-color .15s;
+}
+
+.evt-sel:hover {
+    border-color: var(--muted);
+}
+
+.evt-sel .en {
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.evt-sel .ct {
+    font-size: 11px;
+    color: var(--gray);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.evt-sel svg {
+    width: 10px;
+    height: 10px;
+    color: var(--gray);
+    flex: none;
+}
+
+.evt-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--gray);
+    min-width: 0;
+    overflow: hidden;
+}
+
+.evt-meta>span {
+    white-space: nowrap;
+}
+
+.top-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+}
+
+.profile-chip {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 5px 12px 5px 5px;
+    border-radius: 999px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    cursor: pointer;
+    transition: border-color .15s;
+}
+
+.profile-chip:hover {
+    border-color: var(--muted);
+}
+
+.profile-chip .av {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--teal);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    flex: none;
+}
+
+.profile-chip .lbl {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+}
+
+.profile-chip .lbl b {
+    font-size: 12px;
+}
+
+.profile-chip .lbl span {
+    font-size: 10px;
+    color: var(--gray);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+
+.profile-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    min-width: 150px;
+    z-index: 70;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-4px);
+    transition: opacity .15s, transform .15s;
+    overflow: hidden;
+}
+
+.profile-menu.open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+}
+
+.profile-menu-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 11px 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+}
+
+.profile-menu-item:hover {
+    background: var(--paper);
+}
+
+/* row 2 — session strip. Day X of Y is a direct merge of "Todays Session
+   Day"; the dot/pill state is computed by comparing now to the session's
+   start instant (see script — recommend a precomputed UTC merge field
+   rather than client-side timezone math). */
+.evtstrip {
+    position: sticky;
+    top: var(--stick-evtstrip, 64px);
+    z-index: 59;
+    background: var(--teal-deep);
+    color: #fff;
+}
+
+.evtstrip .row {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    height: 50px;
+}
+
+.es-day {
+    flex: none;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .02em;
+}
+
+.es-right {
+    margin-left: auto;
+    margin-right: 8px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: none;
+    white-space: nowrap;
+}
+
+.btn-session {
+    background: transparent;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, .32);
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+}
+
+.btn-session:hover {
+    background: rgba(255, 255, 255, .1);
+    border-color: rgba(255, 255, 255, .5);
+}
+
+.btn-session:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.btn-session:disabled:hover {
+    background: transparent;
+    border-color: rgba(255, 255, 255, .32);
+}
+
+/* row 3 — page nav, two destinations only */
+.tabbar {
+    position: sticky;
+    top: var(--stick-tabbar, 114px);
+    z-index: 58;
+    background: var(--tabbar);
+}
+
+.tabbar .row {
+    display: flex;
+    gap: 0;
+    height: 42px;
+    align-items: stretch;
+}
+
+.tabbar button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--white-55);
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    padding: 0 26px;
+    position: relative;
+    transition: color .15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tabbar button:hover {
+    color: rgba(255, 255, 255, .85);
+}
+
+.tabbar button.active {
+    color: #fff;
+}
+
+.tabbar button.active::after {
+    content: "";
+    position: absolute;
+    left: 20px;
+    right: 20px;
+    bottom: 0;
+    height: 3px;
+    background: var(--green-bright);
+    border-radius: 2px 2px 0 0;
+}
+
+.tabbar button.locked {
+    color: rgba(255, 255, 255, .32);
+}
+
+.tabbar button .lockic {
+    width: 11px;
+    height: 11px;
+}
+
+.tabbar .tcount {
+    background: var(--coral);
+    color: #fff;
+    border-radius: 3px;
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 1px 5px;
+    letter-spacing: .04em;
+    font-family: var(--mono);
+    text-transform: none;
+}
+
+/* Ontraport collision — the page's own stylesheet paints a filled background
+   on a clicked <button>, which lands here as a teal block behind whichever
+   tab was last clicked. Nothing above sets a background on .tabbar button in
+   any state, so this is entirely Ontraport's. It appears on click rather than
+   on load, which is what identifies it as a focus style specifically: the
+   default-active tab renders clean until someone actually clicks it, and the
+   block then persists because focus does. Neutralised across every state,
+   scoped + !important per the same defense already used for .modal/.scrim.
+   background-image and box-shadow are included because a filled look can come
+   from a gradient or an inset shadow rather than background-color.
+
+   Keyboard focus is deliberately preserved via :focus-visible, which pointer
+   clicks do not trigger in modern browsers. Killing the focus indicator
+   outright would fix the visual and leave the nav unusable without a mouse —
+   the tab bar is the only route between the three views. */
+body.cs-dashboard .tabbar button,
+body.cs-dashboard .tabbar button:hover,
+body.cs-dashboard .tabbar button:focus,
+body.cs-dashboard .tabbar button:active,
+body.cs-dashboard .tabbar button.active {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+}
+
+body.cs-dashboard .tabbar button:focus {
+    outline: none;
+}
+
+body.cs-dashboard .tabbar button:focus-visible {
+    outline: 2px solid var(--green-bright);
+    outline-offset: -3px;
+}
+
+/* In-page section nav — Event Management's sub-tabs (Roster & Classification /
+   Course Materials / Guests) and Master Stats' section nav share this element.
+   Fourth and last bar in the sticky stack, so it docks below topbar+evtstrip
+   +tabbar. The --stick-* offsets are measured at runtime by
+   dashboardSyncStickyOffsets() rather than hardcoded — see that function for
+   why. The literals here are fallbacks only, matching this stylesheet's own
+   intended bar heights, so the stack still works if the JS never runs. */
+.secnav {
+    position: sticky;
+    top: var(--stick-secnav, 156px);
+    z-index: 57;
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+}
+
+.secnav .row {
+    display: flex;
+    gap: 4px;
+    height: 44px;
+    align-items: center;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.secnav .row::-webkit-scrollbar {
+    display: none;
+}
+
+.secnav button {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    cursor: pointer;
+    color: var(--gray);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 7px 12px;
+    white-space: nowrap;
+    transition: background .15s, color .15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.secnav button:hover {
+    background: var(--paper);
+    color: var(--ink);
+}
+
+.secnav button.active {
+    background: var(--green-bg);
+    color: var(--green);
+}
+
+.secnav .n {
+    font-family: var(--mono);
+    font-size: 10px;
+    background: #f0eee9;
+    border-radius: 3px;
+    padding: 1px 5px;
+    color: var(--gray);
+}
+
+.secnav button.active .n {
+    background: #fff;
+    color: var(--green);
+}
+
+/* ============================================================
+   LAYOUT PRIMITIVES
+   ============================================================ */
+main {
+    padding: 22px 0 60px;
+    flex: 1 0 auto;
+}
+
+.view {
+    display: none;
+}
+
+.view.active {
+    display: block;
+    animation: fade .18s ease;
+}
+
+@keyframes fade {
+    from {
+        opacity: 0;
+        transform: translateY(3px)
+    }
+
+    to {
+        opacity: 1;
+        transform: none
+    }
+}
+
+.msec {
+    scroll-margin-top: 210px;
+    margin-bottom: 20px;
+}
+
+.card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Card/table title bar. Vertical padding is deliberately tighter than the
+   body's (12 vs 18): a 13.5px title needs less breathing room than content,
+   and the bottom border already separates it. Horizontal stays 20px so the
+   title aligns with .card-bd and the stat columns beneath it. Explicit
+   line-height because body's 1.55 is a reading measure and too loose for a
+   short bold label. */
+.card-hd {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+}
+
+.card-hd h3 {
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: .01em;
+    color: var(--ink);
+    white-space: nowrap;
+    line-height: 1.35;
+}
+
+.card-hd .sub {
+    font-size: 11.5px;
+    color: var(--gray);
+}
+
+.card-hd .r {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.card-bd {
+    padding: 18px 20px;
+}
+
+.card-bd.flush {
+    padding: 0;
+}
+
+.card-ft {
+    padding: 12px 20px;
+    border-top: 1px solid var(--line);
+    background: #fcfbf8;
+    border-radius: 0 0 13px 13px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.sechd {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 16px;
+}
+
+.sechd h2 {
+    font-size: 27px;
+    font-weight: 650;
+    letter-spacing: -.02em;
+}
+
+.sechd .lede {
+    color: var(--gray);
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 300;
+    font-size: 15px;
+}
+
+.sechd .r {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+body.cs-dashboard .btn {
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--ink);
+    border-radius: 5px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.btn:hover {
+    border-color: var(--muted);
+    background: var(--paper);
+}
+
+.btn svg {
+    width: 13px;
+    height: 13px;
+}
+
+body.cs-dashboard .btn-primary {
+    background: var(--green-bright) !important;
+    border-color: var(--green-bright) !important;
+    color: #fff !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    font-size: 11px;
+    padding: 9px 16px;
+}
+
+body.cs-dashboard .btn-primary:hover {
+    background: var(--green) !important;
+    border-color: var(--green) !important;
+}
+
+body.cs-dashboard .btn-sm {
+    padding: 5px 10px;
+    font-size: 11px;
+    border-radius: 5px;
+}
+
+body.cs-dashboard .btn-xs {
+    padding: 3px 8px;
+    font-size: 10.5px;
+    border-radius: 5px;
+}
+
+body.cs-dashboard .btn-danger {
+    border-color: rgba(240, 100, 73, .4);
+    color: var(--coral-ink);
+    background: #fff;
+}
+
+body.cs-dashboard .btn-danger:hover {
+    background: var(--coral-bg);
+    border-color: var(--coral);
+}
+
+.btn:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+}
+
+.btn:disabled:hover {
+    background: #fff;
+    border-color: var(--line);
+}
+
+.pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    padding: 3px 7px;
+    line-height: 1.5;
+    border-radius: 3px;
+    white-space: nowrap;
+}
+
+.p-present {
+    background: var(--green-bg);
+    color: var(--green);
+}
+
+.p-late {
+    background: var(--amber-bg);
+    color: var(--amber);
+}
+
+.p-absent {
+    background: #f0eee9;
+    color: #7a746c;
+}
+
+.p-excused {
+    background: var(--teal-bg);
+    color: #3f6b6d;
+}
+
+.p-pot {
+    background: var(--green-bg);
+    color: var(--green);
+}
+
+.p-np {
+    background: #f0eee9;
+    color: #7a746c;
+}
+
+.p-review {
+    background: var(--amber-bg);
+    color: var(--amber);
+}
+
+.p-visible {
+    background: var(--green-bg);
+    color: var(--green);
+}
+
+.p-neutral {
+    background: #f0eee9;
+    color: #7a746c;
+}
+
+.pill .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    flex: none;
+}
+
+.pill.live .dot {
+    animation: pulse 1.6s infinite;
+}
+
+
+/* inline-edit + save-state affordances (brief §9) */
+.iedit {
+    border: 1px solid transparent;
+    border-radius: 5px;
+    padding: 3px 6px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 700;
+    background: transparent;
+    min-width: 110px;
+    transition: border-color .15s, background .15s;
+}
+
+.iedit:hover {
+    border-color: var(--line);
+    background: var(--paper);
+}
+
+.iedit:focus {
+    outline: none;
+    border-color: var(--green);
+    background: #fff;
+}
+
+.savestate {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10.5px;
+    font-weight: 600;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.savestate .spin {
+    width: 11px;
+    height: 11px;
+    border: 2px solid var(--line-2);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+}
+
+.savestate.ok {
+    color: var(--green);
+}
+
+.savestate.ok svg {
+    width: 12px;
+    height: 12px;
+}
+
+.savestate.err {
+    color: var(--coral-ink);
+}
+
+.savestate .retry {
+    border-bottom: 1px dotted currentColor;
+    cursor: pointer;
+    margin-left: 2px;
+}
+
+/* Plain-look dropdown: no border, no arrow — reads as ordinary bold text
+   until clicked, then opens the native option list like any select. */
+.togchip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 999px;
+    padding: 4px 10px 4px 4px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .15s;
+    color: var(--gray);
+}
+
+.togchip .dot {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #e8e5dd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .15s;
+}
+
+.togchip.on {
+    border-color: rgba(46, 162, 3, .4);
+    background: var(--green-bg);
+    color: var(--green);
+}
+
+.togchip.on .dot {
+    background: var(--green-bright);
+}
+
+.togchip.on .dot::after {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #fff;
+}
+
+/* Event Management record cards — roster & guests share this pattern.
+   Two rows: row 1 (name + every metric, gapped inline) is always visible;
+   row 2 (classification pills) is collapsed by default — the pills are
+   prepopulated from existing data and rarely need a second look, so they
+   only cost space when someone actually opens them. */
+.ev-list {
+    display: grid;
+    gap: 10px;
+    padding: 16px 20px;
+}
+
+.ev-card {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 18px;
+    background: #fff;
+}
+
+.ev-row1 {
+    display: flex;
+    align-items: flex-start;
+    gap: 26px;
+    flex-wrap: wrap;
+}
+
+.ev-name {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 160px;
+    min-width: 150px;
+}
+
+.ev-name b {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.ev-name span {
+    font-size: 11px;
+    color: var(--gray);
+    font-family: var(--mono);
+    margin-top: 3px;
+}
+
+.ev-name-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.status-sep {
+    color: var(--gray-3);
+    font-weight: 400;
+}
+
+.ev-name .iedit {
+    font-size: 14px;
+    font-weight: 700;
+    padding: 2px 5px;
+    margin: -2px -5px;
+}
+
+.ev-field {
+    min-width: 0;
+    flex: 0 0 auto;
+}
+
+.ev-l {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--gray-2);
+    margin-bottom: 6px;
+}
+
+.ev-clickable {
+    cursor: pointer;
+    border: none;
+}
+
+.togchip.chip-check {
+    padding: 6px;
+    border-radius: 7px;
+}
+
+.ev-notesbtn,
+.kebab-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gray);
+    cursor: pointer;
+    flex: none;
+    transition: background .15s, transform .2s;
+}
+
+.ev-notesbtn:hover,
+.kebab-btn:hover {
+    background: var(--paper);
+}
+
+.ev-notesbtn svg,
+.kebab-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.ev-notesbtn.has-note {
+    background: var(--green-bg);
+    border-color: rgba(46, 162, 3, .35);
+    color: var(--green);
+}
+
+/* ============================================================
+   PARTICIPANT ROW REDESIGN — 6-block exception-first layout.
+   Row is a monitoring surface: no raw inline controls. Pills are
+   read/display components with progressive disclosure (click →
+   anchored popover → optional Edit CTA only when CS-correctable).
+   See field dictionary §0l–§0t for the Ontraport field mapping
+   assumptions behind every new concept below.
+   ============================================================ */
+
+/* Participation (per-day attendance) + Completion (per-checkpoint) ticks.
+   tk-ldp added post-prototype (CS Dashboard build, 2026-08-12) to carry
+   the canonical Green=attended/Red=absent/Yellow=LDP rule from the
+   Attendance Architecture spec — the prototype only had 4 states and no
+   yellow, since it predates that 3-layer design being locked in.
+   tk-pending still covers "day hasn't happened yet / in progress". */
+.ticks {
+    display: inline-flex;
+    gap: 3px;
+    flex-wrap: wrap;
+}
+
+.tick {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    border: 1px solid transparent;
+    cursor: pointer;
+}
+
+.tick.tk-attended {
+    background: var(--green-bg);
+    color: var(--green);
+}
+
+.tick.tk-absent {
+    background: #f0eee9;
+    color: #7a746c;
+}
+
+.tick.tk-pending {
+    background: var(--paper-2);
+    color: var(--gray-2);
+    border-color: #eae7de;
+}
+
+.tick.tk-review {
+    background: var(--coral-bg);
+    color: var(--coral-ink);
+}
+
+.tick.tk-ldp {
+    background: var(--amber-bg);
+    color: var(--amber);
+}
+
+.tick-exception {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    background: var(--coral-bg);
+    color: var(--coral-ink);
+    border-radius: 4px;
+    padding: 3px 7px;
+}
+
+/* Classification / Status / Follow-On pill colors not already covered
+   by the base .pill variants above. */
+.p-excluded {
+    background: var(--coral-bg);
+    color: var(--coral-ink);
+}
+
+.p-scholarship {
+    background: var(--teal-bg);
+    color: #3f6b6d;
+}
+
+.p-conf {
+    background: var(--amber-bg);
+    color: var(--amber);
+}
+
+.p-dataerr {
+    background: var(--coral-bg);
+    color: var(--coral-ink);
+    border: 1px dashed var(--coral);
+}
+
+.p-active {
+    background: var(--paper-2);
+    color: var(--gray-2);
+    cursor: default;
+}
+
+.p-ldp,
+.p-nsho {
+    background: var(--coral-bg);
+    color: var(--coral-ink);
+    box-shadow: 0 0 0 1px rgba(240, 100, 73, .25);
+}
+
+/* Locale pill — replaces the old inline IA/OOA/ONL <select>. */
+.p-locale {
+    background: #f0eee9;
+    color: #7a746c;
+}
+
+
+/* Anchored detail popover — shared single instance, JS-positioned per
+   trigger via getBoundingClientRect(). Read-only by default; the
+   Edit footer only renders when the underlying state is CS-correctable. */
+.det-pop {
+    position: fixed;
+    width: 280px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    z-index: 75;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-4px);
+    transition: opacity .15s, transform .15s;
+    overflow: hidden;
+}
+
+.det-pop.open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+}
+
+.det-pop-eyebrow {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--green-bright);
+    padding: 14px 16px 0;
+}
+
+.det-pop-title {
+    font-size: 14px;
+    font-weight: 700;
+    padding: 2px 16px 12px;
+    border-bottom: 1px solid var(--line);
+}
+
+.det-pop-kv {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px 12px;
+    padding: 12px 16px;
+    font-size: 12px;
+}
+
+.det-pop-kv dt {
+    color: var(--gray);
+}
+
+.det-pop-kv dd {
+    font-weight: 600;
+    text-align: right;
+}
+
+.det-pop-ft {
+    padding: 10px 16px;
+    border-top: 1px solid var(--line);
+    background: #fcfbf8;
+}
+
+.det-pop-ft a {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--green);
+    cursor: pointer;
+}
+
+/* Zone wrapper layout — six always-visible zones in .ev-row1 (flex, gap
+   already set by .ev-row1 itself). */
+.ev-identity {
+    flex: 1 1 220px;
+    min-width: 180px;
+}
+
+.ev-sub {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+    row-gap: 5px;
+}
+
+.ev-classification {
+    min-height: 20px;
+}
+
+.class-pills {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+
+.p-minor {
+    background: var(--amber-bg);
+    color: var(--amber);
+}
+
+.p-npflag {
+    background: var(--teal-bg);
+    color: #3f6b6d;
+}
+
+.p-slot-off {
+    background: var(--paper-2);
+    color: var(--gray-3);
+}
+
+.ev-exception {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+/* Per-row ••• kebab menu — generalizes .profile-menu to a shared,
+   JS-positioned instance per trigger, Registration-contextual (§0t). */
+.kebab-menu {
+    position: fixed;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    min-width: 220px;
+    z-index: 76;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-4px);
+    transition: opacity .15s, transform .15s;
+    overflow: hidden;
+}
+
+.kebab-menu.open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+}
+
+.kebab-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    border-bottom: 1px solid #f2f0ea;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+}
+
+.kebab-item:last-child {
+    border-bottom: none;
+}
+
+.kebab-item:hover {
+    background: var(--paper);
+}
+
+/* Person combobox — shared by Spouse (household link) and the guest's
+   inviting-Participant field. Type to filter, click to select; the value
+   just reads as plain data (bold) or a muted placeholder when empty —
+   nothing marks it as a dropdown until it's clicked. */
+.spouse-combo,
+.participant-combo {
+    position: relative;
+}
+
+.spouse-input {
+    width: 128px;
+}
+
+.participant-input {
+    font-size: 11px;
+    color: var(--gray);
+    font-family: var(--mono);
+    width: 150px;
+    padding: 1px 3px;
+    margin: -1px -3px;
+    border: none;
+    background: transparent;
+}
+
+.participant-input:hover {
+    background: var(--paper);
+    border-radius: 4px;
+}
+
+.participant-input:focus {
+    outline: none;
+    background: #fff;
+    box-shadow: 0 0 0 2px rgba(46, 162, 3, .22);
+    border-radius: 4px;
+}
+
+.participant-input::placeholder {
+    color: var(--gray-3);
+    font-style: italic;
+    font-family: var(--sans);
+}
+
+.combo-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+    min-width: 170px;
+    z-index: 45;
+    display: none;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.combo-list.open {
+    display: block;
+}
+
+.combo-opt {
+    padding: 7px 10px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.combo-opt:hover {
+    background: var(--paper);
+}
+
+.combo-opt.muted {
+    color: var(--gray);
+    cursor: default;
+}
+
+.pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 14px 20px;
+    border-top: 1px solid var(--line);
+}
+
+/* Course Materials — always sectioned by day, chronological, no tabs */
+.daysec-hd {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--gray);
+    padding: 14px 20px 8px;
+    background: #fcfbf8;
+    border-top: 1px solid var(--line);
+}
+
+/* Event Management sub-tab panels */
+.emview {
+    display: none;
+}
+
+.emview.active {
+    display: block;
+}
+
+.tog {
+    position: relative;
+    width: 44px;
+    height: 23px;
+    border-radius: 999px;
+    background: #ddd9cf;
+    border: none;
+    cursor: pointer;
+    transition: background .2s;
+    flex: none;
+}
+
+.tog::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
+    transition: transform .2s;
+}
+
+.tog.on {
+    background: var(--green-bright);
+}
+
+.tog.on::after {
+    transform: translateX(21px);
+}
+
+.tog.pending {
+    background: var(--line-2);
+}
+
+.tog.pending::after {
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3C/svg%3E") center/10px no-repeat;
+}
+
+.tog:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+/* stat tiles (course snapshot / in-course stats / release progress) */
+.stats {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    border-top: 1px solid var(--line);
+}
+
+.stats-7 {
+    grid-template-columns: repeat(7, 1fr);
+}
+
+.stats-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.stats-4 .stat:nth-child(4n) {
+    border-right: none;
+}
+
+.stats-4 .stat:nth-child(n+5) {
+    border-top: 1px solid var(--line);
+}
+
+.stat {
+    padding: 15px 17px;
+    border-right: 1px solid var(--line);
+    min-width: 0;
+}
+
+.stat:last-child {
+    border-right: none;
+}
+
+.stat .l {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--gray-2);
+    margin-bottom: 6px;
+    line-height: 1.3;
+}
+
+.stat .n {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: -.02em;
+    color: var(--ink);
+    min-width: 0;
+}
+
+.stat .n .mf-lg {
+    font-size: 22px;
+}
+
+.stat .sub {
+    font-size: 10.5px;
+    color: var(--gray);
+    margin-top: 3px;
+}
+
+.stat.big {
+    background: var(--teal);
+}
+
+.stat.big .l {
+    color: rgba(255, 255, 255, .6);
+}
+
+.stat.big .n {
+    color: #fff;
+}
+
+.stat.big .n .mf-lg {
+    color: #fff;
+}
+
+/* Course snapshot metrics as roster filters (§0y) — Event Management
+   only, since that's the only page with the roster directly beneath
+   the snapshot; Master Stats stays numbers-only/non-interactive. */
+.stat.stat-filterable {
+    cursor: pointer;
+    position: relative;
+    transition: background .15s;
+}
+
+.stat.stat-filterable:hover {
+    background: var(--paper);
+}
+
+.stat.stat-filterable.active {
+    background: var(--green-bg);
+}
+
+.stat.stat-filterable.active .l {
+    color: var(--green);
+}
+
+.stat.stat-filterable.active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 3px;
+    background: var(--green-bright);
+}
+
+.stat.big.stat-filterable:hover {
+    background: var(--teal-deep);
+}
+
+.stat.big.stat-filterable.active {
+    background: var(--teal-deep);
+}
+
+.stat.big.stat-filterable.active .l {
+    color: #fff;
+}
+
+.chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 11px 20px;
+    border-bottom: 1px solid var(--line);
+}
+
+.chip {
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray);
+    cursor: pointer;
+    transition: all .15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.chip:hover {
+    border-color: var(--muted);
+    color: var(--ink);
+}
+
+.chip.on {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+}
+
+.chip .c {
+    font-family: var(--mono);
+    font-size: 10px;
+    opacity: .8;
+}
+
+/* material release day/session tabs */
+.relview {
+    display: block;
+}
+
+.res-row {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+    padding: 12px 20px;
+    border-bottom: 1px solid #f2f0ea;
+}
+
+.res-row:last-child {
+    border-bottom: none;
+}
+
+.res-t {
+    min-width: 0;
+}
+
+.res-t .nm {
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.res-t .mt {
+    font-size: 11px;
+    color: var(--gray);
+    margin-top: 2px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.res-time {
+    font-size: 11px;
+    color: var(--gray);
+    white-space: nowrap;
+    text-align: right;
+    min-width: 112px;
+}
+
+.res-time b {
+    color: var(--ink);
+    font-family: var(--mono);
+    font-weight: 600;
+}
+
+.res-time.fail {
+    color: var(--coral-ink);
+    cursor: pointer;
+    border-bottom: 1px dotted currentColor;
+}
+
+/* audit feed */
+.tl {
+    padding: 6px 0;
+}
+
+.tl-row {
+    display: grid;
+    grid-template-columns: minmax(0, 72px) 16px minmax(0, 1fr);
+    gap: 0;
+    align-items: flex-start;
+    padding: 7px 20px 7px 16px;
+    font-size: 12px;
+}
+
+.tl-row .t {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--gray-2);
+    padding-top: 2px;
+    overflow-wrap: anywhere;
+    padding-right: 6px;
+}
+
+.tl-row .m {
+    display: flex;
+    justify-content: center;
+    padding-top: 5px;
+}
+
+.tl-row .m i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--line-2);
+    display: block;
+}
+
+.tl-row.sys .m i {
+    background: var(--muted);
+}
+
+.tl-row.staff .m i {
+    background: var(--green-bright);
+}
+
+.tl-row.warn .m i {
+    background: var(--coral);
+}
+
+.tl-row .c {
+    color: var(--gray);
+    line-height: 1.45;
+}
+
+.tl-row .c b {
+    color: var(--ink);
+    font-weight: 600;
+}
+
+/* KPI dashboard */
+.kpi-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 13px 18px;
+    font-size: 12.5px;
+    color: var(--gray);
+    line-height: 1.5;
+    margin-bottom: 18px;
+}
+
+.kpi-note svg {
+    width: 15px;
+    height: 15px;
+    flex: none;
+    color: var(--green);
+    margin-top: 1px;
+}
+
+.kpi-band {
+    background: var(--almond);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 18px 20px 20px;
+    margin-bottom: 16px;
+}
+
+.kpi-band.revenue {
+    background: var(--teal);
+    border-color: var(--teal-deep);
+}
+
+.kpi-band.revenue .eyebrow {
+    color: #8fd96f;
+}
+
+.kpi-band.revenue .kpi-src {
+    color: var(--white-55);
+}
+
+.kpi-band.revenue .kpi {
+    background: rgba(255, 255, 255, .06);
+    border-color: rgba(255, 255, 255, .14);
+}
+
+.kpi-band.revenue .kpi .l {
+    color: rgba(255, 255, 255, .6);
+}
+
+.kpi-band.revenue .kpi .n .mf-lg {
+    color: #fff;
+}
+
+.kpi-band.revenue .kpi .sub {
+    color: rgba(255, 255, 255, .45);
+}
+
+.kpi-band.last {
+    margin-bottom: 0;
+}
+
+/* Revenue — one row per product line, three columns (Booked/Projected/
+   Collected) per row, Total row last and visually set apart. */
+.rev-row {
+    border-top: 1px solid rgba(255, 255, 255, .12);
+    padding-top: 14px;
+    margin-top: 14px;
+}
+
+.rev-row:first-child {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+}
+
+.rev-row-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--white-55);
+    margin-bottom: 10px;
+}
+
+.rev-row.total {
+    border-top: 1px solid rgba(255, 255, 255, .25);
+}
+
+.rev-row.total .rev-row-label {
+    color: #8fd96f;
+}
+
+.rev-row.total .kpi {
+    background: rgba(255, 255, 255, .12);
+    border-color: rgba(255, 255, 255, .28);
+}
+
+.rev-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+@media(max-width:700px) {
+    .rev-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.kpi-hd {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+
+.kpi-src {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--gray);
+}
+
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
+}
+
+.kpi {
+    background: #fff;
+    border: 1px solid rgba(230, 226, 216, .9);
+    border-radius: 13px;
+    padding: 16px 15px 14px;
+    text-align: center;
+    min-width: 0;
+}
+
+.kpi .l {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    color: var(--gray);
+    line-height: 1.35;
+    min-height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.kpi .n {
+    margin: 9px 0 6px;
+    min-width: 0;
+}
+
+.kpi .n .mf-lg {
+    font-size: 24px;
+}
+
+.kpi .sub {
+    font-size: 11px;
+    color: var(--gray-2);
+    line-height: 1.4;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.kpi.term {
+    background: var(--green-bg);
+    border-color: rgba(46, 162, 3, .28);
+}
+
+.kpi.term .l {
+    color: var(--green);
+}
+
+.badge-optin {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--gray);
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 2px 8px;
+}
+
+.legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 11px 20px;
+    background: #fcfbf8;
+    border-top: 1px solid var(--line);
+    font-size: 11px;
+    color: var(--gray);
+    border-radius: 0 0 13px 13px;
+}
+
+.legend b {
+    font-size: 9.5px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--gray-2);
+}
+
+/* ============================================================
+   DRAWERS / MODALS
+   ============================================================ */
+body.cs-dashboard .scrim {
+    position: fixed !important;
+    inset: 0;
+    background: rgba(6, 16, 15, .45);
+    z-index: 80;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
+    display: block !important;
+}
+
+body.cs-dashboard .scrim.open {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+}
+
+.dw-layer {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 85;
+}
+
+.dw {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: min(540px, 94vw);
+    background: #fff;
+    transform: translateX(101%);
+    transition: transform .2s ease;
+    box-shadow: -20px 0 60px rgba(0, 0, 0, .22);
+    display: flex;
+    flex-direction: column;
+    pointer-events: auto;
+    visibility: hidden;
+}
+
+.dw.open {
+    visibility: visible;
+    transform: none;
+}
+
+.dw-hd {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: var(--teal);
+    color: #fff;
+}
+
+.dw-hd h3 {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+}
+
+.dw-hd .sub {
+    font-size: 11.5px;
+    color: rgba(255, 255, 255, .62);
+    margin-top: 3px;
+    font-family: var(--mono);
+}
+
+.dw-hd .x {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, .7);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.dw-hd .x:hover {
+    color: #fff;
+}
+
+.dw-bd {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.dw-sec {
+    border-bottom: 1px solid var(--line);
+    padding: 16px 24px;
+}
+
+.dw-sec:last-child {
+    border-bottom: none;
+}
+
+.dw-sec h5 {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--green-bright);
+    margin-bottom: 11px;
+}
+
+.kv {
+    display: grid;
+    grid-template-columns: 130px minmax(0, 1fr);
+    gap: 6px 14px;
+    font-size: 12.5px;
+}
+
+.kv .k {
+    color: var(--gray);
+}
+
+.kv .v {
+    color: var(--ink);
+}
+
+.dw-ft {
+    padding: 14px 24px;
+    border-top: 1px solid var(--line);
+    background: #fcfbf8;
+    display: flex;
+    gap: 9px;
+    flex-wrap: wrap;
+}
+
+/* .modal/.btn/.btn-primary are common enough class names that Ontraport's
+   own site-wide CSS framework may also define them, and depending on
+   specificity/load order its rules can win for individual properties even
+   though this stylesheet loads correctly (confirmed via an isolated
+   Playwright reconstruction of this exact file — the code itself renders
+   right in isolation, so a collision on the live page is the most likely
+   explanation). Scoped 2026-08-13 under body.cs-dashboard (set on the
+   <body> tag in INSTALL-dashboard-body-block.html) so these rules can
+   never leak onto/from an unrelated Ontraport widget reusing the same
+   class name elsewhere on the page — !important kept as a second layer
+   of defense against the already-diagnosed collision, since the exact
+   competing rule's specificity was never directly inspected live. */
+body.cs-dashboard .modal {
+    position: fixed !important;
+    z-index: 86;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -47%);
+    width: min(600px, 94vw);
+    max-height: 86vh;
+    overflow-y: auto;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s, transform .2s;
+    display: block !important;
+    visibility: visible !important;
+}
+
+body.cs-dashboard .modal.open {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: translate(-50%, -50%);
+}
+
+.modal-hd {
+    padding: 20px 24px 0;
+}
+
+.modal-hd h3 {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -.02em;
+}
+
+.modal-hd p {
+    font-size: 13px;
+    color: var(--gray);
+    margin-top: 6px;
+    line-height: 1.5;
+}
+
+.modal-bd {
+    padding: 18px 24px;
+}
+
+.modal-ft {
+    padding: 15px 24px;
+    border-top: 1px solid var(--line);
+    background: #fcfbf8;
+    border-radius: 0 0 15px 15px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Modal-footer button type hardening, 2026-08-13. The collision fix above
+   forced font-family on bare buttons and colors on .btn-primary, but left
+   the remaining type properties (size, weight, letter-spacing, transform)
+   unprotected — so Ontraport's own button rules could still win on those,
+   rendering modal buttons in the right typeface at the wrong size/weight.
+   Deliberately scoped to .modal-ft rather than all .btn: a blanket
+   !important on .btn-primary's font-size would override .evt-card-ft
+   .btn-primary's intentional 12.5px further down this file. */
+body.cs-dashboard .modal-ft .btn {
+    font-family: var(--sans) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    letter-spacing: normal !important;
+    text-transform: none !important;
+    line-height: 1.55 !important;
+}
+
+body.cs-dashboard .modal-ft .btn-primary {
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    letter-spacing: .06em !important;
+}
+
+.preview {
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    overflow: hidden;
+}
+
+.preview-hd {
+    background: var(--almond);
+    padding: 9px 14px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--gray);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.preview-bd {
+    padding: 16px;
+    background: var(--paper);
+    display: grid;
+    gap: 9px;
+}
+
+.pv-item {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-left: 2px solid var(--green);
+    border-radius: 9px;
+    padding: 12px 14px;
+}
+
+.pv-item .t {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.pv-item .d {
+    font-size: 11.5px;
+    color: var(--gray);
+    margin-top: 3px;
+}
+
+.warnbox {
+    border: 1px solid rgba(240, 100, 73, .4);
+    background: var(--coral-bg);
+    border-radius: 10px;
+    padding: 13px 15px;
+    display: flex;
+    gap: 11px;
+    align-items: flex-start;
+}
+
+.warnbox svg {
+    width: 16px;
+    height: 16px;
+    color: var(--coral-ink);
+    flex: none;
+    margin-top: 1px;
+}
+
+.warnbox .t {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--coral-ink);
+}
+
+.warnbox .d {
+    font-size: 12px;
+    color: var(--ink);
+    margin-top: 4px;
+    line-height: 1.45;
+}
+
+.field {
+    margin-bottom: 14px;
+}
+
+.field label {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--gray);
+    display: block;
+    margin-bottom: 6px;
+}
+
+.field input,
+.field select,
+.field textarea {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 10px 12px;
+    font-family: var(--sans);
+    font-size: 13px;
+    outline: none;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+    border-color: var(--green);
+}
+
+/* Form-control hardening 2026-08-13 — same collision class as the modal
+   button rules further down, reported live as select controls not appearing
+   at all inside the roster kebab modals. The rule above sets border/padding/
+   font but never display, appearance or visibility, so an Ontraport rule
+   that hides or collapses native form controls (its framework replaces them
+   with custom widgets) wins by default rather than by specificity: nothing
+   here contests those properties. Scoped under body.cs-dashboard + important
+   to match the established fix pattern in this file. */
+body.cs-dashboard .field input,
+body.cs-dashboard .field select,
+body.cs-dashboard .field textarea {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    font-family: var(--sans) !important;
+    font-size: 13px !important;
+}
+
+body.cs-dashboard .field input,
+body.cs-dashboard .field select {
+    min-height: 38px !important;
+}
+
+body.cs-dashboard .field select {
+    -webkit-appearance: menulist !important;
+    appearance: menulist !important;
+    background-color: #fff !important;
+    color: var(--ink) !important;
+}
+
+/* Header rule replacing the old explanatory <p> in kebab-action modals. */
+.modal-hd .hd-rule {
+    height: 1px;
+    background: var(--line);
+    margin-top: 14px;
+}
+
+/* Progressive-field attention cue 2026-08-13. As each stage of a kebab
+   modal reveals itself, exactly one field carries .attn — the one the CS
+   needs to act on next. Deliberately restrained per the client: a softened
+   dark-green border (--green #217a00 at 55%) plus a faint 9% halo, with no
+   fill and no label recolour, so it reads as "you are here" rather than as
+   a validation error. Only ever applied to one field at a time; marking
+   several would defeat the whole point of the cue. */
+body.cs-dashboard .field.attn input,
+body.cs-dashboard .field.attn select,
+body.cs-dashboard .field.attn textarea,
+body.cs-dashboard .ev-field.attn input {
+    border-color: rgba(33, 122, 0, .55) !important;
+    box-shadow: 0 0 0 3px rgba(33, 122, 0, .09) !important;
+}
+
+/* Native control accent, 2026-08-13. Browsers paint their own selection
+   fills on form controls in the OS/browser accent (blue by default), which
+   no ordinary rule reaches — accent-color is the only supported lever.
+   Covers checkboxes, radios, range and progress reliably. NOTE: it does
+   NOT restyle Chrome's <input type="time"> dropdown panel; that panel is
+   browser chrome rendered outside the page, so its blue selection cannot
+   be changed from CSS at all. Making that green would mean replacing the
+   native time input with a custom control. */
+body.cs-dashboard {
+    accent-color: var(--green);
+}
+
+/* In-page combo/list hover fills, so anything we DO own highlights green
+   rather than falling back to a UA default. */
+body.cs-dashboard .combo-opt:hover,
+body.cs-dashboard .combo-opt.active {
+    background: var(--green-bg) !important;
+    color: var(--ink) !important;
+}
+
+.match {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-bottom: 7px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+}
+
+.match:hover {
+    border-color: var(--green);
+    background: var(--green-bg);
+}
+
+.match.top {
+    border-color: rgba(46, 162, 3, .5);
+    background: var(--green-bg);
+}
+
+.match .mi {
+    flex: 1;
+    min-width: 0;
+}
+
+.match .mn {
+    font-size: 12.5px;
+    font-weight: 700;
+}
+
+.match .mp {
+    font-size: 10.5px;
+    color: var(--gray);
+    font-family: var(--mono);
+}
+
+.tokline {
+    padding-left: 20px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--gray-2);
+}
+
+.toast {
+    position: fixed;
+    bottom: 26px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--teal);
+    color: #fff;
+    border-radius: 9px;
+    padding: 13px 20px;
+    font-size: 12.5px;
+    box-shadow: var(--shadow);
+    z-index: 95;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s, transform .2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 420px;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(-50%);
+}
+
+.toast.err {
+    background: var(--coral-ink);
+}
+
+.toast svg {
+    width: 15px;
+    height: 15px;
+    color: var(--green-bright);
+    flex: none;
+}
+
+.toast.err svg {
+    color: #fff;
+}
+
+.foot {
+    background: var(--teal-deep);
+    color: rgba(255, 255, 255, .5);
+    margin-top: 40px;
+}
+
+.foot .wrap {
+    padding: 26px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    font-size: 12px;
+}
+
+.foot a {
+    color: rgba(255, 255, 255, .6);
+}
+
+.foot a:hover {
+    color: rgba(255, 255, 255, .9);
+}
+
+.foot-l {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.foot-contact {
+    color: rgba(255, 255, 255, .6);
+}
+
+@media(max-width:1440px) {
+    .evt-meta {
+        display: none;
+    }
+}
+
+@media(max-width:1180px) {
+    .stats {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .stat {
+        border-bottom: 1px solid var(--line);
+    }
+}
+
+@media(max-width:1100px) {
+    .tabbar .wrap {
+        overflow-x: auto;
+    }
+
+    .res-row {
+        grid-template-columns: 36px minmax(0, 1fr) auto;
+    }
+
+    .res-time {
+        display: none;
+    }
+}
+
+@media(max-width:900px) {
+    .wrap {
+        padding: 0 18px;
+    }
+
+    .stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .kv {
+        grid-template-columns: 110px 1fr;
+    }
+}
+
+/* ============================================================
+   HOME — pre-Forum landing (§0x). The dashboard chrome (event
+   selector, session strip, tabbar, EM sub-tabs) has no meaning
+   before an Event is entered, so it's hidden outright while the
+   CS is on Home rather than just scrolled past.
+   ============================================================ */
+body.home .evtstrip,
+body.home .tabbar,
+body.home #secnav,
+body.home .evt-sel,
+body.home .evt-meta {
+    display: none;
+}
+
+.home-events {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.home-cards {
+    display: grid;
+    gap: 16px;
+}
+
+/* Resized/restyled 2026-08-13 to match the Member Portal During-page hero
+   card (.progcard: 20px radius, 30px/34px padding, generous title size) --
+   client feedback: card was too cramped for the event title, button was
+   too narrow/wrong color. */
+.evt-card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Home loading state — added 2026-08-13, matches .evt-card's own card
+   shell (radius/shadow/border) so the swap-in doesn't jump. */
+.home-loading {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    padding: 56px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+}
+
+.home-loading-dots {
+    display: flex;
+    gap: 9px;
+}
+
+.home-loading-dots span {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--green-bright);
+    animation: homeLoadingBounce 1.4s ease-in-out infinite both;
+}
+
+.home-loading-dots span:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.home-loading-dots span:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+.home-loading-dots span:nth-child(3) {
+    animation-delay: 0s;
+}
+
+@keyframes homeLoadingBounce {
+
+    0%,
+    80%,
+    100% {
+        transform: scale(.6);
+        opacity: .5;
+    }
+
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.home-loading-text {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray);
+    letter-spacing: .02em;
+}
+
+.evt-card-bd {
+    padding: 28px 32px;
+}
+
+.evt-card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.evt-card-title {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 23px;
+    letter-spacing: -.01em;
+    color: var(--ink);
+    line-height: 1.2;
+}
+
+.evt-card-dates {
+    font-size: 13px;
+    color: var(--gray);
+    margin-top: 6px;
+}
+
+.evt-card-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: none;
+}
+
+.evt-card-caption {
+    font-size: 12px;
+    color: var(--gray);
+    margin-top: 16px;
+}
+
+.evt-card-ft {
+    padding: 20px 32px !important;
+    border-top: 1px solid var(--line);
+    background: #fcfbf8;
+    border-radius: 0 0 19px 19px;
+}
+
+.evt-card-ft .btn-primary {
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    padding: 15px 18px !important;
+    font-size: 12.5px;
+}
+
+.p-ready {
+    background: var(--paper-2);
+    color: var(--gray-2);
+}
+
+.p-needsattn {
+    background: var(--coral-bg);
+    color: var(--coral-ink);
+    cursor: help;
+}
+
+.p-inprogress {
+    background: var(--amber-bg);
+    color: var(--amber);
+}
+
+/* Pre-Forum readiness roster (§0x) — reduced columns vs. the Event
+   Management roster, table-shaped per the brief's "column headers"
+   language rather than the six-zone .ev-card layout. */
+.home-roster {
+    display: grid;
+    gap: 8px;
+}
+
+.hr-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 74px 74px 74px 32px;
+    gap: 16px;
+    align-items: center;
+    padding: 11px 14px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+}
+
+.hr-row.hd {
+    border: none;
+    padding: 0 14px;
+}
+
+.hr-row.hd span {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--gray-2);
+}
+
+.hr-name-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.hr-name b {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.hr-name>span {
+    font-size: 11px;
+    color: var(--gray);
+    font-family: var(--mono);
+    margin-top: 2px;
+    display: block;
+}
+
+/* View Assignments (§0x) — browse/open only, no release toggle */
+.modal-bd.flush {
+    padding: 0;
+}
+
+.al-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 20px;
+    border-bottom: 1px solid #f2f0ea;
+    cursor: pointer;
+    transition: background .15s;
+}
+
+.al-row:last-child {
+    border-bottom: none;
+}
+
+.al-row:hover {
+    background: var(--paper);
+}
+
+.al-row .t {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.al-row .k {
+    font-size: 11px;
+    color: var(--gray);
+    margin-top: 2px;
+}
+
+</style>
