@@ -61,8 +61,13 @@
 </div></div>
 
 <nav class="tabbar"><div class="wrap row">
+  <!-- Master Stats removed 2026-08-14. It was a read-only mirror of the same numbers
+       Event Management already shows, so it cost a nav slot without carrying anything
+       unique — and the Device & Zoom reconciliation card that lived there was the one
+       thing a CS needs during a live session, sitting on the tab they never open.
+       Both tile sets now share one tabbed card on Event Management; Reporting keeps
+       the longer-horizon course performance view. -->
   <button class="active" data-v="em" id="navEm" onclick="go('em')">Event Management</button>
-  <button data-v="master" id="navMaster" onclick="go('master')">Master Stats</button>
   <button data-v="kpi" id="navKpi" onclick="go('kpi')">Reporting Dashboard</button>
 </div></nav>
 
@@ -131,76 +136,6 @@
 </section>
 
 <!-- ============================================================
-     MASTER STATS (brief §4) — Course Supervisor's single working
-     surface. Recomposes the full prototype's Participants, Attendance,
-     Content and Outcomes components into one page. Audience is CS only
-     (brief §3) — an Event-Leader-only session gets this denial panel
-     instead of the working content, never a silently blank page.
-     ============================================================ -->
-<!-- ============================================================
-     MASTER STATS — numbers only, no edit controls. All roster,
-     attendance, seminar/AC and material-release editing now lives on
-     Event Management; this page is the "read the numbers aloud"
-     destination (brief §4.6 in-course statistics), unchanged in spirit
-     but no longer carrying the editable surfaces. Course Supervisor
-     only, enforced by page-level access outside this file (see field
-     dictionary) — not a client-side check.
-     ============================================================ -->
-<section class="view" id="v-master">
-
-  <div class="sechd">
-    <h2>Master Stats</h2>
-    <div class="lede">No editing happens here.</div>
-  </div>
-
-  <div class="card msec" id="ms-snapshot">
-    <div class="card-hd">
-      <h3>Course snapshot</h3>
-      <div class="r"><span style="font-size:11.5px;color:var(--gray);">Live</span></div>
-    </div>
-    <div class="stats">
-      <div class="stat"><div class="l">Starts (Day 1)</div><div class="n"><span class="v-na" data-stat="starts">—</span></div><div class="sub" data-stat-sub="starts">pending Day 1 lock mechanism</div></div>
-      <div class="stat"><div class="l">Current</div><div class="n"><span class="mf-lg" data-stat="current">—</span></div><div class="sub" data-stat-sub="current">still participating</div></div>
-      <div class="stat"><div class="l">LDP</div><div class="n"><span class="mf-lg" data-stat="ldp">—</span></div><div class="sub">left for any reason</div></div>
-      <div class="stat"><div class="l">WBO</div><div class="n"><span class="mf-lg" data-stat="wbo">—</span></div><div class="sub" data-stat-sub="wbo">of those who left</div></div>
-      <div class="stat"><div class="l">Completions</div><div class="n"><span class="mf-lg" data-stat="completions">—</span></div><div class="sub">Forum Completed</div></div>
-      <div class="stat big"><div class="l">Attendance now</div><div class="n"><span class="mf-lg" data-stat="attendanceNow">—</span></div><div class="sub" style="color:rgba(255,255,255,.55);" data-stat-sub="attendanceNow">—</div></div>
-      <div class="stat"><div class="l">Seminar registered</div><div class="n"><span class="mf-lg" data-stat="seminarPct">—</span></div><div class="sub" data-stat-sub="seminarPct">of potential</div></div>
-      <div class="stat"><div class="l">AC registered</div><div class="n"><span class="mf-lg" data-stat="acPct">—</span></div><div class="sub" data-stat-sub="acPct">of potential</div></div>
-      <div class="stat"><div class="l">Invitations sent</div><div class="n"><span class="mf-lg" data-stat="invitationsSent">—</span></div><div class="sub" data-stat-sub="invitationsSent">by participants</div></div>
-      <div class="stat"><div class="l">Final Session expected</div><div class="n"><span class="v-na" data-stat="finalSession">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
-      <div class="stat"><div class="l">Reviewer</div><div class="n"><span class="mf-lg" data-stat="reviewer">—</span></div><div class="sub">flagged this event</div></div>
-      <div class="stat"><div class="l">SE</div><div class="n"><span class="mf-lg" data-stat="se">—</span></div><div class="sub">flagged this event</div></div>
-    </div>
-  </div>
-
-  <!-- Device & Zoom reconciliation — Event-level aggregate, computed 2026-08-12
-       from real roster/staff data (Roster Fetch webhook): Participants = total
-       registrants no exclusions; Staff = oEventTeam Currently Present WHERE
-       Staff Access; Shared/Duplicate adjustments from f3207/f3208; Observed
-       reuses the same Currently-Present fields, no separate Zoom API call. -->
-  <div class="card msec" id="ms-devicerecon">
-    <div class="card-hd">
-      <h3>Device &amp; Zoom reconciliation</h3>
-      <span class="sub">Derived from roster device exceptions and live Zoom presence</span>
-      <div class="r"><span style="font-size:11.5px;color:var(--gray);">Live</span></div>
-    </div>
-    <div class="stats stats-7">
-      <div class="stat"><div class="l">Participants</div><div class="n"><span class="mf-lg" data-stat="drParticipants">—</span></div><div class="sub">enrolled this Event</div></div>
-      <div class="stat"><div class="l">Staff</div><div class="n"><span class="mf-lg" data-stat="drStaff">—</span></div><div class="sub">Zoom-connected now</div></div>
-      <div class="stat"><div class="l">Shared-device adj.</div><div class="n"><span class="mf-lg" data-stat="drSharedAdj">—</span></div><div class="sub">known shared devices</div></div>
-      <div class="stat"><div class="l">Duplicate-device adj.</div><div class="n"><span class="mf-lg" data-stat="drDupAdj">—</span></div><div class="sub">known duplicate devices</div></div>
-      <div class="stat"><div class="l">Expected Zoom devices</div><div class="n"><span class="mf-lg" data-stat="drExpected">—</span></div><div class="sub">participants + staff, adjusted</div></div>
-      <div class="stat"><div class="l">Observed</div><div class="n"><span class="mf-lg" data-stat="drObserved">—</span></div><div class="sub">connected now</div></div>
-      <div class="stat big"><div class="l">Reconciled</div><div class="n"><span class="mf-lg" data-stat="drReconciled">—</span></div><div class="sub" style="color:rgba(255,255,255,.55);" data-stat-sub="drReconciled">—</div></div>
-    </div>
-  </div>
-
-  <p style="font-size:11.5px;color:#a9a49a;margin-top:2px;">Roster editing, attendance overrides, seminar/AC entry, guest management and material release now live on <a onclick="go('em')" style="cursor:pointer;color:var(--green);font-weight:600;">Event Management</a>.</p>
-
-</section>
-
-<!-- ============================================================
      EVENT MANAGEMENT — the Course Supervisor's working surface.
      Default landing tab. One record card per participant/guest with
      everything actionable on that record in one place, per the Event
@@ -231,22 +166,65 @@
          timestamp on a live-updating card is worse than no timestamp: it
          invites the CS to trust stale-looking numbers that are actually
          current. The card is Ably-pushed, so it needs no staleness stamp. -->
-    <div class="card-hd">
-      <h3>Course snapshot</h3>
+    <!-- Two tile sets, one card (2026-08-14). Device & Zoom reconciliation used to live on
+         the Master Stats tab, which is the tab a CS never opens mid-session — exactly when
+         reconciliation matters most. Tabbing it alongside Course snapshot puts the live
+         operational view and the course-performance view one click apart on the surface the
+         CS already works from. Attendance now is promoted out of the tile grid into the
+         title bar: it is the number that changes most and is glanced at most, and it was
+         costing a full tile slot to say one percentage. -->
+    <div class="card-hd snap-hd">
+      <div class="snap-tabs" role="tablist">
+        <button class="snap-tab active" role="tab" aria-selected="true" data-snap="course" onclick="snapTab(this,'course')">Course snapshot</button>
+        <button class="snap-tab" role="tab" aria-selected="false" data-snap="device" onclick="snapTab(this,'device')">Device &amp; Zoom reconciliation</button>
+      </div>
+      <button class="snap-att stat-filterable" onclick="applyStatFilter('attendanceNow', this)" title="Show only records attending today">
+        <span class="snap-att-l">Attendance now</span>
+        <span class="snap-att-n" data-stat="attendanceNow">—</span>
+        <span class="snap-att-s" data-stat-sub="attendanceNow">—</span>
+      </button>
     </div>
-    <div class="stats">
-      <div class="stat" title="Pending Day 1 lock mechanism"><div class="l">Starts (Day 1)</div><div class="n"><span class="v-na" data-stat="starts">—</span></div><div class="sub" data-stat-sub="starts">pending Day 1 lock mechanism</div></div>
+
+    <div class="stats snap-pane active" id="snap-course">
+      <div class="stat" title="Locked at the end of Day 1"><div class="l">Starts (Day 1)</div><div class="n"><span class="mf-lg" data-stat="starts">—</span></div><div class="sub" data-stat-sub="starts">locked at Day 1 close</div></div>
       <div class="stat stat-filterable" onclick="applyStatFilter('current', this)" title="Show only records still participating"><div class="l">Current</div><div class="n"><span class="mf-lg" data-stat="current">—</span></div><div class="sub" data-stat-sub="current">still participating</div></div>
-      <div class="stat stat-filterable" onclick="applyStatFilter('ldp', this)" title="Show only LDP records"><div class="l">LDP</div><div class="n"><span class="mf-lg" data-stat="ldp">—</span></div><div class="sub">left for any reason</div></div>
-      <div class="stat stat-filterable" onclick="applyStatFilter('wbo', this)" title="Show only WBO records"><div class="l">WBO</div><div class="n"><span class="mf-lg" data-stat="wbo">—</span></div><div class="sub" data-stat-sub="wbo">of those who left</div></div>
-      <div class="stat stat-filterable" onclick="applyStatFilter('completions', this)" title="Show only records with a completed checkpoint"><div class="l">Completions</div><div class="n"><span class="mf-lg" data-stat="completions">—</span></div><div class="sub">Forum Completed</div></div>
-      <div class="stat big stat-filterable" onclick="applyStatFilter('attendanceNow', this)" title="Show only records attending today"><div class="l">Attendance now</div><div class="n"><span class="mf-lg" data-stat="attendanceNow">—</span></div><div class="sub" style="color:rgba(255,255,255,.55);" data-stat-sub="attendanceNow">—</div></div>
+      <!-- LDP and WBO merged (2026-08-14): WBO is a subset of LDP, never a peer of it, and
+           showing them as two equal tiles read as two separate populations. The diagonal
+           split says "part of" in a way two tiles cannot. Both halves stay independently
+           filterable, so the drill-down behaviour is unchanged. -->
+      <div class="stat stat-split">
+        <div class="split-half split-a stat-filterable" onclick="applyStatFilter('ldp', this)" title="Show only LDP records">
+          <div class="l">LDP</div><div class="n"><span class="mf-lg" data-stat="ldp">—</span></div>
+        </div>
+        <div class="split-rule" aria-hidden="true"></div>
+        <div class="split-half split-b stat-filterable" onclick="applyStatFilter('wbo', this)" title="Show only WBO records">
+          <div class="l">WBO</div><div class="n"><span class="mf-lg" data-stat="wbo">—</span></div>
+        </div>
+        <div class="sub" data-stat-sub="wbo">of those who left</div>
+      </div>
+      <!-- PIQ — participants in queue. The CS's actual worklist: anyone carrying an
+           unresolved ATTN / unmatched / multi-device / shared-device flag. Filterable like
+           every other tile so it can be worked one record at a time. -->
+      <div class="stat stat-filterable" onclick="applyStatFilter('piq', this)" title="Show only participants still needing CS action"><div class="l">PIQ</div><div class="n"><span class="mf-lg" data-stat="piq">—</span></div><div class="sub" data-stat-sub="piq">participants in queue</div></div>
       <div class="stat stat-filterable" onclick="applyStatFilter('seminar', this)" title="Show only Seminar-registered records"><div class="l">Seminar registered</div><div class="n"><span class="mf-lg" data-stat="seminarPct">—</span></div><div class="sub" data-stat-sub="seminarPct">of potential</div></div>
       <div class="stat stat-filterable" onclick="applyStatFilter('ac', this)" title="Show only AC-registered records"><div class="l">AC registered</div><div class="n"><span class="mf-lg" data-stat="acPct">—</span></div><div class="sub" data-stat-sub="acPct">of potential</div></div>
       <div class="stat"><div class="l">Invitations sent</div><div class="n"><span class="mf-lg" data-stat="invitationsSent">—</span></div><div class="sub" data-stat-sub="invitationsSent">by participants</div></div>
-      <div class="stat"><div class="l">Final Session expected</div><div class="n"><span class="v-na" data-stat="finalSession">—</span></div><div class="sub">pending Landmark team confirmation</div></div>
       <div class="stat stat-filterable" onclick="applyStatFilter('reviewer', this)" title="Show only Reviewer-flagged records"><div class="l">Reviewer</div><div class="n"><span class="mf-lg" data-stat="reviewer">—</span></div><div class="sub">flagged this event</div></div>
       <div class="stat stat-filterable" onclick="applyStatFilter('se', this)" title="Show only SE-flagged records"><div class="l">SE</div><div class="n"><span class="mf-lg" data-stat="se">—</span></div><div class="sub">flagged this event</div></div>
+      <!-- Cut 2026-08-14: "Final Session expected" (CS confirmed they don't know what the
+           number means, and its formula was never settled) and "Completions" (empty until
+           the end of Day 3, so it burned a slot for two and a half days — it remains on
+           Reporting, where end-of-course numbers belong). -->
+    </div>
+
+    <div class="stats stats-7 snap-pane" id="snap-device">
+      <div class="stat"><div class="l">Participants</div><div class="n"><span class="mf-lg" data-stat="drParticipants">—</span></div><div class="sub">enrolled this Event</div></div>
+      <div class="stat"><div class="l">Staff</div><div class="n"><span class="mf-lg" data-stat="drStaff">—</span></div><div class="sub">Zoom-connected now</div></div>
+      <div class="stat"><div class="l">Shared-device adj.</div><div class="n"><span class="mf-lg" data-stat="drSharedAdj">—</span></div><div class="sub">known shared devices</div></div>
+      <div class="stat"><div class="l">Duplicate-device adj.</div><div class="n"><span class="mf-lg" data-stat="drDupAdj">—</span></div><div class="sub">known duplicate devices</div></div>
+      <div class="stat"><div class="l">Expected Zoom devices</div><div class="n"><span class="mf-lg" data-stat="drExpected">—</span></div><div class="sub">participants + staff, adjusted</div></div>
+      <div class="stat"><div class="l">Observed</div><div class="n"><span class="mf-lg" data-stat="drObserved">—</span></div><div class="sub">connected now</div></div>
+      <div class="stat big"><div class="l">Reconciled</div><div class="n"><span class="mf-lg" data-stat="drReconciled">—</span></div><div class="sub" style="color:rgba(255,255,255,.55);" data-stat-sub="drReconciled">—</div></div>
     </div>
   </div>
   <!-- 4.2 Roster and classification — the current Event's oRegistrations,
@@ -264,8 +242,11 @@
        per page. -->
   <div class="card msec" id="ms-roster">
     <div class="card-hd">
-      <h3>Roster &amp; classification</h3>
-      <span class="sub"><span class="mf">188</span> on oRegistrations for this Event · showing <span class="mf" id="rosterShowingCount">12</span></span>
+      <!-- Was "188 on oRegistrations for this Event · showing 12" — the 188 was a hardcoded
+           fixture the engine never wrote, and "oRegistrations" is an internal object name
+           that means nothing to a CS. Both counts are now real and written by paginate(). -->
+      <h3>Roster</h3>
+      <span class="sub">Showing <span class="mf" id="rosterShowingCount">—</span> of <span class="mf" id="rosterTotalCount">—</span> participants</span>
       <span class="pill p-neutral" id="rosterFilterChip" style="display:none;cursor:pointer;gap:6px;" onclick="clearStatFilter()" title="Clear filter">Filtered: <span id="rosterFilterLabel"></span> ✕</span>
       <div class="r">
         <div class="search" style="position:relative;">
@@ -714,12 +695,15 @@
      trigger, Registration-contextual via pendingRowMenuCard/data-reg-id.
      Items render conditionally — see openRowMenu(). -->
 <div class="kebab-menu" id="rowMenu">
+  <!-- View Participant Details moved to first, 2026-08-14. It is by far the most-used
+       action on this menu and it was sitting last — which also made it the first item lost
+       whenever the menu opened near the bottom of the viewport and got clipped. -->
+  <button class="kebab-item" onclick="kebabAction('viewDetails')">View Participant Details</button>
   <button class="kebab-item" onclick="kebabAction('courseStatus')">Update Course Status</button>
   <button class="kebab-item" onclick="kebabAction('deviceException')">Device / Zoom Exception</button>
   <button class="kebab-item" onclick="kebabAction('overrideClassification')">Override Classification</button>
   <button class="kebab-item" onclick="kebabAction('correctAttendance')">Correct Attendance</button>
   <button class="kebab-item" onclick="kebabAction('addNote')">Add Operational Note</button>
-  <button class="kebab-item" onclick="kebabAction('viewDetails')">View Participant Details</button>
 </div>
 
 <div class="dw-layer">
