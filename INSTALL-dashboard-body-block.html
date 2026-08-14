@@ -217,12 +217,22 @@
            Reporting, where end-of-course numbers belong). -->
     </div>
 
-    <div class="stats stats-7 snap-pane" id="snap-device">
+    <!-- 8 tiles on stats-4 (2 rows of 4), not stats-7. There is no .stats-8 rule in the
+         header CSS, and .stats-4 already carries the second-row border handling
+         (nth-child(4n) / nth-child(n+5)) — so adding the Drop-ins tile needed no header
+         change and therefore no second Ontraport paste.
+         Relabelled 2026-08-14: this card compares HEADCOUNTS, not devices. The dashboard
+         never receives Zoom's live connection total, so "Expected Zoom devices" was naming
+         something the data could not express. Multi-device is now an informational count
+         rather than an adjustment — one person on two connections is still one person and
+         does not move a headcount. See dashboardRenderSnapshot() for the full reasoning. -->
+    <div class="stats stats-4 snap-pane" id="snap-device">
       <div class="stat"><div class="l">Participants</div><div class="n"><span class="mf-lg" data-stat="drParticipants">—</span></div><div class="sub">enrolled this Event</div></div>
       <div class="stat"><div class="l">Staff</div><div class="n"><span class="mf-lg" data-stat="drStaff">—</span></div><div class="sub">Zoom-connected now</div></div>
+      <div class="stat"><div class="l">Drop-ins</div><div class="n"><span class="mf-lg" data-stat="drDropIns">—</span></div><div class="sub">no registration match</div></div>
       <div class="stat"><div class="l">Shared-device adj.</div><div class="n"><span class="mf-lg" data-stat="drSharedAdj">—</span></div><div class="sub">known shared devices</div></div>
-      <div class="stat"><div class="l">Duplicate-device adj.</div><div class="n"><span class="mf-lg" data-stat="drDupAdj">—</span></div><div class="sub">known duplicate devices</div></div>
-      <div class="stat"><div class="l">Expected Zoom devices</div><div class="n"><span class="mf-lg" data-stat="drExpected">—</span></div><div class="sub">participants + staff, adjusted</div></div>
+      <div class="stat"><div class="l">Multi-device</div><div class="n"><span class="mf-lg" data-stat="drDupAdj">—</span></div><div class="sub">on two connections</div></div>
+      <div class="stat"><div class="l">Expected present</div><div class="n"><span class="mf-lg" data-stat="drExpected">—</span></div><div class="sub">current + staff, adjusted</div></div>
       <div class="stat"><div class="l">Observed</div><div class="n"><span class="mf-lg" data-stat="drObserved">—</span></div><div class="sub">connected now</div></div>
       <div class="stat big"><div class="l">Reconciled</div><div class="n"><span class="mf-lg" data-stat="drReconciled">—</span></div><div class="sub" style="color:rgba(255,255,255,.55);" data-stat-sub="drReconciled">—</div></div>
     </div>

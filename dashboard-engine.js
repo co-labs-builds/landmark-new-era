@@ -516,17 +516,44 @@ function dashboardRenderSnapshot(registrations, eventFields, staffCount){
   dashboardSetStat('participantsWhoInvited', invitationsWithGuests);
   dashboardSetSub('participantsWhoInvited', dashboardFmtPct(invitationsWithGuests, total) + ' of the course');
 
+  /* Device & Zoom reconciliation, corrected 2026-08-14. Both sides of this comparison are
+     HEADCOUNTS, not device counts: attendingNow counts registrations with f2853=1, one per
+     person however many devices they are on, and staffCount counts oEventTeam rows with
+     f3218=1. The tile labels said "devices" but nothing here ever had a device count to
+     work from — the dashboard never receives Zoom's live connection total. So the formula
+     is expressed in people, and the two adjustments are applied on that basis.
+
+     Shared device: two people on one connection, so Zoom reports one registrant_id and only
+     one of them can ever be observed present. That is a real subtraction from what we can
+     expect to see — one per pair.
+
+     Multi-device: one person on two connections is still one person and still one f2853=1,
+     so it does NOT move a headcount either way. It used to be subtracted, which quietly
+     made expected too low by one per occurrence. It is now surfaced as its own informational
+     count rather than folded into the arithmetic. */
   var sharedDeviceCount = registrations.filter(function(r){ return String(r.f3207 || '').trim() !== ''; }).length;
   var sharedAdj = -Math.floor(sharedDeviceCount / 2);
-  var dupAdj = -registrations.filter(function(r){ return String(r.f3208) === '474'; }).length;
-  var expected = total + staffCount + sharedAdj + dupAdj;
+  /* Counts the poller's auto-detected f3184 as well as the CS-declared f3208=474, so the
+     tile moves when the Zoom poller raises multi-device on its own — previously only a
+     manual Device Exception save could shift it, leaving it at 0 all session while the
+     roster showed MULTI-DEVICE pills. */
+  var multiDeviceCount = registrations.filter(function(r){ return String(r.f3208) === '474' || rosterIsTrue(r.f3184); }).length;
+  /* Built from `current`, never `total`: total includes cancelled and LDP records, who are
+     never going to appear in Zoom, so a single cancellation made ✓ permanently unreachable
+     for the whole event. */
+  var expected = current + staffCount + sharedAdj;
   var observed = attendingNow + staffCount;
   var reconciled = expected === observed;
 
   dashboardSetStat('drParticipants', total);
   dashboardSetStat('drStaff', staffCount);
   dashboardSetStat('drSharedAdj', sharedAdj);
-  dashboardSetStat('drDupAdj', dupAdj);
+  dashboardSetStat('drDupAdj', multiDeviceCount);
+  /* Drop-in viewers — events.f3262, written by LM | Zoom | Live Attendance Poller for live
+     participants matching neither a Registration nor an oEventTeam row. Read straight off
+     eventFields like the other Event-level numbers, so it does not matter whether the value
+     arrived on a full Roster Fetch or live via event.metric.changed. */
+  dashboardSetStat('drDropIns', Number(eventFields.f3262 || 0));
   dashboardSetStat('drExpected', expected);
   dashboardSetStat('drObserved', observed);
   dashboardSetStat('drReconciled', reconciled ? '✓' : '✗');
@@ -2492,6 +2519,12 @@ function dashboardApplyDayAdvanced(msg){
    f2871 is a join count and f2805-f2807 are minute totals, not flags. */
 var DASHBOARD_ATTENDANCE_RAW_FIELDS = ['f3191', 'f3056', 'f3059', 'f3208', 'f2808', 'f2871', 'f2805', 'f2806', 'f2807', 'f3190'];
 var DASHBOARD_DAY_TICK_FIELDS = { f2801: 1, f2802: 2, f2803: 3 };
+/* The per-day minute totals the Zoom poller writes. They live inside the D-tick's detail
+   pop (rosterBuildAttendanceTick bakes them into data-pop-kv at build time), so a minutes
+   change has to rebuild the tick or the pop keeps showing a stale figure until the next
+   full roster fetch. Added 2026-08-14 — previously these arrived, updated dashboardLastRoster
+   and repainted nothing. */
+var DASHBOARD_DAY_MINUTES_FIELDS = { f2805: 1, f2806: 2, f2807: 3 };
 /* Fields that can change queue membership — the four raising conditions plus the two note
    fields that resolve them, plus the states that remove a record from the queue entirely
    (present, left the course, cancelled). Must stay in step with rosterQueueReasons(). */
@@ -2535,7 +2568,7 @@ function dashboardApplyAttendanceChanged(msg){
   // D1/D2/D3 attendance ticks — f2801-f2803 directly, or f2293/f3059
   // since LDP overrides whichever day's tick matches (rebuild all 3,
   // simplest correct approach given the day match can shift).
-  if(DASHBOARD_DAY_TICK_FIELDS[field] || field === 'f2293' || field === 'f3059'){
+  if(DASHBOARD_DAY_TICK_FIELDS[field] || DASHBOARD_DAY_MINUTES_FIELDS[field] || field === 'f2293' || field === 'f3059'){
     [1, 2, 3].forEach(function(dayNum){
       var attendedField = 'f280' + dayNum, minutesField = 'f280' + (dayNum + 4);
       var oldDayTick = card.querySelector('.tick[data-day-num="' + dayNum + '"]');
@@ -2618,8 +2651,12 @@ function dashboardApplyAttendanceChanged(msg){
   // queue membership, and PIQ is a tile like any other, so it has to recompute on the same
   // pass. f2424 too: it decides both the CANCELLED badge and whether a record counts as
   // Current at all.
+  /* f2801-f2803 added 2026-08-14. A Day-attended flip rebuilt that card's tick but never
+     recomputed the aggregate tiles, so Master Stats/Reporting sat stale behind the roster
+     until some unrelated field happened to trigger a pass — exactly the drift
+     ONTRAPORT-ATTENDANCE-AUTOMATION-RULES.md already claimed was fixed. */
   var SNAPSHOT_RECOMPUTE_FIELDS = ['f2853', 'f2882', 'f2887', 'f2303', 'f2302', 'f2293', 'f2688', 'f3044', 'f3046', 'f3208', 'f3207',
-    'f2808', 'f3184', 'f3062', 'f3191', 'f3237', 'f3236', 'f2424'];
+    'f2808', 'f3184', 'f3062', 'f3191', 'f3237', 'f3236', 'f2424', 'f2801', 'f2802', 'f2803'];
   if(SNAPSHOT_RECOMPUTE_FIELDS.indexOf(field) !== -1){
     dashboardRenderSnapshot(dashboardLastRoster, dashboardLastEventFields, dashboardLastStaffCount);
   }
