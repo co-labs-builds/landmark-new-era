@@ -1275,6 +1275,15 @@
       // Registration, not the Contact — Contact-side fields need the
       // explicit Contact// prefix, Registration-side fields don't).
       registrationId: '[Page//ID]',
+      // Invite Guest hub destination — 2026-08-14, per direct instruction.
+      // registrations.page_104_url "Invite your friends URL" is Ontraport's
+      // own generated page URL for this registration, already populated and
+      // published on every event-218 registration (confirmed via API, e.g.
+      // reg 1176 -> .../invite/7JEH7PT). This REPLACES the URL the engine
+      // used to build by hand out of contactUniqueId — that one keyed off
+      // the *Contact's* Unique ID, while the real page is keyed off the
+      // *Registration's*, so it resolved to the wrong path for everyone.
+      inviteHubUrl: '[Page//Invite your friends URL]',
       // Communication preference checkboxes (My Account modal) — the two
       // "Enabled" fields live on registrations (f3158/f3159, added
       // 2026-08-10), the marketing one lives on contacts (f3160, same

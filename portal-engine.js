@@ -1413,10 +1413,16 @@ Portal.render.during = function(data){
     });
   }
 
-  // Real destination added 2026-08-09, per direct instruction — both
-  // "Invite another guest" and "Invite your guests" used to be either a
-  // local placeholder path or a fully inert button with no href at all.
-  var inviteHubUrl = 'https://lm.landmarkworldwide.com/invite/' + encodeURIComponent(data.contactUniqueId || '');
+  // Invite Guest hub destination for "Invite another guest" and "Invite
+  // your guests". 2026-08-14, per direct instruction: read Ontraport's own
+  // registrations.page_104_url "Invite your friends URL" straight off the
+  // record (PORTAL_DATA.inviteHubUrl) instead of assembling the path here.
+  // The hand-built version this replaces used data.contactUniqueId — the
+  // Contact's Unique ID — but the generated page is keyed to the
+  // Registration's, so it pointed at the wrong path. No fallback: a made-up
+  // URL that 404s is worse than an empty href, and the field is populated
+  // and published on every registration checked.
+  var inviteHubUrl = data.inviteHubUrl || '';
 
   var startTs = Portal.dateUtil.resolveStart({
     reference: data.eventStartUTC, date: data.eventStartDate, time: data.sessionStartTime, timeZone: tz
@@ -1471,13 +1477,19 @@ Portal.render.during = function(data){
     '<a href="#today">Today</a><a href="#programs">Programs</a><a href="#graduation">Graduation</a><a href="#contact">Contact</a>';
 
   // ---- hero ----
+  // No forced <br> between the greeting and the session label (removed
+  // 2026-08-14 per direct instruction) — a hardcoded break put "welcome
+  // to" on its own line and orphaned "to" once the name pushed the first
+  // line long enough to wrap on its own. The h1 now wraps naturally at
+  // whatever width it gets, which is the only thing that holds up across
+  // "Cameron, welcome to Day One." and "Welcome to your Forum."
   var heroName = firstName ? escapeHtml(firstName) + ', welcome to' : 'Welcome to';
   var heroTarget = sessionLabel ? sessionLabel + '.' : 'your ' + courseType + '.';
   var heroHtml =
     '<header class="hero" id="today"><div class="wrap hero-inner">' +
       '<div class="hero-copy">' +
         '<div class="eyebrow">The Landmark ' + courseType + '</div>' +
-        '<h1>' + heroName + '<br><span class="serif-it">' + heroTarget + '</span></h1>' +
+        '<h1>' + heroName + ' <span class="serif-it">' + heroTarget + '</span></h1>' +
         '<p class="lede">You’ve set this time aside for your life. Everything you need for the weekend lives on this page — your link to join, assignments, and what’s ahead. Bring your real life with you — that’s what this time is for.</p>' +
       '</div>' +
       '<aside class="progcard">' +
