@@ -220,31 +220,124 @@ function rosterNameBadge(reg){
   // the majority of a real event's roster as cancelled. Fixed 2026-08-13.
   if(String(reg.f2424) === '153') return {label:'CANCELLED', cls:'p-active'};
   if(rosterIsTrue(reg.f2293)) return {label:'LDP', cls:'p-ldp'};
+  /* LIVE now outranks f3191 (2026-08-14, CS queue spec). Turning up is itself the
+     resolution for an absent participant, and the T+20 sweep's Absent-NCNS is only a
+     provisional value until a CS confirms it — so a record that reads ABSENT while the
+     person is sitting in the meeting is simply wrong. Present wins. */
+  if(rosterIsTrue(reg.f2853)) return {label:'LIVE', cls:'p-present'};
   var attStatus = String(reg.f3191 || '');
   if(attStatus === '467') return {label:'ABSENT - EXCUSED', cls:'p-excused'};
   if(attStatus === '468') return {label:'ABSENT - NCNS', cls:'p-absent'};
-  if(rosterIsTrue(reg.f2853)) return {label:'LIVE', cls:'p-present'};
   if(rosterIsTrue(reg.f3062)) return {label:'LATE', cls:'p-late'};
-  return {label:'ACTIVE', cls:'p-active'};
+  /* No badge at all by default. The old ACTIVE badge fired on every ordinary participant,
+     which made the one signal the name row exists to carry — something is off with this
+     person — invisible in a wall of identical green. Null means render nothing. */
+  return null;
 }
 
-/* rosterDeviceExceptionPill() — added 2026-08-13. Surfaces Device Exception
-   (f3208/f3184/f3207) as a badge under the name/PID line, per client spec:
-   MULTI-DEVICE when f3184 (Multi-Device) is set, SHARED DEVICE when f3207
-   (Shared Device — the paired participant's name, written bidirectionally
-   by CS Dashboard : Device Exception) is non-empty. f3184 checked first —
-   the two are independent fields and shouldn't both be set from a single
-   exceptionType selection, but if they ever are, Multi-Device is the more
-   direct/current signal. No badge at all for the plain "Other" exception
-   (f3208=473 with neither flag set) — that case has no dedicated visual
-   per the locked spec beyond the kebab-menu note itself. */
-function rosterDeviceExceptionPill(reg){
-  var isMulti = rosterIsTrue(reg.f3184);
-  var sharedWith = String(reg.f3207 || '').trim();
-  if(!isMulti && !sharedWith) return '';
-  var label = isMulti ? 'MULTI-DEVICE' : 'SHARED DEVICE';
-  var kv = isMulti ? [['Status', 'Participant using multiple devices']] : [['Shared with', sharedWith]];
-  return '<button class="pill p-needsattn ev-clickable" data-devexc="1" onclick="openDetailPop(this)" data-pop-eyebrow="Device / Zoom Exception" data-pop-title="' + rosterEscAttr(label) + '" data-pop-kv=\'' + rosterEscAttr(JSON.stringify(kv)) + '\'>' + label + '</button>';
+/* Name-row badge markup. Kept as one function used by both the initial card render and the
+   live patch so the two can never drift. When there is no badge the separator and pill are
+   still emitted but hidden, so the live patch always has a node to write into rather than
+   having to rebuild the name row. */
+function rosterNameBadgeHtml(reg){
+  var nb = rosterNameBadge(reg);
+  if(!nb) return '<span class="status-sep" data-name-sep="1" style="display:none">–</span> <span class="pill" data-name-badge="1" style="display:none"></span>';
+  return '<span class="status-sep" data-name-sep="1">–</span> <span class="pill ' + nb.cls + '" data-name-badge="1">' + rosterEscHtml(nb.label) + '</span>';
+}
+function rosterApplyNameBadge(card, reg){
+  var badge = card.querySelector('[data-name-badge="1"]');
+  if(!badge) return;
+  var sep = card.querySelector('[data-name-sep="1"]');
+  var nb = rosterNameBadge(reg);
+  if(!nb){
+    badge.style.display = 'none';
+    badge.className = 'pill';
+    badge.textContent = '';
+    if(sep) sep.style.display = 'none';
+    return;
+  }
+  badge.style.display = '';
+  badge.className = 'pill ' + nb.cls;
+  badge.textContent = nb.label;
+  if(sep) sep.style.display = '';
+}
+
+/* ---------- The CS queue (2026-08-14) ----------
+   "In queue" means a human still needs to do something with this participant. It is derived
+   from field state rather than stored, so it cannot drift out of sync with the thing it
+   summarises, and the common resolution — the participant simply turns up — clears itself
+   with no workflow involvement at all.
+
+   Four reasons, each with its own resolution:
+     attention    — Late, or Absent (either value), and not currently present. Resolved by a
+                    saved Attendance Override note (f3237), or by them showing up (f2853).
+                    The sweep's own f3191=468 does NOT resolve it: the system pre-picking
+                    NCNS is a starting position, and the note is the evidence a CS worked it.
+     unmatched    — f2808=490, the T+5 reconciliation flagged present-but-not-in-Zoom.
+     multidevice  — f3184, one registrant ID holding two concurrent connections.
+     shareddevice — f3207, paired with another participant on one device.
+   The three device/match reasons all resolve on a saved Zoom/Exception note (f3236).
+
+   Cancelled and LDP records are never queued — they have left the course, so there is
+   nothing for a CS to chase. */
+var ROSTER_QUEUE_META = {
+  attention:    { label: 'ATTN!',         cls: 'p-needsattn', title: 'Needs attention', action: 'correctAttendance' },
+  unmatched:    { label: 'UNMATCHED',     cls: 'p-needsattn', title: 'Zoom match unresolved', action: 'deviceException' },
+  multidevice:  { label: 'MULTI-DEVICE',  cls: 'p-needsattn', title: 'Participant using multiple devices', action: 'deviceException' },
+  shareddevice: { label: 'SHARED DEVICE', cls: 'p-needsattn', title: 'Shared device with another participant', action: 'deviceException' }
+};
+function rosterQueueReasons(reg){
+  var out = [];
+  if(String(reg.f2424) === '153' || rosterIsTrue(reg.f2293)) return out;
+  var att = String(reg.f3191 || '');
+  var attFlagged = rosterIsTrue(reg.f3062) || att === '467' || att === '468';
+  if(attFlagged && !rosterIsTrue(reg.f2853) && !String(reg.f3237 || '').trim()) out.push('attention');
+  if(String(reg.f2808) === '490' && !String(reg.f3236 || '').trim()) out.push('unmatched');
+  return out;
+}
+function rosterIsQueued(reg){ return rosterQueueReasons(reg).length > 0; }
+
+/* Device flags — shown, never queued (client decision, 2026-08-14). Multi-device (f3184)
+   and shared device (f3207) are handled as pure CS interaction if and when they come up,
+   rather than as automatic worklist items: the Zoom poller can raise f3184 from nothing
+   more than a waiting-room reconnect, and auto-queueing every one of those would bury the
+   cases that genuinely need a human. They still render a pill so the state is visible on
+   the card, and the pill still opens Device Exception, but they carry no data-queue
+   attribute and so never reach PIQ or the queue filter. */
+function rosterDeviceFlags(reg){
+  var out = [];
+  if(String(reg.f2424) === '153' || rosterIsTrue(reg.f2293)) return out;
+  if(rosterIsTrue(reg.f3184)) out.push('multidevice');
+  if(String(reg.f3207 || '').trim()) out.push('shareddevice');
+  return out;
+}
+
+/* rosterQueuePills() — replaced rosterDeviceExceptionPill() on 2026-08-14. The old pill
+   surfaced only the two device states (MULTI-DEVICE from f3184, SHARED DEVICE from f3207)
+   and opened a read-only detail pop. This covers the same two device states plus
+   the unmatched and needs-attention cases, and — unlike the old detail-pop pill — opens the
+   action that resolves the flag. A pill that only describes a problem the CS is required to
+   act on is a dead end; every queue pill is now a way in to the modal that clears it. */
+function rosterQueuePillHtml(reason, queued){
+  var m = ROSTER_QUEUE_META[reason];
+  /* data-rosterpill marks every pill this function owns, so the live patch can clear the
+     whole set before rebuilding. data-queue is the narrower marker the PIQ filter counts —
+     only genuine queue reasons carry it. */
+  return '<button class="pill ' + m.cls + ' ev-clickable" data-rosterpill="1"' + (queued ? ' data-queue="1"' : '') +
+    ' data-queue-reason="' + reason + '" title="' + rosterEscAttr(m.title) +
+    '" onclick="rosterQueuePillAction(this,\'' + m.action + '\')">' + m.label + '</button>';
+}
+function rosterQueuePills(reg){
+  var html = '';
+  rosterQueueReasons(reg).forEach(function(reason){ html += rosterQueuePillHtml(reason, true); });
+  rosterDeviceFlags(reg).forEach(function(reason){ html += rosterQueuePillHtml(reason, false); });
+  return html;
+}
+function rosterQueuePillAction(el, which){
+  var card = el.closest('.ev-card');
+  if(!card) return;
+  if(which === 'correctAttendance') openCorrectAttendance(card);
+  else if(which === 'deviceException') openDeviceException(card);
 }
 
 function rosterBuildCardHtml(reg, currentDayRaw, localeAbbr){
@@ -255,8 +348,7 @@ function rosterBuildCardHtml(reg, currentDayRaw, localeAbbr){
   var displayFirst = nameLikes || first;
   var displayName = (displayFirst + ' ' + last).trim() || legalName;
   var pid = 'PID-' + (reg.f2794 || reg.id);
-  var nameBadge = rosterNameBadge(reg);
-  var statusLabel = nameBadge.label;
+  var nameBadgeHtml = rosterNameBadgeHtml(reg);
   var searchStr = (displayName + ' ' + legalName + ' ' + (reg.f2794 || '') + ' ' + reg.id).toLowerCase();
 
   var mnrOn = rosterIsTrue(reg.f3206);
@@ -275,7 +367,7 @@ function rosterBuildCardHtml(reg, currentDayRaw, localeAbbr){
   var semNpKv = [['Seminar Potential', semNpIsNonPotential ? 'Non-Potential' : 'Pending']];
   if(semNpIsNonPotential) semNpKv.push(['Reason', ROSTER_SEM_NP_REASON_MAP[String(reg.f2883 || '')] || '—']);
   var semNpPill = '<button class="pill p-slot-off ev-clickable" data-classtype="sem-np" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="Seminar — Not Potential" data-pop-kv=\'' + rosterEscAttr(JSON.stringify(semNpKv)) + '\'>SEM NP</button>';
-  var devExcPill = rosterDeviceExceptionPill(reg);
+  var queuePills = rosterQueuePills(reg);
 
   var d1Tick = rosterBuildAttendanceTick(reg, 1, 'f2801', 'f2805', currentDayRaw);
   var d2Tick = rosterBuildAttendanceTick(reg, 2, 'f2802', 'f2806', currentDayRaw);
@@ -301,8 +393,8 @@ function rosterBuildCardHtml(reg, currentDayRaw, localeAbbr){
   return '<div class="ev-card" data-search="' + rosterEscAttr(searchStr) + '" data-sort-name="' + rosterEscAttr(displayName) + '" data-reg-id="' + rosterEscAttr(reg.id) + '">' +
     '<div class="ev-row1">' +
       '<div class="ev-field ev-identity">' +
-        '<div class="ev-name"><div class="ev-name-row"><b>' + rosterEscHtml(displayName) + '</b> <span class="status-sep">–</span> <span class="pill ' + nameBadge.cls + '" data-name-badge="1">' + rosterEscHtml(statusLabel) + '</span></div><span>Legal: ' + rosterEscHtml(legalName) + ' · ' + rosterEscHtml(pid) + '</span></div>' +
-        '<div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv=\'' + rosterEscAttr(JSON.stringify([['Value', localeAbbr.full]])) + '\'>' + localeAbbr.abbr + '</button>' + devExcPill + '</div>' +
+        '<div class="ev-name"><div class="ev-name-row"><b>' + rosterEscHtml(displayName) + '</b> ' + nameBadgeHtml + '</div><span>Legal: ' + rosterEscHtml(legalName) + ' · ' + rosterEscHtml(pid) + '</span></div>' +
+        '<div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv=\'' + rosterEscAttr(JSON.stringify([['Value', localeAbbr.full]])) + '\'>' + localeAbbr.abbr + '</button>' + queuePills + '</div>' +
       '</div>' +
       '<div class="ev-field ev-classification">' +
         '<div class="ev-l">Classification</div>' +
@@ -337,17 +429,20 @@ function dashboardRenderRoster(registrations){
 }
 
 /* ---------- Course Snapshot + Device & Zoom Reconciliation — real data
-   render (CS Dashboard build, 2026-08-12). Same #em-snapshot (Event
-   Management, filterable) and #ms-snapshot (Master Stats, plain mirror)
-   cards, driven by one shared dashboardRenderSnapshot() off the same
+   render (CS Dashboard build, 2026-08-12; restructured 2026-08-14). Both
+   tile sets now live in one tabbed #em-snapshot card on Event Management
+   (#snap-course / #snap-device panes); the Master Stats mirror was deleted
+   along with its nav tab. One shared dashboardRenderSnapshot() writes every
+   data-stat on both panes regardless of which is visible, off the same
    registrations array Roster Fetch already returns, plus the eventFields/
-   staffCount the webhook was extended to include. Starts (Day 1) and
-   Final Session Expected are deliberately left as "—" — Starts needs a
-   frozen-at-Day-1-lock snapshot mechanism that doesn't exist yet (no
-   storage field confirmed), and Final Session Expected's formula was
-   explicitly flagged by the client as "confirm with Landmark team, may
-   change" — showing a fabricated number for either would be worse than
-   an honest empty state. Material Released tile cut entirely (locked
+   staffCount/staffPresence the webhook was extended to include.
+
+   Tiles cut 2026-08-14: Final Session expected (formula never settled and CS
+   confirmed they don't know what it means) and Completions (empty until the
+   end of Day 3 — it lives on Reporting instead). Attendance now moved into
+   the card's title bar. LDP and WBO merged into one split tile. PIQ added.
+   Starts (Day 1) is no longer a permanent "—": it reads a locked value
+   written at Day 1 close. Material Released tile cut entirely (locked
    spec). Reviewer/SE split into two single-stat tiles per the locked
    spec (was one combined "4/5" tile in the prototype). ---------- */
 function dashboardFmtPct(num, den){ return den ? Math.round((num / den) * 100) + '%' : '—'; }
@@ -373,6 +468,23 @@ function dashboardRenderSnapshot(registrations, eventFields, staffCount){
   var invitationsWithGuests = registrations.filter(function(r){ return Number(r.f2272 || 0) > 0; }).length;
   var reviewer = registrations.filter(function(r){ return String(r.f3044) === '1'; }).length;
   var se = registrations.filter(function(r){ return String(r.f3046) === '1'; }).length;
+  /* PIQ counts participants, not reasons — someone flagged both multi-device and unmatched
+     is one person for a CS to work, and the tile is a workload number. rosterQueueReasons()
+     is shared with the roster pills so the count and the pills can never disagree. */
+  var piqRows = registrations.filter(rosterIsQueued);
+  var piq = piqRows.length;
+
+  /* Starts (Day 1) — read, never derived. It is locked once by CS Dashboard : Day Advance
+     when Day 1 closes (count of registrations present for D1S1 or D1S2, the 15-minute start
+     threshold) precisely so it stops moving afterwards; recomputing it here from the live
+     roster would defeat the entire point of locking it.
+
+     Zero is treated as not-yet-locked rather than as a real count: Ontraport numeric fields
+     default to the string "0" rather than empty, so there is no way to tell the two apart
+     from the value alone — and a Forum where nobody at all started Day 1 does not happen. */
+  var startsLocked = Number(eventFields.f3263 || 0);
+  dashboardSetStat('starts', startsLocked > 0 ? startsLocked : '—');
+  dashboardSetSub('starts', startsLocked > 0 ? 'locked at Day 1 close' : 'locks at Day 1 close');
 
   dashboardSetStat('current', current);
   dashboardSetStat('ldp', ldp);
@@ -389,6 +501,8 @@ function dashboardRenderSnapshot(registrations, eventFields, staffCount){
   dashboardSetSub('invitationsSent', invitationsWithGuests + ' participants invited');
   dashboardSetStat('reviewer', reviewer);
   dashboardSetStat('se', se);
+  dashboardSetStat('piq', piq);
+  dashboardSetSub('piq', piq === 0 ? 'nothing outstanding' : piq + ' need CS action');
 
   // Raw counts (as opposed to the % tiles above) — needed for Reporting
   // Dashboard's Seminar/AC/Invitations bands, which show Potential/
@@ -433,6 +547,8 @@ function dashboardFetchRoster(){
     dashboardLastRoster = r.result.registrations;
     dashboardLastEventFields = r.result.eventFields;
     dashboardLastStaffCount = r.result.staffCount;
+    dashboardLastStaffPresence = {};
+    (r.result.staffPresence || []).forEach(function(s){ dashboardLastStaffPresence[String(s.id)] = !!s.present; });
     dashboardRenderGuestSnapshot();
   }).catch(function(err){
     console.error('dashboardFetchRoster failed:', err);
@@ -567,6 +683,10 @@ var dashboardLastRoster = null;
 var dashboardLastGuests = null;
 var dashboardLastEventFields = null;
 var dashboardLastStaffCount = 0;
+/* Per-row oEventTeam presence, keyed by row id. Seeded by dashboardFetchRoster() from the
+   staffPresence array Roster Fetch was extended to return (2026-08-14), then maintained by
+   dashboardApplyStaffChanged(). Null until the first successful fetch. */
+var dashboardLastStaffPresence = null;
 function dashboardRenderGuestSnapshot(){
   if(!dashboardLastRoster || !dashboardLastGuests || !dashboardLastEventFields) return;
   var roster = dashboardLastRoster;
@@ -736,6 +856,21 @@ function go(view){
      the next paint or the remaining bars keep the previous view's offsets. */
   dashboardSyncStickyOffsets();
   window.scrollTo({top:0, behavior:'instant'});
+}
+
+/* Course snapshot / Device & Zoom reconciliation tab switch (2026-08-14). Both panes stay
+   in the DOM and both keep being written on every render — dashboardRenderSnapshot() sets
+   every data-stat regardless of which pane is visible — so switching is display-only and
+   the hidden pane is never stale when the CS comes back to it. */
+function snapTab(btn, key){
+  document.querySelectorAll('.snap-tab').forEach(function(b){
+    var on = b === btn;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  document.querySelectorAll('.snap-pane').forEach(function(p){ p.classList.remove('active'); });
+  var pane = document.getElementById('snap-' + key);
+  if(pane) pane.classList.add('active');
 }
 
 function emTab(btn, key){
@@ -1171,13 +1306,31 @@ function confirmNotes(){
 var pendingPopTrigger = null;
 function positionFloating(el, trigger){
   var r = trigger.getBoundingClientRect();
+  /* Reset any clamp left over from a previous open, or the measurement below reads the
+     constrained height instead of the menu's natural one. */
+  el.style.maxHeight = '';
+  el.style.overflowY = '';
   el.style.top = (r.bottom + 6) + 'px';
   el.style.left = r.left + 'px';
   requestAnimationFrame(function(){
-    var w = el.offsetWidth;
+    var w = el.offsetWidth, h = el.offsetHeight;
     if(r.left + w > window.innerWidth - 12){
       el.style.left = Math.max(12, window.innerWidth - w - 12) + 'px';
     }
+    /* Vertical collision (2026-08-14). Previously the menu was always placed below the
+       trigger, so a roster card near the bottom of the viewport opened a menu clipped by
+       the window edge — and being fixed-positioned, it did not scroll back into view
+       either, leaving the CS looking at one of six actions with no way to reach the rest.
+       Prefer below, flip above when below has no room, and when neither side fits, take
+       the roomier side and let the menu scroll inside itself. */
+    var below = window.innerHeight - r.bottom - 12;
+    var above = r.top - 12;
+    if(h <= below) return;
+    if(h <= above){ el.style.top = (r.top - h - 6) + 'px'; return; }
+    var capped = Math.max(120, Math.max(below, above) - 6);
+    el.style.maxHeight = capped + 'px';
+    el.style.overflowY = 'auto';
+    el.style.top = (below >= above ? (r.bottom + 6) : Math.max(12, r.top - capped - 6)) + 'px';
   });
 }
 function openDetailPop(trigger){
@@ -1929,6 +2082,12 @@ var ROSTER_STAT_FILTERS = {
   } },
   se: { label: 'SE', test: function(card){
     return !!card.querySelector('[data-classtype="se"].p-excluded');
+  } },
+  /* PIQ — the participants a CS still has to work. Tests for any queue pill rather than
+     re-deriving the reasons from the DOM: the pills are already rendered from
+     rosterQueueReasons(), so this stays correct by construction as reasons are added. */
+  piq: { label: 'Participants in queue', test: function(card){
+    return !!card.querySelector('[data-queue="1"]');
   } }
 };
 function applyStatFilter(key, el){
@@ -2027,6 +2186,14 @@ function paginate(kind){
   filtered.slice(start, end).forEach(function(c){ c.style.display = ''; });
   document.getElementById(kind + 'PageLabel').textContent = 'Page ' + pageState[kind] + ' of ' + totalPages;
   document.getElementById(kind === 'roster' ? 'rosterShowingCount' : 'guestShowingCount').textContent = filtered.length;
+  /* Roster header shows "Showing N of M participants". M is the card count, not
+     filtered.length — it has to stay the whole roster while a search or stat filter is
+     narrowing N, or the header reads "showing 4 of 4" and hides the fact that a filter
+     is on at all. */
+  if(kind === 'roster'){
+    var totalEl = document.getElementById('rosterTotalCount');
+    if(totalEl) totalEl.textContent = cards.length;
+  }
 }
 function filterList(kind){ pageState[kind] = 1; paginate(kind); }
 function pagerGo(kind, delta){ pageState[kind] = (pageState[kind] || 1) + delta; paginate(kind); }
@@ -2317,8 +2484,18 @@ function dashboardApplyDayAdvanced(msg){
    per-card tick (f3193-f3202) still get dashboardLastRoster kept in
    sync for correctness on the next re-render/detail-pop, just no live
    DOM patch target exists for those specifically. */
-var DASHBOARD_ATTENDANCE_DROPDOWN_FIELDS = ['f3191', 'f3056', 'f3059'];
+/* Must mirror RAW_VALUE_FIELDS in PORTAL : Ably Publish exactly — anything the server sends
+   raw and the client coerces gets silently mangled. f3208 was published raw but missing here
+   (found 2026-08-14), so a live Device Exception push wrote 1 into a field the snapshot
+   compares against '474', quietly breaking the duplicate-device adjustment until the next
+   full refresh. The Zoom pipeline's numeric/text fields are on the list for the same reason:
+   f2871 is a join count and f2805-f2807 are minute totals, not flags. */
+var DASHBOARD_ATTENDANCE_RAW_FIELDS = ['f3191', 'f3056', 'f3059', 'f3208', 'f2808', 'f2871', 'f2805', 'f2806', 'f2807', 'f3190'];
 var DASHBOARD_DAY_TICK_FIELDS = { f2801: 1, f2802: 2, f2803: 3 };
+/* Fields that can change queue membership — the four raising conditions plus the two note
+   fields that resolve them, plus the states that remove a record from the queue entirely
+   (present, left the course, cancelled). Must stay in step with rosterQueueReasons(). */
+var DASHBOARD_QUEUE_FIELDS = ['f3062', 'f3191', 'f2853', 'f2808', 'f3184', 'f3207', 'f3237', 'f3236', 'f2293', 'f2424'];
 function dashboardApplyAttendanceChanged(msg){
   var data = (msg && msg.data) || {};
   var regId = data.registrationId;
@@ -2330,22 +2507,18 @@ function dashboardApplyAttendanceChanged(msg){
     if(Number(list[i].id) === Number(regId)){ reg = list[i]; break; }
   }
   if(!reg) return;
-  var isDropdown = DASHBOARD_ATTENDANCE_DROPDOWN_FIELDS.indexOf(field) !== -1;
-  var newVal = isDropdown ? String(data.value || '') : (data.value ? 1 : 0);
+  var isRaw = DASHBOARD_ATTENDANCE_RAW_FIELDS.indexOf(field) !== -1;
+  var newVal = isRaw ? String(data.value == null ? '' : data.value) : (data.value ? 1 : 0);
   if(String(reg[field] == null ? '' : reg[field]) === String(newVal)) return;
   reg[field] = newVal;
 
   var card = document.querySelector('#rosterList .ev-card[data-reg-id="' + regId + '"]');
   if(!card) return;
 
-  // Name badge: LIVE/LATE/LDP/ABSENT — any of these 4 fields can flip it.
-  if(field === 'f2853' || field === 'f3062' || field === 'f2293' || field === 'f3191'){
-    var badge = card.querySelector('[data-name-badge="1"]');
-    if(badge){
-      var nb = rosterNameBadge(reg);
-      badge.className = 'pill ' + nb.cls;
-      badge.textContent = nb.label;
-    }
+  // Name badge: LIVE/LATE/LDP/ABSENT/CANCELLED — any of these can flip it, including into
+  // and out of the no-badge state, which is why this delegates to the shared applier.
+  if(field === 'f2853' || field === 'f3062' || field === 'f2293' || field === 'f3191' || field === 'f2424'){
+    rosterApplyNameBadge(card, reg);
   }
 
   // S3/S4 checkpoint ticks (existing behavior, unchanged).
@@ -2394,17 +2567,17 @@ function dashboardApplyAttendanceChanged(msg){
   // can each independently flip whether/what this shows; rebuild from
   // scratch (remove-then-reinsert) since it can also disappear entirely
   // (e.g. switching back to plain "Other").
-  if(field === 'f3184' || field === 'f3207' || field === 'f3208'){
+  // Queue pills (ATTN! / UNMATCHED / MULTI-DEVICE / SHARED DEVICE). Any of these fields can
+  // add a reason, remove one, or empty the set entirely — and the note fields resolve a
+  // reason without touching the field that raised it — so the whole set is rebuilt from
+  // rosterQueueReasons() rather than patched pill by pill.
+  if(DASHBOARD_QUEUE_FIELDS.indexOf(field) !== -1){
     var evSub = card.querySelector('.ev-sub');
     if(evSub){
-      var oldDevPill = evSub.querySelector('[data-devexc="1"]');
-      if(oldDevPill) oldDevPill.remove();
-      var newDevPillHtml = rosterDeviceExceptionPill(reg);
-      if(newDevPillHtml){
-        var devWrap = document.createElement('div');
-        devWrap.innerHTML = newDevPillHtml;
-        evSub.appendChild(devWrap.firstChild);
-      }
+      evSub.querySelectorAll('[data-rosterpill="1"]').forEach(function(p){ p.remove(); });
+      var queueWrap = document.createElement('div');
+      queueWrap.innerHTML = rosterQueuePills(reg);
+      while(queueWrap.firstChild) evSub.appendChild(queueWrap.firstChild);
     }
   }
 
@@ -2441,10 +2614,54 @@ function dashboardApplyAttendanceChanged(msg){
   // self-publishing them from CS Dashboard : Device Exception — drives the
   // Device Reconciliation card's Shared/Duplicate-Device Adj. tiles, which
   // previously had no live path under any code path at all.
-  var SNAPSHOT_RECOMPUTE_FIELDS = ['f2853', 'f2882', 'f2887', 'f2303', 'f2302', 'f2293', 'f2688', 'f3044', 'f3046', 'f3208', 'f3207'];
+  // f2808/f3184/f3062/f3191/f3237/f3236 added 2026-08-14 — every one of them can change
+  // queue membership, and PIQ is a tile like any other, so it has to recompute on the same
+  // pass. f2424 too: it decides both the CANCELLED badge and whether a record counts as
+  // Current at all.
+  var SNAPSHOT_RECOMPUTE_FIELDS = ['f2853', 'f2882', 'f2887', 'f2303', 'f2302', 'f2293', 'f2688', 'f3044', 'f3046', 'f3208', 'f3207',
+    'f2808', 'f3184', 'f3062', 'f3191', 'f3237', 'f3236', 'f2424'];
   if(SNAPSHOT_RECOMPUTE_FIELDS.indexOf(field) !== -1){
     dashboardRenderSnapshot(dashboardLastRoster, dashboardLastEventFields, dashboardLastStaffCount);
   }
+}
+
+/* Staff presence — oEventTeam rows, published as staff.changed by PORTAL : Ably Publish's
+   10007 resolve branch (added 2026-08-14; before that this workflow could only ever resolve
+   a Registration or an Event, so a staff member joining or leaving Zoom never moved the
+   Device Reconciliation tiles until a full refetch).
+
+   Held as a per-row map rather than a running total on purpose: each message names one row
+   and carries its absolute state, so recomputing the count from the map is idempotent. A
+   duplicate delivery, or a redelivery after an Ably reconnect, can't drift the number the
+   way a +/-1 counter would. Roster Fetch seeds the map; until it has, we no-op rather than
+   invent a count from a single row. */
+function dashboardApplyStaffChanged(msg){
+  var data = (msg && msg.data) || {};
+  if(data.eventTeamId == null || !dashboardLastStaffPresence || !dashboardLastRoster) return;
+  var key = String(data.eventTeamId);
+  var present = !!data.present;
+  if(dashboardLastStaffPresence[key] === present) return;
+  dashboardLastStaffPresence[key] = present;
+  var count = 0;
+  for(var k in dashboardLastStaffPresence){
+    if(Object.prototype.hasOwnProperty.call(dashboardLastStaffPresence, k) && dashboardLastStaffPresence[k]) count++;
+  }
+  dashboardLastStaffCount = count;
+  dashboardRenderSnapshot(dashboardLastRoster, dashboardLastEventFields, dashboardLastStaffCount);
+}
+
+/* Event-level numeric metrics — event.metric.changed, for the Events fields the snapshot
+   reads directly rather than deriving from the roster array (f3262 Current Drop-In Viewers;
+   f3257 once rule 9's generic-vs-drop-in semantics are settled). Merged into
+   dashboardLastEventFields so the tiles read them exactly as a full Roster Fetch delivers
+   them, and no tile needs to know whether its number arrived live or on load. */
+function dashboardApplyEventMetricChanged(msg){
+  var data = (msg && msg.data) || {};
+  if(!data.field || !dashboardLastEventFields || !dashboardLastRoster) return;
+  var next = Number(data.value || 0);
+  if(Number(dashboardLastEventFields[data.field] || 0) === next) return;
+  dashboardLastEventFields[data.field] = next;
+  dashboardRenderSnapshot(dashboardLastRoster, dashboardLastEventFields, dashboardLastStaffCount);
 }
 
 function dashboardInitRealtime(){
@@ -2464,6 +2681,8 @@ function dashboardInitRealtime(){
       channel.subscribe('announcement.changed', dashboardApplyAnnouncementChanged);
       channel.subscribe('day.advanced', dashboardApplyDayAdvanced);
       channel.subscribe('attendance.changed', dashboardApplyAttendanceChanged);
+      channel.subscribe('staff.changed', dashboardApplyStaffChanged);
+      channel.subscribe('event.metric.changed', dashboardApplyEventMetricChanged);
     }catch(err){
       console.error('dashboardInitRealtime failed:', err);
     }
