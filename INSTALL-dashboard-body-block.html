@@ -223,9 +223,16 @@
        whole-course snapshot — Guests gets its own guest-focused card
        instead (see #em-guest-snapshot below). -->
   <div class="card msec" id="em-snapshot">
+    <!-- The "As of 7:44 pm · Day 2 of 3" stamp that used to sit here was
+         removed 2026-08-13. Both halves were hardcoded literals, not merge
+         fields — the engine only ever writes `.card-hd .sub .mf` (the roster
+         and guest totals), never this one, so it rendered 7:44 pm and "Day 2
+         of 3" permanently regardless of the real time or day. A frozen
+         timestamp on a live-updating card is worse than no timestamp: it
+         invites the CS to trust stale-looking numbers that are actually
+         current. The card is Ably-pushed, so it needs no staleness stamp. -->
     <div class="card-hd">
       <h3>Course snapshot</h3>
-      <div class="r"><span style="font-size:11.5px;color:var(--gray);">As of <span class="mf">7:44 pm</span> · Day 2 of 3</span></div>
     </div>
     <div class="stats">
       <div class="stat" title="Pending Day 1 lock mechanism"><div class="l">Starts (Day 1)</div><div class="n"><span class="v-na" data-stat="starts">—</span></div><div class="sub" data-stat-sub="starts">pending Day 1 lock mechanism</div></div>

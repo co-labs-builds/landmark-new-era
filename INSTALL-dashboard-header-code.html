@@ -56,6 +56,15 @@ a{color:inherit;text-decoration:none;}
    body.cs-dashboard (higher specificity, can't lose to load order) plus
    !important, matching the established fix pattern in this file. */
 body.cs-dashboard button,body.cs-dashboard h1,body.cs-dashboard h2,body.cs-dashboard h3,body.cs-dashboard h4,body.cs-dashboard h5,body.cs-dashboard h6{font-family:var(--sans) !important;}
+/* Same collision, second property: the `*{margin:0;padding:0}` reset above has
+   specificity 0, so Ontraport's rules on bare h1-h6 selectors (specificity 1)
+   beat it no matter the load order — the reset never actually applied to any
+   heading on this page. That left every heading carrying Ontraport's own
+   margin, which is what inflated the card title bars well beyond their 15px
+   padding. Restoring the reset's intent for headings only; every heading in
+   this build gets its spacing from its container's padding or flex gap
+   (.card-hd, .sechd, .dw-hd), never from a heading margin. */
+body.cs-dashboard h1,body.cs-dashboard h2,body.cs-dashboard h3,body.cs-dashboard h4,body.cs-dashboard h5,body.cs-dashboard h6{margin:0 !important;}
 .wrap{width:100%;max-width:1560px;margin:0 auto;padding:0 32px;}
 .eyebrow{font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--green-bright);}
 .serif-it{font-family:var(--serif);font-style:italic;font-weight:300;}
@@ -172,8 +181,14 @@ main{padding:22px 0 60px;flex:1 0 auto;}
 @keyframes fade{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
 .msec{scroll-margin-top:210px;margin-bottom:20px;}
 .card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-sm);}
-.card-hd{display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap;}
-.card-hd h3{font-size:13.5px;font-weight:700;letter-spacing:.01em;color:var(--ink);white-space:nowrap;}
+/* Card/table title bar. Vertical padding is deliberately tighter than the
+   body's (12 vs 18): a 13.5px title needs less breathing room than content,
+   and the bottom border already separates it. Horizontal stays 20px so the
+   title aligns with .card-bd and the stat columns beneath it. Explicit
+   line-height because body's 1.55 is a reading measure and too loose for a
+   short bold label. */
+.card-hd{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+.card-hd h3{font-size:13.5px;font-weight:700;letter-spacing:.01em;color:var(--ink);white-space:nowrap;line-height:1.35;}
 .card-hd .sub{font-size:11.5px;color:var(--gray);}
 .card-hd .r{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .card-bd{padding:18px 20px;}
