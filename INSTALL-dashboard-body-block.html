@@ -306,13 +306,13 @@
         <button class="btn btn-sm" onclick="pagerGo('roster',1)">Next</button>
       </div>
     </div>
-    <div class="legend">
-      <b>Owner</b>
-      <span>Preferred name → <span class="mf">Contact</span></span>
-      <span>Classification pills / Attendance / Seminar / ADV. CRS → <span class="mf">oRegistration</span></span>
-      <span>Course Status / Completion / Scholarship / Device exception → <span class="mf">oRegistration</span> (assumed, unconfirmed — see field dictionary §0l–§0o)</span>
-      <span style="margin-left:auto;color:#a9a49a;">Every edit here goes through the secure write service — see the field dictionary at the foot of this page.</span>
-    </div>
+    <!-- Field-provenance legend removed 2026-08-13. It documented which
+         Ontraport object each column writes to, and cited "field dictionary
+         §0l–§0o" and an "assumed, unconfirmed" mapping — build-time notes for
+         us, not information a Course Supervisor can act on mid-Forum. The
+         mapping itself still lives in CS-DASHBOARD-FIELD-DICTIONARY.md, which
+         is where it belongs. The .legend class stays in the stylesheet; the
+         Master Stats value key still uses it. -->
   </div>
   </div><!-- /#em-roster -->
 
@@ -530,11 +530,10 @@
         <button class="btn btn-sm" onclick="pagerGo('guest',1)">Next</button>
       </div>
     </div>
-    <div class="legend">
-      <b>Owner</b>
-      <span>All guest fields → <span class="mf">oInvitation</span></span>
-      <span style="margin-left:auto;color:#a9a49a;">Guest activity is invitation/event-specific, per the data-ownership table in the field dictionary.</span>
-    </div>
+    <!-- Same field-provenance legend as the roster's, removed for the same
+         reason — it named the owning object and pointed at the field
+         dictionary's data-ownership table. Build-time documentation, not
+         something the CS acts on. -->
   </div>
   </div><!-- /#em-guests -->
 
