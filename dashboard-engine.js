@@ -661,6 +661,63 @@ var pageState = { roster: 1, guest: 1 };
 function currentActorName(){ return DASHBOARD_DATA.csFirstName; }
 function currentRoleLabel(){ return dashboardCsRole(); }
 
+/* ---------- sticky header stack ----------
+   Four stacked position:sticky bars, each of which has to dock directly
+   below the one above it:
+     1 .topbar    logo / event selector / profile avatar
+     2 .evtstrip  dark session strip (End Session)      — hidden on Home
+     3 .tabbar    Event Management / Master Stats / Reporting Dashboard
+     4 .secnav    Roster & Classification / Course Materials / Guests,
+                  and Master Stats' section nav         — Event Management only
+
+   Those dock offsets used to be hardcoded (top:64px / 114px / 156px): a sum
+   of the heights this stylesheet *intends* each bar to have. That is correct
+   in isolation and wrong inside Ontraport, whose own page CSS competes on
+   typography and can render a bar taller than the 64/50/42px assumed here.
+   The moment any bar is taller than its assumption, every offset below it is
+   short by the difference, and that bar docks *behind* its predecessor rather
+   than beneath it — which is exactly how the Event Management sub-nav ended
+   up tucked under .tabbar, visibly pinned but ~20px too high.
+
+   Measuring beats asserting. Read the real rendered heights and publish the
+   running totals as CSS custom properties the stylesheet consumes, so the
+   stack self-corrects against whatever Ontraport does to it. The stylesheet
+   keeps the old literals as var() fallbacks, so nothing regresses if this
+   never runs. Bars that are hidden (body.home, or .secnav outside Event
+   Management) measure 0 and collapse out of the sum on their own. */
+function dashboardBarHeight(sel){
+  var el = document.querySelector(sel);
+  if(!el) return 0;
+  /* Fractional height on purpose — rounding down leaves a 1px sliver of
+     scrolling content visible in the seam between two bars. */
+  return el.getBoundingClientRect().height || 0;
+}
+function dashboardSyncStickyOffsets(){
+  var root = document.documentElement;
+  var topbar = dashboardBarHeight('.topbar');
+  var evtstrip = dashboardBarHeight('.evtstrip');
+  var tabbar = dashboardBarHeight('.tabbar');
+  root.style.setProperty('--stick-evtstrip', topbar + 'px');
+  root.style.setProperty('--stick-tabbar', (topbar + evtstrip) + 'px');
+  root.style.setProperty('--stick-secnav', (topbar + evtstrip + tabbar) + 'px');
+}
+var dashboardStickySyncQueued = false;
+function dashboardQueueStickySync(){
+  if(dashboardStickySyncQueued) return;
+  dashboardStickySyncQueued = true;
+  requestAnimationFrame(function(){
+    dashboardStickySyncQueued = false;
+    dashboardSyncStickyOffsets();
+  });
+}
+window.addEventListener('resize', dashboardQueueStickySync);
+/* A webfont swapping in after first paint changes bar heights, and Ontraport
+   loads its own fonts — re-measure once the swap has settled. Guarded because
+   document.fonts is absent in older browsers. */
+if(document.fonts && document.fonts.ready && document.fonts.ready.then){
+  document.fonts.ready.then(dashboardQueueStickySync).catch(function(){});
+}
+
 /* ---------- navigation ---------- */
 function go(view){
   currentView = view;
@@ -669,6 +726,10 @@ function go(view){
   document.getElementById('v-' + view).classList.add('active');
   document.querySelectorAll('.tabbar button[data-v]').forEach(function(b){ b.classList.toggle('active', b.dataset.v === view); });
   document.getElementById('secnav').style.display = view === 'em' ? '' : 'none';
+  /* Home hides .evtstrip/.tabbar/.secnav and the other views hide .secnav, so
+     the stack's total height changes on every view switch — re-measure before
+     the next paint or the remaining bars keep the previous view's offsets. */
+  dashboardSyncStickyOffsets();
   window.scrollTo({top:0, behavior:'instant'});
 }
 
@@ -2354,6 +2415,7 @@ function dashboardInitRealtime(){
 document.body.classList.add('cs-dashboard');
 
 go('home');
+dashboardSyncStickyOffsets();
 dashboardRenderHome();
 dashboardRenderSessionStrip();
 dashboardFetchBootstrap();

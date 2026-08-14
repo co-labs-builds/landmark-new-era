@@ -105,7 +105,7 @@ body.cs-dashboard button,body.cs-dashboard h1,body.cs-dashboard h2,body.cs-dashb
    Day"; the dot/pill state is computed by comparing now to the session's
    start instant (see script — recommend a precomputed UTC merge field
    rather than client-side timezone math). */
-.evtstrip{position:sticky;top:64px;z-index:59;background:var(--teal-deep);color:#fff;}
+.evtstrip{position:sticky;top:var(--stick-evtstrip,64px);z-index:59;background:var(--teal-deep);color:#fff;}
 .evtstrip .row{display:flex;align-items:center;gap:24px;height:50px;}
 .es-day{flex:none;white-space:nowrap;display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;letter-spacing:.02em;}
 .es-right{margin-left:auto;margin-right:8px;display:flex;align-items:center;gap:14px;flex:none;white-space:nowrap;}
@@ -115,7 +115,7 @@ body.cs-dashboard button,body.cs-dashboard h1,body.cs-dashboard h2,body.cs-dashb
 .btn-session:disabled:hover{background:transparent;border-color:rgba(255,255,255,.32);}
 
 /* row 3 — page nav, two destinations only */
-.tabbar{position:sticky;top:114px;z-index:58;background:var(--tabbar);}
+.tabbar{position:sticky;top:var(--stick-tabbar,114px);z-index:58;background:var(--tabbar);}
 .tabbar .row{display:flex;gap:0;height:42px;align-items:stretch;}
 .tabbar button{background:none;border:none;cursor:pointer;color:var(--white-55);font-family:var(--sans);font-size:10.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;padding:0 26px;position:relative;transition:color .15s;display:flex;align-items:center;gap:8px;}
 .tabbar button:hover{color:rgba(255,255,255,.85);}
@@ -125,8 +125,14 @@ body.cs-dashboard button,body.cs-dashboard h1,body.cs-dashboard h2,body.cs-dashb
 .tabbar button .lockic{width:11px;height:11px;}
 .tabbar .tcount{background:var(--coral);color:#fff;border-radius:3px;font-size:9.5px;font-weight:700;padding:1px 5px;letter-spacing:.04em;font-family:var(--mono);text-transform:none;}
 
-/* in-page section nav for Master Stats */
-.secnav{position:sticky;top:156px;z-index:57;background:#fff;border-bottom:1px solid var(--line);}
+/* In-page section nav — Event Management's sub-tabs (Roster & Classification /
+   Course Materials / Guests) and Master Stats' section nav share this element.
+   Fourth and last bar in the sticky stack, so it docks below topbar+evtstrip
+   +tabbar. The --stick-* offsets are measured at runtime by
+   dashboardSyncStickyOffsets() rather than hardcoded — see that function for
+   why. The literals here are fallbacks only, matching this stylesheet's own
+   intended bar heights, so the stack still works if the JS never runs. */
+.secnav{position:sticky;top:var(--stick-secnav,156px);z-index:57;background:#fff;border-bottom:1px solid var(--line);}
 .secnav .row{display:flex;gap:4px;height:44px;align-items:center;overflow-x:auto;scrollbar-width:none;}
 .secnav .row::-webkit-scrollbar{display:none;}
 .secnav button{background:none;border:1px solid transparent;border-radius:7px;cursor:pointer;color:var(--gray);font-size:12px;font-weight:700;padding:7px 12px;white-space:nowrap;transition:background .15s,color .15s;display:flex;align-items:center;gap:6px;}
