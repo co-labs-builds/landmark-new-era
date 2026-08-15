@@ -2728,8 +2728,21 @@ function confirmTakeAttendance(session){
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   }).then(function(res){
-    return res.json().then(function(result){ return { ok: res.ok, result: result }; });
+    return res.json().then(function(result){ return { ok: res.ok, status: res.status, result: result }; });
   }).then(function(r){
+    /* The workflow being switched off is a distinct failure from the workflow erroring, and
+       has to read differently. n8n answers an inactive production webhook with 404 and a
+       "not registered" message — retrying that never succeeds, so the generic "try again"
+       copy below actively misleads a CS into hammering a dead button during a live session.
+       Verified live 2026-08-15: CS Dashboard : Take Attendance is inactive and its production
+       URL returns exactly this. Detected by status AND message because either alone could
+       plausibly come from something else. */
+    var msg = String((r.result && (r.result.message || r.result.error)) || '');
+    if(r.status === 404 || /not registered/i.test(msg)){
+      var e = new Error('Take Attendance is not enabled for this account.');
+      e.disabled = true;
+      throw e;
+    }
     if(!r.ok || !r.result || r.result.success !== true) throw new Error((r.result && r.result.error) || 'Request failed');
     btn.disabled = false;
     btn.textContent = originalLabel;
@@ -2739,6 +2752,15 @@ function confirmTakeAttendance(session){
   }).catch(function(err){
     console.error('confirmTakeAttendance failed:', err);
     btn.disabled = false;
+    btn.textContent = originalLabel;
+    if(err && err.disabled){
+      /* Names the alternative rather than just refusing. Presence is still being recorded by
+         the Zoom poller regardless, so the CS needs to know nothing is being lost — and that
+         a single record can still be fixed by hand through the row's Correct Attendance
+         action, whose workflow IS active. */
+      toast('Take Attendance is switched off for this account. Live presence is still being recorded automatically; use a row\'s ••• → Correct Attendance to set one manually.', 'err');
+      return;
+    }
     btn.textContent = 'Could not take attendance — try again';
     setTimeout(function(){ btn.textContent = originalLabel; }, 2600);
   });
