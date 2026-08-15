@@ -658,6 +658,14 @@ body.cs-dashboard .btn-danger:hover{background:var(--coral-bg);border-color:var(
 .advchip{border:1px solid var(--line-2);background:#fff;border-radius:999px;padding:4px 11px;font-family:var(--sans);font-size:11px;font-weight:600;color:var(--gray);cursor:pointer;transition:all .15s;}
 .advchip:hover{border-color:var(--muted);color:var(--ink);}
 .advchip.on{background:var(--green);border-color:var(--green);color:#fff;}
+/* Excluded: coral rather than green, and the label itself reads "not X" (see
+   rosterRenderAdvanced) so the state does not depend on colour alone. Outlined rather than
+   filled, so an exclusion reads as a subtraction from the list rather than as a second kind
+   of selection. */
+.advchip.ex{background:var(--coral-bg);border-color:var(--coral);color:var(--coral-ink);}
+.advchip.ex:hover{border-color:var(--coral-ink);color:var(--coral-ink);}
+.advsearch-hint{display:block;margin-top:3px;font-size:9px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--gray-3);white-space:nowrap;}
+.advsearch-l{white-space:nowrap;}
 .advsearch-rule{height:1px;background:var(--line);margin:12px 0;}
 .advsearch-conds{display:flex;flex-direction:column;gap:6px;}
 .advcond{display:flex;align-items:center;gap:8px;}

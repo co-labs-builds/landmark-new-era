@@ -311,7 +311,10 @@
          everything else without needing each combination pre-blessed. -->
     <div class="advsearch" id="rosterAdvPanel" hidden>
       <div class="advsearch-row">
-        <span class="advsearch-l">Popular</span>
+        <!-- The hint is the only thing that makes the third chip state findable. A tri-state
+             control reads as a plain toggle until someone clicks it twice by accident, and
+             "everyone except X" is too common a need to leave to accident. -->
+        <span class="advsearch-l">Popular<span class="advsearch-hint">click twice to exclude</span></span>
         <div class="advsearch-presets" id="rosterAdvPresets"></div>
       </div>
       <div class="advsearch-rule"></div>

@@ -2923,7 +2923,9 @@ function rosterSyncFilterChip(){
   var parts = [];
   if(rosterStatFilter && ROSTER_STAT_FILTERS[rosterStatFilter]) parts.push(ROSTER_STAT_FILTERS[rosterStatFilter].label);
   if(rosterAdvancedQuery) parts.push(rosterAdvancedQuery.label);
-  if(!parts.length){ chip.style.display = 'none'; return; }
+  // Blank the text as well as hiding it — a stale label is a trap for anything that reads
+  // the chip to describe the current view, and it briefly flashes the old filter on re-show.
+  if(!parts.length){ chip.style.display = 'none'; label.textContent = ''; return; }
   label.textContent = parts.join(' + ');
   chip.style.display = '';
 }
@@ -3245,11 +3247,18 @@ function rosterRenderAdvanced(){
   var presetWrap = document.getElementById('rosterAdvPresets');
   if(presetWrap){
     presetWrap.innerHTML = ROSTER_ADV_PRESETS.map(function(p){
-      var on = rosterAdvancedQuery && rosterAdvancedQuery.preset === p.key;
-      // aria-pressed for the same reason as the tiles: these are toggles whose only other
-      // on/off signal is a colour change.
-      return '<button class="advchip' + (on ? ' on' : '') + '" aria-pressed="' + (on ? 'true' : 'false') +
-        '" onclick="rosterApplyPreset(\'' + p.key + '\')">' + rosterEscHtml(p.label) + '</button>';
+      var st = rosterPresetState[p.key];
+      var cls = st === 'in' ? ' on' : (st === 'ex' ? ' ex' : '');
+      /* The excluded state prefixes the label with "not" rather than relying on colour
+         alone — a red chip reading "Late" is ambiguous about whether it is showing late
+         people or hiding them, and colour is the one channel some users cannot read.
+         aria-pressed is three-valued here in effect, so the label carries the truth. */
+      var text = (st === 'ex' ? 'not ' : '') + p.label;
+      var title = st === 'in' ? 'Showing only ' + p.label + ' — click to exclude instead'
+                : st === 'ex' ? 'Hiding ' + p.label + ' — click to clear'
+                : 'Click to show only ' + p.label + ', twice to exclude';
+      return '<button class="advchip' + cls + '" aria-pressed="' + (st === 'in' ? 'true' : 'false') +
+        '" title="' + rosterEscAttr(title) + '" onclick="rosterCyclePreset(\'' + p.key + '\')">' + rosterEscHtml(text) + '</button>';
     }).join('');
   }
   var condWrap = document.getElementById('rosterAdvConds');
@@ -3280,15 +3289,58 @@ function rosterSyncCondJoinLabels(){
     el.textContent = mode === 'any' ? 'or' : 'and';
   });
 }
-function rosterApplyPreset(key){
-  var preset = ROSTER_ADV_PRESETS.filter(function(p){ return p.key === key; })[0];
-  if(!preset) return;
-  if(rosterAdvancedQuery && rosterAdvancedQuery.preset === key){ rosterClearAdvanced(); return; }
-  rosterAdvancedQuery = {
-    preset: key,
-    label: preset.label,
-    test: function(card){ return rosterHasFlag(card, key); }
+/* ---------- Preset chips: three states, and they compose (2026-08-15) ----------
+   Was single-select and include-only: clicking a chip replaced whatever was there, and there
+   was no way to say "everyone EXCEPT". Exclusion existed only in the row builder below, where
+   a CS has to open a panel and pick from two dropdowns to express "not late" — which is the
+   single most common thing they want and should not cost that much.
+
+   Each chip now cycles  off -> include -> exclude -> off, and any number can be on at once.
+   Includes AND together, excludes AND together, and the two combine: "Late, not SE" is two
+   clicks on one chip and two on another.
+
+   Kept as a cycle on the same chip rather than adding a parallel row of "exclude" chips: the
+   vocabulary is already eleven items long and duplicating it would double a list a CS has to
+   scan, to express a state that belongs to the item itself. */
+var rosterPresetState = {};   // key -> 'in' | 'ex'   (absent = off)
+function rosterCyclePreset(key){
+  var cur = rosterPresetState[key];
+  if(!cur) rosterPresetState[key] = 'in';
+  else if(cur === 'in') rosterPresetState[key] = 'ex';
+  else delete rosterPresetState[key];
+  rosterComposeQuery();
+}
+
+/* The row builder's own result, held separately from the chips so the two layers can be
+   edited independently and still both apply. Previously each overwrote the other, so opening
+   the builder silently discarded the chip you had just clicked. */
+var rosterBuilderQuery = null;
+
+/* One query from both layers, ANDed. Called by every path that changes either. */
+function rosterComposeQuery(){
+  var inc = [], exc = [];
+  Object.keys(rosterPresetState).forEach(function(k){
+    (rosterPresetState[k] === 'ex' ? exc : inc).push(k);
+  });
+  var labelFor = function(k){
+    var p = ROSTER_ADV_PRESETS.filter(function(x){ return x.key === k; })[0];
+    return p ? p.label : k;
   };
+  var parts = inc.map(labelFor).concat(exc.map(function(k){ return 'not ' + labelFor(k); }));
+  if(rosterBuilderQuery) parts.push(rosterBuilderQuery.label);
+
+  if(!parts.length){
+    rosterAdvancedQuery = null;
+  } else {
+    rosterAdvancedQuery = {
+      label: parts.join(' · '),
+      test: function(card){
+        for(var i = 0; i < inc.length; i++){ if(!rosterHasFlag(card, inc[i])) return false; }
+        for(var j = 0; j < exc.length; j++){ if(rosterHasFlag(card, exc[j])) return false; }
+        return rosterBuilderQuery ? rosterBuilderQuery.test(card) : true;
+      }
+    };
+  }
   rosterRenderAdvanced();
   rosterSyncFilterChip();
   pageState.roster = 1;
@@ -3298,13 +3350,13 @@ function rosterApplyAdvanced(){
   rosterSyncCondJoinLabels();
   var mode = (document.getElementById('rosterAdvMatch') || {}).value || 'all';
   var conds = rosterAdvConditions.filter(function(c){ return !!c.field; });
-  if(!conds.length){ rosterClearAdvanced(); return; }
   var labelFor = function(k){
     var f = ROSTER_ADV_FIELDS.filter(function(x){ return x.key === k; })[0];
     return f ? f.label : k;
   };
-  rosterAdvancedQuery = {
-    preset: null,
+  /* Sets only the BUILDER layer. Any preset chips stay in force — applying a built query
+     used to wipe them, which meant the panel could silently undo a click made outside it. */
+  rosterBuilderQuery = !conds.length ? null : {
     label: conds.map(function(c){ return (c.op === 'not' ? 'not ' : '') + labelFor(c.field); }).join(mode === 'any' ? ' or ' : ' and '),
     test: function(card){
       var results = conds.map(function(c){
@@ -3314,17 +3366,14 @@ function rosterApplyAdvanced(){
       return mode === 'any' ? results.some(Boolean) : results.every(Boolean);
     }
   };
-  rosterRenderAdvanced();
-  rosterSyncFilterChip();
-  pageState.roster = 1;
-  paginate('roster');
+  rosterComposeQuery();
 }
 function rosterClearAdvanced(){
-  rosterAdvancedQuery = null;
-  rosterRenderAdvanced();
-  rosterSyncFilterChip();
-  pageState.roster = 1;
-  paginate('roster');
+  // Clears BOTH layers — a control labelled "Clear" that left chips lit would not be clearing.
+  rosterPresetState = {};
+  rosterBuilderQuery = null;
+  rosterAdvConditions = [];
+  rosterComposeQuery();
 }
 
 /* ---------- 4.7 / §8 Live Material Release — sectioned by day, no tabs.
