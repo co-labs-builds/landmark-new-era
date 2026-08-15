@@ -1390,14 +1390,18 @@
       csName: '[Page//Event//Course Supervisor Name]',
       csPhone: '[Page//Event//Course Supervisor Phone]',
       post: {
-        // Field NAMES, not the ones in ontraport-field-master-list.md — that
-        // dump is stale. Live aliases read "SEM Registration" (f2303) and "AC
-        // Registration" (f2302), and Ontraport resolves merge tags by alias,
-        // so the old [Page//Registered for Seminar] silently never resolved:
-        // it left the literal tag text, which !== 'true', so both flags were
-        // permanently false and the Seminar/AC cards could never light up.
-        // Proven 2026-08-15 on registration 1064 (event 218, f2303 = 1, whose
-        // own portal page still reported hasSeminarReg false).
+        // Use the LIVE field aliases, not the names in
+        // ontraport-field-master-list.md — that dump is stale. Ontraport
+        // resolves page merge tags by alias, and these two read "SEM
+        // Registration" (f2303) and "AC Registration" (f2302). Both tags
+        // previously named the master-list spellings, which no longer exist,
+        // so neither resolved: each left its own literal tag text in place,
+        // which !== 'true', so both flags sat permanently false and the
+        // Seminar and AC cards could never leave the dimmed state no matter
+        // what the records said. Proven 2026-08-15 on registration 1064
+        // (event 218, f2303 = 1, whose own portal page still reported
+        // hasSeminarReg false). Check get_object_meta before trusting any
+        // field name here.
         hasSeminarReg: '[Page//SEM Registration##checkediftrue]' === 'true',
         hasACReg: '[Page//AC Registration##checkediftrue]' === 'true',
         // The specific seminar they chose, for the All Programs card's title
