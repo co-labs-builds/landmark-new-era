@@ -473,6 +473,12 @@ body.cs-dashboard .btn-danger:hover{background:var(--coral-bg);border-color:var(
 .kebab-item{display:block;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid #f2f0ea;padding:10px 14px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;}
 .kebab-item:last-child{border-bottom:none;}
 .kebab-item:hover{background:var(--paper);}
+/* Sort menu rows carry their direction on the right. flex so the label and the direction
+   sit at opposite ends and the column of directions stays scannable. */
+.kebab-item.on{color:var(--green);}
+#rosterSortMenu .kebab-item{display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.sort-hint{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--gray-2);text-transform:none;letter-spacing:0;}
+.kebab-item.on .sort-hint{color:var(--green);}
 
 /* Person combobox — shared by Spouse (household link) and the guest's
    inviting-Participant field. Type to filter, click to select; the value

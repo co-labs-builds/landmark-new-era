@@ -1661,6 +1661,8 @@ document.addEventListener('click', function(e){
   if(ecmenu && ecmenu.classList.contains('open') && !e.target.closest('#eventCardMenu') && !e.target.closest('.evt-card')) closeEventCardMenu();
   var taMenu = document.getElementById('takeAttendanceMenu');
   if(taMenu && taMenu.classList.contains('open') && !e.target.closest('#takeAttendanceMenu') && !e.target.closest('#takeAttendanceBtn')) closeTakeAttendanceMenu();
+  var sortMenu = document.getElementById('rosterSortMenu');
+  if(sortMenu && sortMenu.classList.contains('open') && !e.target.closest('#rosterSortMenu') && !e.target.closest('#rosterSortBtn')) closeRosterSortMenu();
 });
 
 /* ---------- End session — review-first confirmation. Confirming submits
@@ -1780,6 +1782,8 @@ document.addEventListener('keydown', function(e){
   var advPanel = document.getElementById('rosterAdvPanel');
   if(pop && pop.classList.contains('open')){ closeDetailPop(); return; }
   if(rowMenu && rowMenu.classList.contains('open')){ closeRowMenu(); return; }
+  var sortMenu = document.getElementById('rosterSortMenu');
+  if(sortMenu && sortMenu.classList.contains('open')){ closeRosterSortMenu(); return; }
   if(document.querySelector('.modal.open, .drawer.open, .scrim.show')){ dismissModal(); return; }
   if(advPanel && !advPanel.hidden){ rosterToggleAdvanced(); return; }
   dismissModal();
@@ -2960,7 +2964,45 @@ function rosterClearAllFilters(){
 
    Default is unsorted — whatever order Roster Fetch returned — until the CS
    opts in. First click sorts A-Z, subsequent clicks flip direction. */
-var rosterSortDir = null;
+/* ---------- Sort by attribute (2026-08-15) ----------
+   Was name-only. A CS scanning 134 rows for the people who need them was reading every row;
+   sorting by attribute puts those people at the top instead.
+
+   Boolean attributes sort as "matching first", with NAME as the tiebreak — without a stable
+   secondary key the non-matching remainder would sit in whatever order the server returned,
+   which changes between fetches and makes the list appear to reshuffle on every live push.
+
+   Reversing a boolean sort gives "matching last", which is a useful third thing: it answers
+   "show me everyone else" without removing the flagged people from the list the way the
+   exclude filter does.
+
+   The attribute vocabulary is deliberately the same one the filter chips use, so a CS who
+   has learned "Needs attention" as a filter already knows it as a sort. */
+var ROSTER_SORTS = [
+  { key: 'name',      label: 'Name',              asc: 'A–Z',        desc: 'Z–A' },
+  { key: 'attention', label: 'Needs attention',   flags: ['queued'] },
+  { key: 'live',      label: 'Live now',          flags: ['live'] },
+  { key: 'late',      label: 'Late',              flags: ['late'] },
+  { key: 'absent',    label: 'Absent',            flags: ['absent', 'nsho'] },
+  { key: 'ldp',       label: 'Left the course',   flags: ['ldp'] },
+  { key: 'device',    label: 'Device exception',  flags: ['shareddevice', 'multidevice', 'unmatched'] },
+  { key: 'days',      label: 'Days attended',     numeric: true, asc: 'fewest first', desc: 'most first' }
+];
+var rosterSortKey = null;
+function rosterSortSpec(){
+  return ROSTER_SORTS.filter(function(s){ return s.key === rosterSortKey; })[0] || null;
+}
+/* Lower sorts earlier. Booleans map matching -> 0 so "matching first" is the natural
+   ascending direction and needs no special-casing in the comparator. */
+function rosterSortValue(card, spec){
+  if(spec.numeric){
+    var n = 0;
+    ['d1','d2','d3'].forEach(function(d){ if(rosterHasFlag(card, d)) n++; });
+    return n;
+  }
+  for(var i = 0; i < spec.flags.length; i++){ if(rosterHasFlag(card, spec.flags[i])) return 0; }
+  return 1;
+}
 function rosterCompareNames(a, b){
   /* localeCompare with sensitivity:'base' so accented names file under their
      base letter (this roster really contains Schürch and Abdel-Wahab) and
@@ -2973,13 +3015,23 @@ function rosterCompareNames(a, b){
   }
 }
 function rosterApplySort(){
-  if(!rosterSortDir) return;
+  var spec = rosterSortSpec();
+  if(!spec || !rosterSortDir) return;
   var list = document.getElementById('rosterList');
   if(!list) return;
   var cards = Array.prototype.filter.call(list.children, function(c){ return c.classList.contains('ev-card'); });
   if(cards.length < 2) return;
   var dir = rosterSortDir === 'desc' ? -1 : 1;
   cards.sort(function(a, b){
+    if(spec.key !== 'name'){
+      var av = rosterSortValue(a, spec), bv = rosterSortValue(b, spec);
+      if(av !== bv) return dir * (av - bv);
+      /* Name tiebreak, always ascending regardless of the primary direction. Without a
+         stable secondary key the tied remainder keeps whatever order the last fetch
+         happened to return, so the list visibly reshuffles on every Ably push even though
+         nothing about the sort changed. */
+      return rosterCompareNames(a.dataset.sortName || '', b.dataset.sortName || '');
+    }
     return dir * rosterCompareNames(a.dataset.sortName || '', b.dataset.sortName || '');
   });
   /* One fragment, one reflow — appending each card individually would thrash
@@ -2989,20 +3041,63 @@ function rosterApplySort(){
   cards.forEach(function(c){ frag.appendChild(c); });
   list.appendChild(frag);
 }
+/* The button always states the CURRENT order, not what the next click would do — it labels
+   the list you are looking at, which is the reading a CS needs mid-scan. */
+function rosterSortLabel(){
+  var spec = rosterSortSpec();
+  if(!spec || !rosterSortDir) return 'Sort';
+  var desc = rosterSortDir === 'desc';
+  if(spec.asc) return spec.label + ' ' + (desc ? spec.desc : spec.asc);
+  return spec.label + (desc ? ' last' : ' first');
+}
 function rosterUpdateSortButton(){
   var btn = document.getElementById('rosterSortBtn');
   if(!btn) return;
-  btn.textContent = rosterSortDir === 'desc' ? 'Name Z–A' : 'Name A–Z';
-  btn.setAttribute('aria-pressed', rosterSortDir ? 'true' : 'false');
+  btn.textContent = rosterSortLabel();
+  btn.classList.toggle('on', !!rosterSortKey);
+  btn.setAttribute('aria-pressed', rosterSortKey ? 'true' : 'false');
 }
-function rosterToggleSort(){
-  rosterSortDir = rosterSortDir === 'asc' ? 'desc' : 'asc';
+function openRosterSortMenu(btn){
+  closeDetailPop();
+  var menu = document.getElementById('rosterSortMenu');
+  if(!menu) return;
+  menu.innerHTML = ROSTER_SORTS.map(function(s){
+    var on = rosterSortKey === s.key;
+    /* Each row shows the direction it will apply, and the active one shows a check plus the
+       direction it is currently in, so choosing it again to flip direction is discoverable
+       rather than something you have to be told. */
+    var hint = s.asc ? (on && rosterSortDir === 'desc' ? s.desc : s.asc) : (on && rosterSortDir === 'desc' ? 'last' : 'first');
+    return '<button class="kebab-item' + (on ? ' on' : '') + '" onclick="rosterSetSort(\'' + s.key + '\')">' +
+      (on ? '✓ ' : '') + rosterEscHtml(s.label) + '<span class="sort-hint">' + rosterEscHtml(hint) + '</span></button>';
+  }).join('') + '<button class="kebab-item" onclick="rosterClearSort()">Clear sort</button>';
+  positionFloating(menu, btn);
+  menu.classList.add('open');
+}
+function closeRosterSortMenu(){
+  var m = document.getElementById('rosterSortMenu');
+  if(m) m.classList.remove('open');
+}
+function rosterSetSort(key){
+  // Same key again flips direction; a different key starts ascending.
+  if(rosterSortKey === key) rosterSortDir = rosterSortDir === 'asc' ? 'desc' : 'asc';
+  else { rosterSortKey = key; rosterSortDir = 'asc'; }
+  closeRosterSortMenu();
   rosterApplySort();
   /* Back to page 1: holding the page number across a re-sort would land the
      CS on a page of people they never asked to see. */
   pageState.roster = 1;
   paginate('roster');
   rosterUpdateSortButton();
+}
+function rosterClearSort(){
+  /* Returns to server order rather than to name order. There is no way to un-sort a list
+     that has already been reordered in the DOM, so this refetches — which is also the only
+     way to get back the order the server actually returned. */
+  rosterSortKey = null;
+  rosterSortDir = null;
+  closeRosterSortMenu();
+  rosterUpdateSortButton();
+  if(dashboardLastRoster) dashboardRenderRoster(dashboardLastRoster);
 }
 /* Rows per page. Was a hardcoded 10 in three places inside paginate(); now one variable so
    the roster's new rows-per-page control can move it. Guests stay at 10 — that list is

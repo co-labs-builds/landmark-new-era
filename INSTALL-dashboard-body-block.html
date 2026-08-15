@@ -287,7 +287,9 @@
              Ontraport's CSS is a known hazard on this page (see the header
              code's collision fixes). Label states the CURRENT order, matching
              the sorted list the CS is looking at. -->
-        <button class="btn-quiet" id="rosterSortBtn" onclick="rosterToggleSort()" aria-pressed="false" title="Sort the roster by participant name">Name A–Z</button>
+        <!-- Sort is a menu as of 2026-08-15, not a two-state name toggle. Opens the same
+             floating menu component the row kebab and Take Attendance already use. -->
+        <button class="btn-quiet" id="rosterSortBtn" onclick="openRosterSortMenu(this)" aria-pressed="false" title="Sort the roster">Sort</button>
         <!-- Active/Inactive view switch. Inactive registrations are batched out of the
              default list so the CS works only records they can act on; this is the way
              back to them. Hidden entirely when there are none. -->
@@ -750,6 +752,10 @@
      Session (S1-S4) only — Day is always resolved server-side from
      events.f3025, never client-supplied. See openTakeAttendanceMenu()/
      confirmTakeAttendance() in the script. -->
+<!-- Roster sort menu — populated by openRosterSortMenu() so the active option can carry a
+     check and its current direction. -->
+<div class="kebab-menu" id="rosterSortMenu"></div>
+
 <div class="kebab-menu" id="takeAttendanceMenu">
   <button class="kebab-item" onclick="confirmTakeAttendance('1')">Session 1</button>
   <button class="kebab-item" onclick="confirmTakeAttendance('2')">Session 2</button>
