@@ -522,6 +522,13 @@ body.cs-dashboard .btn-danger:hover{background:var(--coral-bg);border-color:var(
 /* stat tiles (course snapshot / in-course stats / release progress) */
 .stats{display:grid;grid-template-columns:repeat(6,1fr);border-top:1px solid var(--line);}
 .stats-7{grid-template-columns:repeat(7,1fr);}
+/* 8-wide for the snapshot as of 2026-08-15, when Seminar and AC registration rates were
+   restored. They occupy the LAST COLUMN of both rows so the two sit stacked one above the
+   other — a related pair read together — rather than being split across the row boundary,
+   which is what appending them sequentially to a 7-wide grid would have done. */
+.stats-8{grid-template-columns:repeat(8,1fr);}
+.stats-8 .stat:nth-child(8n){border-right:none;}
+.stats-8 .stat:nth-child(n+9){border-top:1px solid var(--line);}
 /* Second-row handling for the 7-wide snapshot grid (2026-08-15), matching what
    .stats-4 already did for its own width: kill the trailing right border at the end
    of each row, and rule off between the two rows. Without these the 14-tile grid
@@ -575,7 +582,11 @@ body.cs-dashboard .btn-danger:hover{background:var(--coral-bg);border-color:var(
    stretched to the full height of that stack (align-self:stretch on a flex item
    whose parent is itself stretched to the bar). The panel is separated by a hairline
    rather than a fill so the whole control still reads as one teal object. */
-.snap-att{margin-left:auto;align-self:stretch;margin-top:-12px;margin-bottom:-12px;display:flex;align-items:stretch;background:var(--teal);border:0;padding:0;cursor:pointer;font-family:inherit;text-align:left;transition:filter .15s;}
+/* border-top-right-radius matches the card's own 14px less its 1px border. Without it the
+   teal block's square corner sits proud of the card's rounded one, which is what made this
+   panel look wider than the tile grid beneath it even though both right edges are flush to
+   the pixel (measured: 0.0px difference). */
+.snap-att{margin-left:auto;align-self:stretch;margin-top:-12px;margin-bottom:-12px;display:flex;align-items:stretch;background:var(--teal);border:0;padding:0;border-top-right-radius:13px;overflow:hidden;cursor:pointer;font-family:inherit;text-align:left;transition:filter .15s;}
 .snap-att:hover{filter:brightness(1.08);}
 .snap-att.active{box-shadow:inset 0 3px 0 var(--green-bright);}
 .snap-att-txt{display:flex;flex-direction:column;justify-content:center;gap:3px;padding:11px 16px 11px 20px;min-width:0;}

@@ -1087,19 +1087,22 @@ function dashboardRenderSnapshot(registrations, eventFields, staffCount){
   dashboardSetStat('current', current);
   dashboardSetStat('ldp', ldp);
   dashboardSetStat('wbo', wbo);
-  dashboardSetSub('wbo', wbo + ' of ' + ldp + ' who left');
-  /* LDP/WBO as rates. The LDP denominator is the locked Day 1 starts where that exists and
-     total registrations before it does — "lost during the programme" is a proportion of the
-     people who actually began it, but that number does not exist until Day 1 closes, and a
-     tile reading "—" for the whole of Day 1 is worse than one reading a slightly wide rate.
-     The sub-label always names the denominator in use, so the two phases are never confused
-     for each other. WBO is always a share of LDP: it is a reason for having left, not an
-     independent population. */
-  var ldpDen = startsLocked > 0 ? startsLocked : total;
-  dashboardSetStat('ldpPct', dashboardFmtPct(ldp, ldpDen));
-  dashboardSetSub('ldpPct', 'of ' + ldpDen + (startsLocked > 0 ? ' who started' : ' registrations'));
-  dashboardSetStat('wboPct', dashboardFmtPct(wbo, ldp));
-  dashboardSetSub('wboPct', ldp === 0 ? 'nobody has left' : 'of ' + ldp + ' who left');
+  dashboardSetSub('wbo', wbo + ' of ' + total + ' participants');
+  /* LDP and WBO are both rates over the SAME denominator: total participants.
+     Corrected 2026-08-15 on client instruction — "WBO is not a sub number of Left. It's off
+     the total of participants, same for LDP."
+
+     Two things changed. WBO was a share of LDP, which framed it as a subset of those who
+     left; it is now a share of all participants, so the two tiles are directly comparable
+     and WBO no longer swings wildly on a small LDP count (1 of 2 people reading "50%").
+     LDP's denominator also no longer switches to the locked Day 1 starts once that exists —
+     a denominator that silently changes partway through the event makes the same tile mean
+     two different things on Day 1 and Day 2, and the client has now specified which one it
+     should be. Both read off `total`, which is active registrations. */
+  dashboardSetStat('ldpPct', dashboardFmtPct(ldp, total));
+  dashboardSetSub('ldpPct', 'of ' + total + ' participants');
+  dashboardSetStat('wboPct', dashboardFmtPct(wbo, total));
+  dashboardSetSub('wboPct', 'of ' + total + ' participants');
   dashboardSetStat('completions', completions);
   dashboardSetStat('attendanceNow', dashboardFmtPct(attendingNow, current));
   dashboardSetSub('attendanceNow', attendingNow + ' / ' + current);
@@ -2137,6 +2140,22 @@ function cardName(card){
    amber LDP state, already built in the Roster read+render pass, is the
    confirmed real display for this). ---------- */
 var pendingCourseStatusCard = null;
+/* Name -> registration, matched the same way dashboardRenderRoster() builds its stacked-avatar
+   partner index: against both the display name (preferred first + last) and the legal name,
+   lower-cased and trimmed, and nothing fuzzier. A near-match that resolves to the wrong
+   participant would clear an unrelated person's pairing, which is worse than not clearing. */
+function rosterFindRegByName(name){
+  var key = String(name || '').trim().toLowerCase();
+  if(!key) return null;
+  var list = dashboardLastRoster || [];
+  for(var i = 0; i < list.length; i++){
+    var r = list[i];
+    var f = r['f2213//firstname'] || '', l = r['f2213//lastname'] || '', nl = r['f2213//f2792'] || '';
+    if ((f + ' ' + l).trim().toLowerCase() === key) return r;
+    if (((nl || f) + ' ' + l).trim().toLowerCase() === key) return r;
+  }
+  return null;
+}
 function rosterFindRegById(id){
   var list = dashboardLastRoster || [];
   for(var i = 0; i < list.length; i++){ if(String(list[i].id) === String(id)) return list[i]; }
@@ -2246,7 +2265,9 @@ function corrAttNextUnsetField(){
 function corrAttUpdateAttention(){ return attnApply('mCorrectAttendance', corrAttNextUnsetField); }
 function deNextUnsetField(){
   var type = document.getElementById('deExceptionType').value;
-  if(!type) return attnFieldOf('deExceptionType');
+  /* "0" is a real, deliberate choice (clear the record), not an unset select — the guard
+     below tests for the empty placeholder specifically, so it must not use falsiness. */
+  if(type === '') return attnFieldOf('deExceptionType');
   /* Shared device (475) needs a resolved partner. The dataset flag, not the
      visible text, is what confirmDeviceException() sends, so typing a name
      without picking from the list correctly still counts as unanswered. */
@@ -2548,6 +2569,23 @@ function confirmDeviceException(){
   var payload = { eventTeamId: DASHBOARD_DATA.eventTeamId, registrationId: Number(card.dataset.regId), exceptionType: exceptionType, note: note };
   if(exceptionType === '475'){
     payload.otherRegistrationId = Number(document.getElementById('deOtherParticipant').dataset.otherRegId);
+  } else if(exceptionType === '0'){
+    /* Clearing a shared-device record has to clear the OTHER side too, or the pairing is left
+       half-standing: the partner keeps a f3207 pointing at someone who is no longer paired
+       with them, which keeps them in the Shared device count and keeps drawing a stacked
+       avatar with a dead click-through.
+
+       f3207 stores the partner's NAME, not an id, so the id is resolved here from the roster
+       already in memory — the same name lookup the stacked avatar uses. If the name does not
+       resolve (a CS typed it differently when creating the pairing), no otherRegistrationId
+       is sent and the server clears this record only. That is a real, known limit of a
+       name-keyed pairing; it fails to a partial clear rather than to a wrong one. */
+    var reg = rosterFindRegById(card.dataset.regId);
+    var partnerName = reg ? String(reg.f3207 || '').trim() : '';
+    if(partnerName){
+      var partner = rosterFindRegByName(partnerName);
+      if(partner) payload.otherRegistrationId = Number(partner.id);
+    }
   }
   saveBtn.disabled = true;
   saveBtn.textContent = 'Saving…';

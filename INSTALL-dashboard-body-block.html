@@ -203,7 +203,7 @@
          than something acted on mid-session, and each still renders on the Reporting
          Dashboard off the same data-stat key. dashboardRenderSnapshot() still computes
          and writes every one of them, so removing the tiles here changes nothing there. -->
-    <div class="stats stats-7" id="snap-course">
+    <div class="stats stats-8" id="snap-course">
       <!-- ROW 1 — the course -->
       <div class="stat stat-filterable" role="button" tabindex="0" onclick="applyStatFilter('all', this)" title="Clear filters and show every participant"><div class="l">Total event registrations</div><div class="n"><span class="mf-lg" data-stat="totalRegistrations">—</span></div><div class="sub" data-stat-sub="totalRegistrations">on the roster</div></div>
       <!-- Numeric only, no sub-label (client decision 2026-08-15) — a withdrawal headcount
@@ -220,6 +220,11 @@
       <div class="stat stat-filterable" role="button" tabindex="0" onclick="applyStatFilter('ldp', this)" title="Show only LDP records"><div class="l">LDP</div><div class="n"><span class="mf-lg" data-stat="ldpPct">—</span><span class="ntag" data-stat="ldp">—</span></div><div class="sub" data-stat-sub="ldpPct">left during programme</div></div>
       <div class="stat stat-filterable" role="button" tabindex="0" onclick="applyStatFilter('wbo', this)" title="Show only WBO records"><div class="l">WBO</div><div class="n"><span class="mf-lg" data-stat="wboPct">—</span><span class="ntag" data-stat="wbo">—</span></div><div class="sub" data-stat-sub="wboPct">of those who left</div></div>
       <div class="stat stat-filterable" role="button" tabindex="0" onclick="applyStatFilter('absent', this)" title="Show only records marked absent"><div class="l">Absent</div><div class="n"><span class="mf-lg" data-stat="absent">—</span></div><div class="sub" data-stat-sub="absent">excused or NCNS</div></div>
+      <!-- Restored 2026-08-15. Seminar and AC sit in the LAST COLUMN of both rows so they
+           read as the pair they are, stacked one above the other. Appending them in sequence
+           would have put Seminar at the end of row 1 and AC at the head of row 2, splitting
+           the two numbers a CS compares against each other. -->
+      <div class="stat stat-filterable" role="button" tabindex="0" onclick="applyStatFilter('seminar', this)" title="Show only Seminar-registered records"><div class="l">Seminar reg</div><div class="n"><span class="mf-lg" data-stat="seminarPct">—</span><span class="ntag" data-stat="seminarRegCount">—</span></div><div class="sub" data-stat-sub="seminarPct">of potential</div></div>
 
       <!-- ROW 2 — the room, right now -->
       <!-- Plain .sub, no data-stat-sub: nothing writes this key (it never did), and the
@@ -234,6 +239,7 @@
            so the two sit adjacent and this tile carries the gap in its own sub line
            rather than spending a 15th tile on a separate Reconciled verdict. -->
       <div class="stat stat-filterable" role="button" tabindex="0" onclick="applyStatFilter('liveNow', this)" title="Show only records present right now"><div class="l">Live now</div><div class="n"><span class="mf-lg" data-stat="drObserved">—</span></div><div class="sub" data-stat-sub="drObserved">—</div></div>
+      <div class="stat stat-filterable" role="button" tabindex="0" onclick="applyStatFilter('ac', this)" title="Show only AC-registered records"><div class="l">AC reg</div><div class="n"><span class="mf-lg" data-stat="acPct">—</span><span class="ntag" data-stat="acRegCount">—</span></div><div class="sub" data-stat-sub="acPct">of potential</div></div>
     </div>
   </div>
   <!-- 4.2 Roster and classification — the current Event's oRegistrations,
@@ -1082,6 +1088,11 @@
         <option value="473">Other Zoom exception</option>
         <option value="474">Participant using multiple devices</option>
         <option value="475">Shared device with another participant</option>
+        <!-- The way back out. Until 2026-08-15 this modal could only ever ADD an exception —
+             a flag raised in error, or one that has since been resolved, had no route to
+             being removed from the dashboard at all. Clears the exception, the multi-device
+             flag and the shared-device pairing on BOTH sides of a pair. -->
+        <option value="0">No exception needed — clear this record</option>
       </select>
     </div>
     <div class="ev-field participant-combo" id="deOtherParticipantField" style="display:none;"><label>Sharing device with</label><input class="iedit participant-input" id="deOtherParticipant" placeholder="Search participants…" oninput="deviceParticipantFilter(this)" onfocus="deviceParticipantFilter(this)" onblur="participantBlur(this)"><div class="combo-list"></div></div>
