@@ -352,6 +352,13 @@ body.cs-dashboard .btn-danger:hover{background:var(--coral-bg);border-color:var(
 .ev-notesbtn,.kebab-btn{width:28px;height:28px;border:0;border-radius:7px;background:none;display:flex;align-items:center;justify-content:center;color:var(--gray-2);cursor:pointer;flex:none;position:relative;transition:background .15s,color .15s;}
 .ev-notesbtn:hover,.kebab-btn:hover{background:var(--paper);color:var(--ink);}
 .ev-notesbtn svg,.kebab-btn svg{width:16px;height:16px;}
+/* Notes runs larger than the kebab (2026-08-15). At a shared 16px the note glyph was small
+   enough to be ambiguous — it sits beside two pills in the Follow-on zone and needs to read
+   as "notes" at a glance, whereas the kebab is a universally recognised shape that stays
+   legible small. Sized up separately rather than by widening the shared rule, so the kebab
+   keeps the lighter footprint the de-bulking pass gave it. */
+.ev-notesbtn{width:32px;height:32px;}
+.ev-notesbtn svg{width:20px;height:20px;}
 /* Notes reads as "has content" by ink alone — no fill, no border. The count is the useful
    part: it says whether opening this is worth the click. */
 .ev-notesbtn.has-note{color:var(--green);}
@@ -414,7 +421,19 @@ body.cs-dashboard .btn-danger:hover{background:var(--coral-bg);border-color:var(
 .det-pop-ft a{font-size:12px;font-weight:700;color:var(--green);cursor:pointer;}
 
 /* Zone wrapper layout in .ev-row1 (flex, gap already set by .ev-row1 itself). */
-.ev-sub{display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;row-gap:4px;}
+/* margin-top raised from 5px 2026-08-15 — the pill row sat tight under the "(goes by)" line
+   and read as part of the name block rather than as its own row of signals. */
+.ev-sub{display:flex;align-items:center;gap:6px;margin-top:9px;flex-wrap:wrap;row-gap:4px;}
+
+/* Copy-to-clipboard affordances for the participant's email and phone. Sized a touch smaller
+   than the row's other icon buttons so they read as inline detail on the identity block
+   rather than as row-level actions competing with the kebab. */
+.ev-copy{width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:6px;background:none;color:var(--gray-2);cursor:pointer;flex:none;transition:background .15s,color .15s;}
+.ev-copy:hover{background:var(--paper);color:var(--ink);}
+.ev-copy svg{width:14px;height:14px;}
+/* Inline confirmation alongside the toast — the toast is at the page edge and the eye is on
+   the row it was launched from. */
+.ev-copy.copied{color:var(--green);background:var(--green-bg);}
 .ev-classification{min-height:20px;}
 /* 3 over 2, both rows the same total width. Six columns: the top three pills span 2 each,
    the two NP pills span 3 each. That makes the lower pair exactly half the block and
@@ -668,6 +687,7 @@ body.cs-dashboard .btn-quiet:focus-visible,
 body.cs-dashboard .pg-chev:focus-visible,
 body.cs-dashboard .kebab-btn:focus-visible,
 body.cs-dashboard .ev-notesbtn:focus-visible,
+body.cs-dashboard .ev-copy:focus-visible,
 body.cs-dashboard .advchip:focus-visible,
 body.cs-dashboard .advcond-x:focus-visible,
 body.cs-dashboard .secnav button:focus-visible,

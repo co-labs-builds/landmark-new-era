@@ -609,6 +609,77 @@ function rosterNoteEntries(reg){
   return out;
 }
 
+/* ---------- Copy contact details (2026-08-15) ----------
+   A CS phoning or emailing a participant mid-session was previously reading the address off
+   the Participant Details drawer and retyping it. These put it on the clipboard from the row.
+
+   Values come from f3252/f3253, which are `related_data` fields — the collection endpoint
+   silently drops those from listFields, so Roster Fetch resolves them via the f2213//email
+   and f2213//sms_number externs and aliases them onto these keys (see that workflow's Build
+   Roster Response). Confirmed present on all 134 records of event 218.
+
+   A button is only rendered when its value exists. An icon that copies an empty string looks
+   identical to one that works and fails silently, which is worse than not offering it. */
+function rosterCopyToClipboard(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(text);
+  }
+  /* Fallback for non-secure contexts, where navigator.clipboard is undefined. Ontraport
+     serves over https so this should never be needed, but a copy button that throws is a
+     dead control and the fallback is six lines. */
+  return new Promise(function(resolve, reject){
+    try{
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-1000px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      if(ok) resolve(); else reject(new Error('copy rejected'));
+    }catch(err){ reject(err); }
+  });
+}
+var ROSTER_ICON_EMAIL = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="15" height="11" rx="1.6"/><path d="m3.2 6 6.8 4.8L16.8 6"/></svg>';
+var ROSTER_ICON_PHONE = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 13.6v2a1.5 1.5 0 0 1-1.6 1.5 14 14 0 0 1-6.1-2.2 13.8 13.8 0 0 1-4.2-4.2A14 14 0 0 1 2.9 4.6 1.5 1.5 0 0 1 4.4 3h2a1.5 1.5 0 0 1 1.5 1.3c.1.7.3 1.4.5 2a1.5 1.5 0 0 1-.3 1.6l-.9.8a11 11 0 0 0 4.2 4.2l.8-.9a1.5 1.5 0 0 1 1.6-.3c.6.2 1.3.4 2 .5A1.5 1.5 0 0 1 17 13.6Z"/></svg>';
+function rosterContactButtons(reg){
+  var out = '';
+  var email = String(reg.f3252 == null ? '' : reg.f3252).trim();
+  var phone = String(reg.f3253 == null ? '' : reg.f3253).trim();
+  if(email){
+    out += '<button class="ev-copy" onclick="rosterCopyContact(event, this)" data-copy="' + rosterEscAttr(email) +
+      '" data-copy-label="Email" title="' + rosterEscAttr('Copy ' + email) + '" aria-label="Copy email address">' + ROSTER_ICON_EMAIL + '</button>';
+  }
+  if(phone){
+    out += '<button class="ev-copy" onclick="rosterCopyContact(event, this)" data-copy="' + rosterEscAttr(phone) +
+      '" data-copy-label="Phone" title="' + rosterEscAttr('Copy ' + phone) + '" aria-label="Copy phone number">' + ROSTER_ICON_PHONE + '</button>';
+  }
+  return out;
+}
+function rosterCopyContact(e, btn){
+  /* The row has its own click targets; without this the copy would also open whatever the
+     surrounding element does. */
+  e.stopPropagation();
+  var value = String(btn.dataset.copy || '');
+  var label = btn.dataset.copyLabel || 'Value';
+  if(!value) return;
+  rosterCopyToClipboard(value).then(function(){
+    /* The toast names the value, not just "Copied" — a CS working a 134-row roster needs to
+       know WHICH record they just copied from, and the row that was clicked has usually
+       scrolled or been forgotten by the time they paste. */
+    toast(label + ' copied · ' + value);
+    // Brief inline confirmation as well: the toast is at the page edge, the eye is on the row.
+    btn.classList.add('copied');
+    setTimeout(function(){ btn.classList.remove('copied'); }, 1300);
+  }).catch(function(err){
+    console.error('rosterCopyContact failed:', err);
+    toast('Could not copy — ' + value, 'err');
+  });
+}
+
 /* ---------- Participant avatar (2026-08-15) ----------
    The row had no avatar at all: identity was a name, a legal name and a PID, three lines of
    text with nothing to anchor them. An avatar gives the eye something to scan down a
@@ -823,7 +894,16 @@ function rosterBuildCardHtml(reg, currentDayRaw, localeAbbr, partnerIndex){
         '<div class="ev-name">' +
           '<b>' + rosterEscHtml(legalName) + '</b>' +
           (nameLikes ? '<span class="ev-goesby">(' + rosterEscHtml(nameLikes) + ')</span>' : '') +
-          '<div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv=\'' + rosterEscAttr(JSON.stringify([['Value', localeAbbr.full]])) + '\'>' + localeAbbr.abbr + '</button>' + queuePills + '</div>' +
+          /* Copy buttons lead the row so they sit at a fixed x on every card. Placed after
+             the pills they would land at a different offset per row, depending on how many
+             queue pills that participant happens to carry — and a control whose position
+             moves per row cannot be hit without looking for it first.
+             They also have to precede the queue pills for the live patch to be safe:
+             dashboardApplyAttendanceChanged() rebuilds the queue set by removing every
+             [data-rosterpill] and re-appending, so anything that must survive has to sit
+             before them in the DOM. */
+          '<div class="ev-sub">' + rosterContactButtons(reg) +
+            '<button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv=\'' + rosterEscAttr(JSON.stringify([['Value', localeAbbr.full]])) + '\'>' + localeAbbr.abbr + '</button>' + queuePills + '</div>' +
         '</div>' +
       '</div>' +
       '<div class="ev-field ev-status"><div class="ev-l">Status</div><div class="status-pills" data-status-zone="1">' + rosterStatusBadgesHtml(reg) + '</div></div>' +
