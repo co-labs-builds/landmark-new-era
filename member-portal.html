@@ -1390,8 +1390,16 @@
       csName: '[Page//Event//Course Supervisor Name]',
       csPhone: '[Page//Event//Course Supervisor Phone]',
       post: {
-        hasSeminarReg: '[Page//Registered for Seminar##checkediftrue]' === 'true',
-        hasACReg: '[Page//Registered for Advanced Course##checkediftrue]' === 'true',
+        // Field NAMES, not the ones in ontraport-field-master-list.md — that
+        // dump is stale. Live aliases read "SEM Registration" (f2303) and "AC
+        // Registration" (f2302), and Ontraport resolves merge tags by alias,
+        // so the old [Page//Registered for Seminar] silently never resolved:
+        // it left the literal tag text, which !== 'true', so both flags were
+        // permanently false and the Seminar/AC cards could never light up.
+        // Proven 2026-08-15 on registration 1064 (event 218, f2303 = 1, whose
+        // own portal page still reported hasSeminarReg false).
+        hasSeminarReg: '[Page//SEM Registration##checkediftrue]' === 'true',
+        hasACReg: '[Page//AC Registration##checkediftrue]' === 'true',
         // The specific seminar they chose, for the All Programs card's title
         // once hasSeminarReg is true (2026-08-15). registrations.f3185
         // "Seminar Title" — free text written per registration, NOT a link to
