@@ -1418,7 +1418,15 @@
         // render verbatim with no date parsing on this side. Verified live
         // 2026-08-15 against reg 1143 / seminar event 272.
         seminarBegins: '[Page//Seminar Begins]',
-        seminarSchedule: '[Page//Seminar Schedule]'
+        seminarSchedule: '[Page//Seminar Schedule]',
+        seminarSessionDates: '[Page//Seminar Session Dates]',
+        // f3279 "Seminar Ends" does NOT exist in Ontraport yet — this tag is
+        // wired ahead of the field so the Dates row widens from "Thu, Sep 10"
+        // to "Thu, Sep 10 – Thu, Dec 3" the moment the field is created and
+        // the workflow starts filling it, with no code change. Safe to ship
+        // unresolved: seminarDetailRows() discards any value that is still a
+        // literal "[Page//…]" tag.
+        seminarEnds: '[Page//Seminar Ends]'
       },
       // ---- the event (cross-object) ----
       // Format (events.f2234) renders as its label directly

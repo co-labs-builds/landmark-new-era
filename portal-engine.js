@@ -1115,6 +1115,37 @@ Portal.render._sec = {
   // data.seminarNext/acNext -> recommend it; neither -> dim). Extracted
   // here (Stage 5) so the two phases can't drift; behavior unchanged
   // from the During-event version this was ported from.
+  // Seminar detail rows, shaped to parallel the Forum card's Dates/Graduation/
+  // Format block (2026-08-15, per direct instruction). Sources are the fields
+  // n8n copies off the seminar's own Event record, all display-formatted
+  // upstream, so nothing is parsed or reformatted here:
+  //   Dates     f3274 Seminar Begins, widened to a range when f3279 Seminar
+  //             Ends is also set -> "Thu, Sep 10 – Thu, Dec 3"
+  //   Schedule  f3275 Seminar Schedule -> "Thursdays, 6:00 PM PT"
+  //   Sessions  counted off f3278 Seminar Session Dates — the one derived row,
+  //             since a seminar's length is what most distinguishes it from the
+  //             Forum's three days -> "10 evenings"
+  //
+  // mf() drops any value that is still an unresolved Ontraport merge tag. Those
+  // arrive as the literal "[Page//Seminar Ends]", which is truthy and would
+  // otherwise render inside the range. This also means a field can be wired
+  // here BEFORE it exists in Ontraport: it reads as absent until it's real.
+  seminarDetailRows: function(post){
+    function mf(v){
+      v = (v == null ? '' : String(v)).trim();
+      return v.charAt(0) === '[' ? '' : v;
+    }
+    var begins = mf(post.seminarBegins);
+    var ends = mf(post.seminarEnds);
+    var sessions = mf(post.seminarSessionDates)
+      .split(',').filter(function(s){ return s.trim(); }).length;
+    return [
+      { label: 'Dates', value: (begins && ends) ? begins + ' – ' + ends : begins },
+      { label: 'Schedule', value: mf(post.seminarSchedule) },
+      { label: 'Sessions', value: sessions ? sessions + ' evenings' : '' }
+    ].filter(function(r){ return r.value; });
+  },
+
   seminarAcCards: function(data){
     var hasSeminarReg = !!(data.post && data.post.hasSeminarReg);
     var hasACReg = !!(data.post && data.post.hasACReg);
@@ -1131,15 +1162,12 @@ Portal.render._sec = {
       // records that have f2303 checked.
       title: (hasSeminarReg && data.post.seminarTitle)
         || (data.seminarNext && data.seminarNext.title),
-      // Registered -> the seminar they're actually in, from the fields n8n
-      // copies off that seminar's Event record (post.seminarBegins/
-      // seminarSchedule). Both are pre-formatted upstream, so no parsing here.
-      // Not registered -> the recommendation's own labels, unchanged. Either
-      // way empty rows are dropped rather than rendered as blank .pdet lines.
-      detailRows: (hasSeminarReg && (data.post.seminarBegins || data.post.seminarSchedule)) ? [
-        { label: 'Begins', value: data.post.seminarBegins },
-        { label: 'Schedule', value: data.post.seminarSchedule }
-      ].filter(function(r){ return r.value; })
+      // Registered -> the seminar they're actually in (see seminarDetailRows
+      // above). Not registered -> the recommendation's own labels, unchanged.
+      // Either way empty rows are dropped rather than rendered as blank .pdet
+      // lines, so a registration with no seminar detail yet renders a lit card
+      // with no detail block rather than a row of empty labels.
+      detailRows: hasSeminarReg ? Portal.render._sec.seminarDetailRows(data.post || {})
       : data.seminarNext ? [
         { label: 'Begins', value: data.seminarNext.beginsLabel || 'Details available soon' },
         { label: 'Schedule', value: data.seminarNext.scheduleLabel || '' }
