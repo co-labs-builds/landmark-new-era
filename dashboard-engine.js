@@ -3755,7 +3755,15 @@ function dashboardApplyDayAdvanced(msg){
    compares against '474', quietly breaking the duplicate-device adjustment until the next
    full refresh. The Zoom pipeline's numeric/text fields are on the list for the same reason:
    f2871 is a join count and f2805-f2807 are minute totals, not flags. */
-var DASHBOARD_ATTENDANCE_RAW_FIELDS = ['f3191', 'f3056', 'f3059', 'f3208', 'f2808', 'f2871', 'f2805', 'f2806', 'f2807', 'f3190'];
+/* f2424 added 2026-08-15 — the SAME class of bug this comment already describes, found by
+   tracing what the (still unbuilt) native rule for it would actually do on arrival.
+   PORTAL : Ably Publish has had f2424 in its RAW_VALUE_FIELDS since 2026-08-14 and sends the
+   raw option id, but this mirror never gained it, so the client ran `data.value ? 1 : 0` and
+   turned BOTH '491' and '154' into 1. rosterIsInactive() then reads '1' as "an explicit
+   non-Active option" — so a live push saying someone had been set back to ACTIVE would have
+   hidden them from the roster and dropped them from every metric. Worse than the f3208 case,
+   because it fires on the value that is supposed to restore a record, not remove it. */
+var DASHBOARD_ATTENDANCE_RAW_FIELDS = ['f3191', 'f3056', 'f3059', 'f3208', 'f2808', 'f2871', 'f2805', 'f2806', 'f2807', 'f3190', 'f2424'];
 var DASHBOARD_DAY_TICK_FIELDS = { f2801: 1, f2802: 2, f2803: 3 };
 /* The per-day minute totals the Zoom poller writes. They live inside the D-tick's detail
    pop (rosterBuildAttendanceTick bakes them into data-pop-kv at build time), so a minutes
@@ -3794,6 +3802,9 @@ function dashboardApplyAttendanceChanged(msg){
 
   var card = document.querySelector('#rosterList .ev-card[data-reg-id="' + regId + '"]');
   if(!card) return;
+  /* Snapshot the flag string so the handler can tell, at the end, whether this push changed
+     what the record IS rather than only how it looks. See the re-paginate at the bottom. */
+  var flagsBefore = card.dataset.flags || '';
 
   // Status badges: LIVE/LATE/LDP/WBO/NSHO/ABSENT/WITHDRAWN — any of these can add or remove
   // a pill, so the shared applier rebuilds the whole zone rather than patching one node.
@@ -3924,6 +3935,26 @@ function dashboardApplyAttendanceChanged(msg){
     'f2808', 'f3184', 'f3062', 'f3191', 'f3237', 'f3236', 'f2424', 'f2801', 'f2802', 'f2803'];
   if(SNAPSHOT_RECOMPUTE_FIELDS.indexOf(field) !== -1){
     dashboardRenderSnapshot(dashboardLastRoster, dashboardLastEventFields, dashboardLastStaffCount);
+  }
+
+  /* Re-paginate when the flag set actually changed (2026-08-15). Everything above patches
+     how a row LOOKS; nothing re-evaluated whether it still belongs in the visible list.
+     That was survivable while the roster showed everyone, and stopped being survivable with
+     the active/inactive split and the flag-driven filters: a live Withdraw rewrote
+     data-flags but left the row sitting in the active list until some unrelated action
+     happened to paginate, and a record that gained or lost a filtered attribute likewise
+     stayed put while the count beside it said otherwise.
+
+     Gated on the flags actually differing so an ordinary presence flip — by far the most
+     frequent push during a session — doesn't re-run pagination over 134 rows for nothing.
+     Sort order is untouched: paginate() only toggles visibility, it never reorders. */
+  if((card.dataset.flags || '') !== flagsBefore){
+    paginate('roster');
+    /* The Inactive switch carries a count, and a live Withdraw changes it. Without this the
+       control keeps reporting the count from the last full fetch — or stays hidden entirely
+       when the first inactive record of the session arrives by push, leaving no way to reach
+       a participant who has just vanished from the list. */
+    rosterSyncInactiveButton();
   }
 }
 
