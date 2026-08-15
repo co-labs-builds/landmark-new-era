@@ -1426,7 +1426,16 @@
         // the workflow starts filling it, with no code change. Safe to ship
         // unresolved: seminarDetailRows() discards any value that is still a
         // literal "[Page//…]" tag.
-        seminarEnds: '[Page//Seminar Ends]'
+        seminarEnds: '[Page//Seminar Ends]',
+        // Advanced Course, exactly mirroring the seminar block above. Only
+        // "AC Title" (f3186) exists in Ontraport today; AC Begins / AC Ends /
+        // AC Schedule are wired ahead of the fields being created, and read as
+        // absent until then via the same unresolved-tag guard. Note the AC card
+        // gets no Sessions row — see acDetailRows in portal-engine.js for why.
+        acTitle: '[Page//AC Title]',
+        acBegins: '[Page//AC Begins]',
+        acEnds: '[Page//AC Ends]',
+        acSchedule: '[Page//AC Schedule]'
       },
       // ---- the event (cross-object) ----
       // Format (events.f2234) renders as its label directly

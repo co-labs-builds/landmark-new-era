@@ -1130,20 +1130,51 @@ Portal.render._sec = {
   // arrive as the literal "[Page//Seminar Ends]", which is truthy and would
   // otherwise render inside the range. This also means a field can be wired
   // here BEFORE it exists in Ontraport: it reads as absent until it's real.
-  seminarDetailRows: function(post){
-    function mf(v){
-      v = (v == null ? '' : String(v)).trim();
-      return v.charAt(0) === '[' ? '' : v;
-    }
-    var begins = mf(post.seminarBegins);
-    var ends = mf(post.seminarEnds);
-    var sessions = mf(post.seminarSessionDates)
-      .split(',').filter(function(s){ return s.trim(); }).length;
+  // Reads one PORTAL_DATA value, discarding anything that is still an
+  // unresolved Ontraport merge tag. Those arrive as the literal
+  // "[Page//Seminar Ends]", which is truthy and would otherwise print inside a
+  // date range. Consequence worth knowing: a field can be wired here BEFORE it
+  // exists in Ontraport — it simply reads as absent until it's real.
+  mergeVal: function(v){
+    v = (v == null ? '' : String(v)).trim();
+    return v.charAt(0) === '[' ? '' : v;
+  },
+
+  // Shared Dates/Schedule builder for the two "you're registered for this next"
+  // cards. Sources are the fields n8n copies off the program's own Event
+  // record, all display-formatted upstream, so nothing is parsed here.
+  datesAndSchedule: function(begins, ends, schedule){
+    var mf = Portal.render._sec.mergeVal;
+    begins = mf(begins); ends = mf(ends);
     return [
       { label: 'Dates', value: (begins && ends) ? begins + ' – ' + ends : begins },
-      { label: 'Schedule', value: mf(post.seminarSchedule) },
-      { label: 'Sessions', value: sessions ? sessions + ' evenings' : '' }
-    ].filter(function(r){ return r.value; });
+      { label: 'Schedule', value: mf(schedule) }
+    ];
+  },
+
+  // Seminar adds a Sessions count — the one derived row, since a seminar's
+  // length is what most distinguishes it from the Forum's three days.
+  // f3278 Seminar Session Dates is comma-separated display text ("Sep 10, 17,
+  // 24, …"); splitting on newlines too because the same Event field holds
+  // newline-separated ISO dates on Advanced Course records.
+  seminarDetailRows: function(post){
+    var _s = Portal.render._sec;
+    var sessions = _s.mergeVal(post.seminarSessionDates)
+      .split(/[,\n]/).filter(function(s){ return s.trim(); }).length;
+    return _s.datesAndSchedule(post.seminarBegins, post.seminarEnds, post.seminarSchedule)
+      .concat([{ label: 'Sessions', value: sessions ? sessions + ' evenings' : '' }])
+      .filter(function(r){ return r.value; });
+  },
+
+  // Advanced Course deliberately has NO Sessions row. Its f2753 lists only the
+  // Fri/Sat/Sun dates and omits the Tuesday graduation evening, so a count off
+  // it reads 3 for what is really a 4-day course. The day names already come
+  // through on the Schedule row ("Friday, Saturday, Sunday, and Tuesday"),
+  // which is both correct and more useful.
+  acDetailRows: function(post){
+    return Portal.render._sec
+      .datesAndSchedule(post.acBegins, post.acEnds, post.acSchedule)
+      .filter(function(r){ return r.value; });
   },
 
   seminarAcCards: function(data){
@@ -1182,8 +1213,14 @@ Portal.render._sec = {
       pill: hasACReg ? { label: 'Upcoming', variant: 'upcoming' }
         : data.acNext ? { label: 'Recommended Next', variant: 'next' } : undefined,
       pillSide: hasACReg ? undefined : 'right',
-      title: data.acNext && data.acNext.title,
-      detailRows: data.acNext ? [{ label: 'Format', value: data.acNext.formatLabel || '3-day weekend + graduation evening' }] : [],
+      // Same treatment as the Seminar card above: registered -> name the AC
+      // they actually enrolled in (registrations.f3186 "AC Title") and show its
+      // real dates; not registered -> the recommendation's title and the
+      // generic format line.
+      title: (hasACReg && Portal.render._sec.mergeVal(data.post.acTitle))
+        || (data.acNext && data.acNext.title),
+      detailRows: hasACReg ? Portal.render._sec.acDetailRows(data.post || {})
+        : data.acNext ? [{ label: 'Format', value: data.acNext.formatLabel || '3-day weekend + graduation evening' }] : [],
       cta: (hasACReg || data.acNext)
         ? { label: hasACReg ? 'View Details' : 'View Advanced Course Dates', variant: 'solid' }
         : { label: 'Learn More', variant: 'ghost' }
