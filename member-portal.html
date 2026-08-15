@@ -1391,7 +1391,26 @@
       csPhone: '[Page//Event//Course Supervisor Phone]',
       post: {
         hasSeminarReg: '[Page//Registered for Seminar##checkediftrue]' === 'true',
-        hasACReg: '[Page//Registered for Advanced Course##checkediftrue]' === 'true'
+        hasACReg: '[Page//Registered for Advanced Course##checkediftrue]' === 'true',
+        // The specific seminar they chose, for the All Programs card's title
+        // once hasSeminarReg is true (2026-08-15). registrations.f3185
+        // "Seminar Title" — free text written per registration, NOT a link to
+        // the seminar's Event record, so there is no date to pull alongside it
+        // here. Empty on most records: of the 16 event-218 registrations with
+        // f2303 checked, 2 had f3185 set ("Breakthroughs: Living Outside the
+        // Box" / "…Outside The Box!" — note the two spellings differ), read
+        // from the API 2026-08-15. The engine falls back to Portal.pdata's
+        // generic "Seminar Series" when it's blank, so a card never renders
+        // titleless.
+        seminarTitle: '[Page//Seminar Title]',
+        // Schedule detail for the same card, copied onto the registration by
+        // n8n "SEM : Seminar Confirmed -> Update Forum Registration" from the
+        // seminar's own Event record (f2988 / f2756). Both arrive already
+        // display-formatted — "Thu, Sep 10", "Thursdays, 6:00 PM PT" — so they
+        // render verbatim with no date parsing on this side. Verified live
+        // 2026-08-15 against reg 1143 / seminar event 272.
+        seminarBegins: '[Page//Seminar Begins]',
+        seminarSchedule: '[Page//Seminar Schedule]'
       },
       // ---- the event (cross-object) ----
       // Format (events.f2234) renders as its label directly

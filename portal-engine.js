@@ -1124,8 +1124,23 @@ Portal.render._sec = {
       pill: hasSeminarReg ? { label: 'Upcoming', variant: 'upcoming' }
         : data.seminarNext ? { label: 'Recommended Next', variant: 'next' } : undefined,
       pillSide: hasSeminarReg ? undefined : 'right',
-      title: data.seminarNext && data.seminarNext.title,
-      detailRows: data.seminarNext ? [
+      // Registered -> name the seminar they actually chose (registrations
+      // .f3185, via post.seminarTitle); not registered -> the recommendation's
+      // title. Both fall through to Portal.pdata.seminar.title ("Seminar
+      // Series") when unset, which is the common case: f3185 is blank on most
+      // records that have f2303 checked.
+      title: (hasSeminarReg && data.post.seminarTitle)
+        || (data.seminarNext && data.seminarNext.title),
+      // Registered -> the seminar they're actually in, from the fields n8n
+      // copies off that seminar's Event record (post.seminarBegins/
+      // seminarSchedule). Both are pre-formatted upstream, so no parsing here.
+      // Not registered -> the recommendation's own labels, unchanged. Either
+      // way empty rows are dropped rather than rendered as blank .pdet lines.
+      detailRows: (hasSeminarReg && (data.post.seminarBegins || data.post.seminarSchedule)) ? [
+        { label: 'Begins', value: data.post.seminarBegins },
+        { label: 'Schedule', value: data.post.seminarSchedule }
+      ].filter(function(r){ return r.value; })
+      : data.seminarNext ? [
         { label: 'Begins', value: data.seminarNext.beginsLabel || 'Details available soon' },
         { label: 'Schedule', value: data.seminarNext.scheduleLabel || '' }
       ].filter(function(r){ return r.value; }) : [],
@@ -1545,9 +1560,17 @@ Portal.render.during = function(data){
   // (events.f3104/f3105/f3167 via the registrations mirrors in
   // PORTAL_DATA.announcements). Plain show/hide, no strikethrough or
   // disabled state for the hidden ones — they're just not in the DOM.
-  // The remaining CTAs inside each card were already inert in the source
-  // mockup (no href/handler), same "vestigial, nothing to silently drop"
-  // treatment as Pre-event's "Finish now" link. ----
+  // Every card's CTA now has a real destination (2026-08-15). They arrived
+  // from the source mockup as inert hrefless spans; Seminar and AC were the
+  // last two, wired below. Nothing here is vestigial any more. ----
+
+  // Advanced Course announcement destination, 2026-08-15 per direct
+  // instruction. One fixed marketing page for everyone, so it lives here as a
+  // literal rather than a PORTAL_DATA merge field — same treatment as the Gift
+  // card's transformationfoundation.org link below. Contrast the Seminar card,
+  // which IS per-registration (post.seminarUrl / registrations.page_119_url).
+  var AC_ANNOUNCEMENT_URL = 'https://forum.landmarkworldwide.com/advanced-course/';
+
   var inviteCardHtml =
     '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-invite.jpg" alt=""></div><div class="abody"><div class="aeye">Graduation</div><h4>Invite Friends &amp; Family</h4><p>Tuesday evening is a celebration of what you’ve created. Invite the people who matter most to be there.</p><a href="#graduation" class="go">Invite guests &rarr;</a></div></div>';
   var seminarCardHtml = announcements.seminarOpen ?
@@ -1557,7 +1580,7 @@ Portal.render.during = function(data){
       : '<span class="go">Claim your seminar &rarr;</span>') +
     '</div></div>' : '';
   var acCardHtml = announcements.acOpen ?
-    '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-ac.jpg" alt=""><span class="abadge">Save $300</span></div><div class="abody"><div class="aeye">Keep Going</div><h4>Advanced Course &mdash; Reserve Your Spot</h4><p>Continue your momentum into the Advanced Course. Register before Friday to save $300.</p><span class="go">Reserve your spot &rarr;</span></div></div>' : '';
+    '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-ac.jpg" alt=""><span class="abadge">Save $300</span></div><div class="abody"><div class="aeye">Keep Going</div><h4>Advanced Course &mdash; Reserve Your Spot</h4><p>Continue your momentum into the Advanced Course. Register before Friday to save $300.</p><a class="go" href="' + AC_ANNOUNCEMENT_URL + '" target="_blank" rel="noopener">Reserve your spot &rarr;</a></div></div>' : '';
   var giftCardHtml = announcements.giftOpen ?
     '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-gift.jpg" alt=""></div><div class="abody"><div class="aeye serif-it" style="text-transform:none;letter-spacing:.02em;font-size:14px;">Give transformation.</div><h4 class="serif-it" style="color:var(--green);font-weight:300;font-size:20px;">Gift someone their ' + courseType + '.</h4><p>Many people are here this weekend because of the generosity of someone who came before them. If you feel moved, here’s an opportunity to make it possible for someone else.</p><a class="go serif-it" style="font-style:italic;font-weight:300;font-size:14px;" href="https://transformationfoundation.org/" target="_blank" rel="noopener">Contribute &rarr;</a></div></div>' : '';
   var actionsHtml =
