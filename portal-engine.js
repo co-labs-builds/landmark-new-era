@@ -1140,41 +1140,33 @@ Portal.render._sec = {
     return v.charAt(0) === '[' ? '' : v;
   },
 
-  // Shared Dates/Schedule builder for the two "you're registered for this next"
-  // cards. Sources are the fields n8n copies off the program's own Event
-  // record, all display-formatted upstream, so nothing is parsed here.
-  datesAndSchedule: function(begins, ends, schedule){
+  // Seminar detail rows, shaped to parallel the Forum card's Dates/Graduation/
+  // Format block. Sources are the fields n8n copies off the seminar's own Event
+  // record, all display-formatted upstream, so nothing is parsed here:
+  //   Dates     f3274 Seminar Begins, widened to a range when f3279 Seminar
+  //             Ends is also set -> "Thu, Sep 10 – Thu, Dec 3"
+  //   Schedule  f3275 Seminar Schedule -> "Thursdays, 6:00 PM PT"
+  //   Sessions  counted off f3278 Seminar Session Dates — the one derived row,
+  //             since a seminar's length is what most distinguishes it from the
+  //             Forum's three days. Comma-separated on seminar Events, but the
+  //             same field is newline-separated ISO on AC Events, so split both.
+  //
+  // There is deliberately no Advanced Course equivalent of this: an AC
+  // registration has no dates to show, because the participant picks their
+  // dates AFTER registering (2026-08-15, per direct instruction). The AC card
+  // keeps the evergreen Format line in both states rather than rendering rows
+  // that would be permanently blank.
+  seminarDetailRows: function(post){
     var mf = Portal.render._sec.mergeVal;
-    begins = mf(begins); ends = mf(ends);
+    var begins = mf(post.seminarBegins);
+    var ends = mf(post.seminarEnds);
+    var sessions = mf(post.seminarSessionDates)
+      .split(/[,\n]/).filter(function(s){ return s.trim(); }).length;
     return [
       { label: 'Dates', value: (begins && ends) ? begins + ' – ' + ends : begins },
-      { label: 'Schedule', value: mf(schedule) }
-    ];
-  },
-
-  // Seminar adds a Sessions count — the one derived row, since a seminar's
-  // length is what most distinguishes it from the Forum's three days.
-  // f3278 Seminar Session Dates is comma-separated display text ("Sep 10, 17,
-  // 24, …"); splitting on newlines too because the same Event field holds
-  // newline-separated ISO dates on Advanced Course records.
-  seminarDetailRows: function(post){
-    var _s = Portal.render._sec;
-    var sessions = _s.mergeVal(post.seminarSessionDates)
-      .split(/[,\n]/).filter(function(s){ return s.trim(); }).length;
-    return _s.datesAndSchedule(post.seminarBegins, post.seminarEnds, post.seminarSchedule)
-      .concat([{ label: 'Sessions', value: sessions ? sessions + ' evenings' : '' }])
-      .filter(function(r){ return r.value; });
-  },
-
-  // Advanced Course deliberately has NO Sessions row. Its f2753 lists only the
-  // Fri/Sat/Sun dates and omits the Tuesday graduation evening, so a count off
-  // it reads 3 for what is really a 4-day course. The day names already come
-  // through on the Schedule row ("Friday, Saturday, Sunday, and Tuesday"),
-  // which is both correct and more useful.
-  acDetailRows: function(post){
-    return Portal.render._sec
-      .datesAndSchedule(post.acBegins, post.acEnds, post.acSchedule)
-      .filter(function(r){ return r.value; });
+      { label: 'Schedule', value: mf(post.seminarSchedule) },
+      { label: 'Sessions', value: sessions ? sessions + ' evenings' : '' }
+    ].filter(function(r){ return r.value; });
   },
 
   seminarAcCards: function(data){
@@ -1213,14 +1205,15 @@ Portal.render._sec = {
       pill: hasACReg ? { label: 'Upcoming', variant: 'upcoming' }
         : data.acNext ? { label: 'Recommended Next', variant: 'next' } : undefined,
       pillSide: hasACReg ? undefined : 'right',
-      // Same treatment as the Seminar card above: registered -> name the AC
-      // they actually enrolled in (registrations.f3186 "AC Title") and show its
-      // real dates; not registered -> the recommendation's title and the
-      // generic format line.
+      // Registered -> name the AC they actually enrolled in (registrations.f3186
+      // "AC Title"), falling through to the recommendation's title and then to
+      // Portal.pdata's "Advanced Course".
       title: (hasACReg && Portal.render._sec.mergeVal(data.post.acTitle))
         || (data.acNext && data.acNext.title),
-      detailRows: hasACReg ? Portal.render._sec.acDetailRows(data.post || {})
-        : data.acNext ? [{ label: 'Format', value: data.acNext.formatLabel || '3-day weekend + graduation evening' }] : [],
+      // No dates row in either state: AC participants choose their dates after
+      // registering, so there is nothing date-shaped to show even once they're
+      // enrolled. The Format line is evergreen and true regardless.
+      detailRows: [{ label: 'Format', value: (data.acNext && data.acNext.formatLabel) || '3-day weekend + graduation evening' }],
       cta: (hasACReg || data.acNext)
         ? { label: hasACReg ? 'View Details' : 'View Advanced Course Dates', variant: 'solid' }
         : { label: 'Learn More', variant: 'ghost' }
