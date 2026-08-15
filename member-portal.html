@@ -621,6 +621,33 @@
   .btn-join:hover{background:var(--green);}
   .btn-join[aria-disabled="true"]{background:var(--muted);cursor:default;pointer-events:none;}
 
+  /* Information Form gate (During-event). Rendered by Portal.render.during()
+     at the top of #portal-root when registrations.f2579 "Information Form
+     Completed" is unchecked — the join CTA is withheld from BOTH the nav
+     and the hero in that state, and this banner is what explains why and
+     links to the form. Coral, not the page's green: this is the one state
+     on the portal that stops someone getting in, so it must not read as
+     another green suggestion. --coral/--coral-ink were already in the
+     palette; no new tokens. */
+  .infogate{background:var(--coral);color:#fff;}
+  .infogate .row{display:flex;align-items:center;gap:22px;padding:17px 0;}
+  .infogate .ig-ic{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;flex:none;}
+  .infogate .ig-ic svg{width:18px;height:18px;}
+  .infogate .ig-copy{flex:1;min-width:0;}
+  .infogate .ig-t{font-size:15px;font-weight:650;letter-spacing:-.01em;line-height:1.35;}
+  .infogate .ig-s{font-size:13.5px;color:rgba(255,255,255,.9);line-height:1.5;margin-top:3px;}
+  /* Two stacked actions — complete the form, or reach the Course
+     Supervisor to hand it over directly. The phone link uses the
+     build-wide +1 (312) 440-3464, same as the Contact section and the
+     FAQ's transfer answer; there is no per-event CS number in
+     PORTAL_DATA to point at. */
+  .infogate .ig-actions{display:flex;flex-direction:column;align-items:stretch;gap:9px;flex:none;}
+  .infogate .ig-btn{background:#fff;color:var(--coral-ink);border-radius:5px;padding:14px 18px 11px;font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;transition:background .15s;}
+  .infogate .ig-btn:hover{background:var(--almond);}
+  .infogate .ig-alt{font-size:12.5px;color:rgba(255,255,255,.92);display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap;text-decoration:underline;text-underline-offset:3px;transition:color .15s;}
+  .infogate .ig-alt:hover{color:#fff;}
+  .infogate .ig-alt svg{width:13px;height:13px;flex:none;}
+
   /* Today / assignments. Every session always renders, in strict
      chronological order (Day 1 -> 2 -> 3, 2026-08-07 review round —
      replaces the original "newest on top" inbox ordering). The
@@ -752,6 +779,11 @@
        width:auto (base rule) keeps governing its own aspect ratio. */
     .pc-logo{margin:0;top:0;align-self:center;}
     .btn-join{width:100%;justify-content:center;}
+    /* Same treatment as .pc-cta above — the icon/copy/button row stacks
+       rather than squeezing the CTA down to a 3-line wrap. */
+    .infogate .row{flex-direction:column;align-items:stretch;gap:15px;padding:20px 0;}
+    .infogate .ig-actions{width:100%;}
+    .infogate .ig-btn,.infogate .ig-alt{white-space:normal;text-align:center;}
   }
 </style>
 </head>
@@ -1284,6 +1316,14 @@
       // the *Contact's* Unique ID, while the real page is keyed off the
       // *Registration's*, so it resolved to the wrong path for everyone.
       inviteHubUrl: '[Page//Invite your friends URL]',
+      // "Claim Your Complimentary Seminar" announcement card destination —
+      // 2026-08-15, per direct instruction. Same treatment as inviteHubUrl
+      // directly above: read Ontraport's own generated page URL off the
+      // record (registrations.page_119_url "Available Seminars URL") rather
+      // than hand-assembling https://lm.landmarkworldwide.com/available-
+      // seminars/<unique id>, which would re-open the Contact-vs-
+      // Registration Unique ID trap that broke the invite hub.
+      seminarUrl: '[Page//Available Seminars URL]',
       // Communication preference checkboxes (My Account modal) — the two
       // "Enabled" fields live on registrations (f3158/f3159, added
       // 2026-08-10), the marketing one lives on contacts (f3160, same
@@ -1330,6 +1370,25 @@
       // "Join Your Forum" CTA should point at.
       zoomJoin: '[Page//Zoom Join URL]',
       infoFormCompleted: '[Page//Information Form Completed##checkediftrue]' === 'true',
+      // Course Supervisor contact, for the Information Form gate banner
+      // shown when the field above is false (2026-08-14, per direct
+      // instruction). Both live on EVENTS (10000), not the registration:
+      // events.f3089 / events.f3090, hence the Event// segment — same
+      // cross-object path eventId already uses.
+      //
+      // Two things confirmed by reading the records, both handled in
+      // portal-engine.js rather than assumed here:
+      //   1. f3089 holds free text and can name MORE THAN ONE person —
+      //      event 218 reads "Jennifer Tracy & Lois Pearson". The bare
+      //      ampersand is why the engine escapes this before it goes
+      //      anywhere near innerHTML.
+      //   2. Both fields can be EMPTY (event 271 has neither), so the
+      //      engine falls back to the build-wide +1 (312) 440-3464
+      //      rather than rendering a dead "call or text" with no number.
+      // f3090 is stored pre-formatted for display ("+1 (213) 302-4464");
+      // the engine strips it to digits for the tel: href.
+      csName: '[Page//Event//Course Supervisor Name]',
+      csPhone: '[Page//Event//Course Supervisor Phone]',
       post: {
         hasSeminarReg: '[Page//Registered for Seminar##checkediftrue]' === 'true',
         hasACReg: '[Page//Registered for Advanced Course##checkediftrue]' === 'true'
