@@ -1003,6 +1003,19 @@ Portal.render._sec = {
       io.observe(el);
     } else { el.classList.add(cls); }
   },
+  // Information Form destination. Real URL added 2026-08-09, per direct
+  // instruction — previously just an inert <span>, no href at all.
+  // Lifted out of prepare() 2026-08-14 so During-event's info-form gate
+  // banner points at the identical destination: two hand-built copies of
+  // this URL would eventually drift, and a participant who's blocked out
+  // of the room is the worst place to discover a stale link.
+  infoFormUrl: function(data){
+    data = data || {};
+    return 'https://lm.landmarkworldwide.com/registration-confirmed' +
+      '?cuid=' + encodeURIComponent(data.contactUniqueId || '') +
+      '&cemail=' + encodeURIComponent(data.email || '') +
+      '&cfirstname=' + encodeURIComponent(data.firstName || '');
+  },
   // data is optional (only prepare() needs it, for the Information Form
   // link's query params) — callers that don't have it yet can omit it,
   // same tolerance every other renderer already has for partial data.
@@ -1013,12 +1026,7 @@ Portal.render._sec = {
         return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', '\'':'&#39;' }[c];
       });
     }
-    // Real destination added 2026-08-09, per direct instruction —
-    // previously just an inert <span>, no href at all.
-    var infoFormUrl = 'https://lm.landmarkworldwide.com/registration-confirmed' +
-      '?cuid=' + encodeURIComponent(data.contactUniqueId || '') +
-      '&cemail=' + encodeURIComponent(data.email || '') +
-      '&cfirstname=' + encodeURIComponent(data.firstName || '');
+    var infoFormUrl = Portal.render._sec.infoFormUrl(data);
     var infoCardHtml = infoFormDone ?
       '<div class="pcard done"><div class="ph"><span class="pill pr pill-done">Completed</span><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-prepare-form.jpg" alt="Complete your information form"></div><div class="pbody"><div class="ptag serif-it">a few minutes.</div><h3>Complete Your Information Form</h3><p>Thanks — we have everything we need from you.</p></div></div>' :
       '<div class="pcard"><div class="ph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-prepare-form.jpg" alt="Complete your information form"></div><div class="pbody"><div class="ptag serif-it">a few minutes.</div><h3>Complete Your Information Form</h3><p>We still need a few details from you before the weekend. It only takes a few minutes.</p><a class="go" href="' + escapeHtml(infoFormUrl) + '" target="_blank" rel="noopener">Finish now &rarr;</a></div></div>';
@@ -1406,6 +1414,7 @@ Portal.render.during = function(data){
   var hasSeminarReg = !!(data.post && data.post.hasSeminarReg); // registrations.f2303
   var hasACReg = !!(data.post && data.post.hasACReg); // registrations.f2302
   var announcements = data.announcements || {}; // events.f3104/f3105/f3167 via registrations mirrors — see PORTAL_DATA
+  var infoFormDone = !!data.infoFormCompleted; // registrations.f2579 "Information Form Completed"
 
   function escapeHtml(s){
     return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
@@ -1423,6 +1432,17 @@ Portal.render.during = function(data){
   // URL that 404s is worse than an empty href, and the field is populated
   // and published on every registration checked.
   var inviteHubUrl = data.inviteHubUrl || '';
+
+  // Seminar announcement card destination (PORTAL_DATA.seminarUrl),
+  // 2026-08-15 per direct instruction — the card's "Claim your seminar"
+  // CTA was one of the inert, hrefless spans carried over from the source
+  // mockup. Same source pattern as inviteHubUrl above: Ontraport's own
+  // generated registrations.page_119_url "Available Seminars URL", read off
+  // the record rather than assembled here. Empty stays inert rather than
+  // becoming href="" (which reloads the portal) — the announcement toggle
+  // controls whether the card shows at all, not whether it has a
+  // destination.
+  var seminarUrl = data.seminarUrl || '';
 
   var startTs = Portal.dateUtil.resolveStart({
     reference: data.eventStartUTC, date: data.eventStartDate, time: data.sessionStartTime, timeZone: tz
@@ -1452,16 +1472,29 @@ Portal.render.during = function(data){
   // once immediately and then on a timer, so the button flips live for
   // anyone already on the page when the 30-minute mark passes — no
   // reload required.
-  function linkAvailable(){ return !!(data.zoomJoin && hasStart && Date.now() >= roomOpenTs); }
+  //
+  // 2026-08-14, per direct instruction: a missing Information Form
+  // (registrations.f2579) is now a hard gate on that same boolean. Nobody
+  // without it on file can be admitted to the room, so the link is
+  // withheld rather than handed out for a door they'd be turned away at.
+  // Two things follow from putting it HERE rather than in the markup
+  // branches: nav and hero stay in lockstep for free, and the 30-second
+  // re-check can't quietly resurrect the button on the time condition
+  // alone. The withheld state is never unexplained — blockedLabel() names
+  // which of the two conditions is holding it, and infoGateHtml (below)
+  // carries the full message and the link to fix it.
+  function linkAvailable(){ return !!(infoFormDone && data.zoomJoin && hasStart && Date.now() >= roomOpenTs); }
+  function blockedLabel(){ return infoFormDone ? 'Link available soon' : 'Information form required'; }
+  var LOCK_SVG = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><rect x="4.2" y="10.4" width="15.6" height="9.9" rx="2.2"/><path d="M8.1 10.4V7.6a3.9 3.9 0 0 1 7.8 0v2.8"/></svg>';
   function navJoinHtml(avail){
     return avail ?
       '<a class="nav-join" href="' + joinHref() + '" target="_blank" rel="noopener"><span class="dot"></span><span class="jt">' + joinLabel() + '</span></a>' :
-      '<span class="nav-join" aria-disabled="true"><span class="jt">Link available soon</span></span>';
+      '<span class="nav-join" aria-disabled="true">' + (infoFormDone ? '' : LOCK_SVG) + '<span class="jt">' + blockedLabel() + '</span></span>';
   }
   function heroJoinHtml(avail){
     return avail ?
       '<a class="btn-join" href="' + joinHref() + '" target="_blank" rel="noopener">' + joinLabel() + ' <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></a>' :
-      '<span class="btn-join" aria-disabled="true">Link available soon</span>';
+      '<span class="btn-join" aria-disabled="true">' + (infoFormDone ? '' : LOCK_SVG) + blockedLabel() + '</span>';
   }
   function renderJoinCta(){
     var avail = linkAvailable();
@@ -1518,7 +1551,11 @@ Portal.render.during = function(data){
   var inviteCardHtml =
     '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-invite.jpg" alt=""></div><div class="abody"><div class="aeye">Graduation</div><h4>Invite Friends &amp; Family</h4><p>Tuesday evening is a celebration of what you’ve created. Invite the people who matter most to be there.</p><a href="#graduation" class="go">Invite guests &rarr;</a></div></div>';
   var seminarCardHtml = announcements.seminarOpen ?
-    '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-seminar.jpg" alt=""><span class="abadge">Free</span></div><div class="abody"><div class="aeye">On Us</div><h4>Claim Your Complimentary Seminar</h4><p>Your next seminar is on us. Reserve your spot and keep exploring what’s possible.</p><span class="go">Claim your seminar &rarr;</span></div></div>' : '';
+    '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-seminar.jpg" alt=""><span class="abadge">Free</span></div><div class="abody"><div class="aeye">On Us</div><h4>Claim Your Complimentary Seminar</h4><p>Your next seminar is on us. Reserve your spot and keep exploring what’s possible.</p>' +
+    (seminarUrl
+      ? '<a class="go" href="' + escapeHtml(seminarUrl) + '" target="_blank" rel="noopener">Claim your seminar &rarr;</a>'
+      : '<span class="go">Claim your seminar &rarr;</span>') +
+    '</div></div>' : '';
   var acCardHtml = announcements.acOpen ?
     '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-ac.jpg" alt=""><span class="abadge">Save $300</span></div><div class="abody"><div class="aeye">Keep Going</div><h4>Advanced Course &mdash; Reserve Your Spot</h4><p>Continue your momentum into the Advanced Course. Register before Friday to save $300.</p><span class="go">Reserve your spot &rarr;</span></div></div>' : '';
   var giftCardHtml = announcements.giftOpen ?
@@ -1729,8 +1766,64 @@ Portal.render.during = function(data){
       '</div>' +
     '</div></section>';
 
+  // Course Supervisor contact for the gate banner below —
+  // events.f3089/f3090 via PORTAL_DATA.csName/csPhone. Both are
+  // populated per event and BOTH CAN BE EMPTY (confirmed by reading the
+  // records: event 218 has "Jennifer Tracy & Lois Pearson" /
+  // "+1 (213) 302-4464", event 271 has neither), so each falls back
+  // independently rather than as a pair — an event with a name but no
+  // number still names the right person, and one with neither still
+  // gives out a number that rings. The fallback is the build-wide
+  // +1 (312) 440-3464 the Contact section and the FAQ's transfer answer
+  // already use (locked rule: that number everywhere).
+  //
+  // csTel is the href form: f3090 is stored for display
+  // ("+1 (213) 302-4464"), which is not dialable as a tel: URI, so
+  // everything except digits and a leading + comes out. csName is free
+  // text and routinely contains an ampersand (two supervisors share one
+  // field), so it is escaped at the point of use like every other
+  // participant-facing string here.
+  var csName = data.csName || '';
+  var csPhoneDisplay = data.csPhone || '+1 (312) 440-3464';
+  var csTel = csPhoneDisplay.replace(/[^0-9+]/g, '');
+  // f3090 is hand-entered per event, so the country code can't be
+  // assumed present. Event 218 (the only event carrying one today) reads
+  // "+1 (213) 302-4464", but a supervisor typing "(312) 555-0198" would
+  // otherwise produce tel:3125550198 — dialable in the US, dead for the
+  // online participants abroad this portal explicitly serves. Normalize
+  // the two North American shapes to E.164; anything already starting
+  // with + is left exactly as entered.
+  if(csTel.charAt(0) !== '+'){
+    if(csTel.length === 10) csTel = '+1' + csTel;
+    else if(csTel.length === 11 && csTel.charAt(0) === '1') csTel = '+' + csTel;
+  }
+  var csWho = csName ? escapeHtml(csName) : 'your Course Supervisor';
+
+  // ---- Information Form gate banner (2026-08-14, per direct
+  // instruction) — the counterpart to the withheld join CTA above. Rides
+  // at the very top of #portal-root, so it's directly under the sticky
+  // nav and is the first thing on the page, and it's plain markup inside
+  // the same innerHTML the rest of the page is built from: a re-render
+  // driven by the live Ably push (render.during is re-callable by design)
+  // clears the banner and restores the join button in one pass the
+  // moment CS checks f2579, with no reload. Coral rather than the page's
+  // green because this is the one state on the portal that stops someone
+  // from getting in — it should not read as another green suggestion. ----
+  var infoGateHtml = infoFormDone ? '' :
+    '<div class="infogate" id="infoGate"><div class="wrap row">' +
+      '<div class="ig-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="10.4" width="15.6" height="9.9" rx="2.2"/><path d="M8.1 10.4V7.6a3.9 3.9 0 0 1 7.8 0v2.8"/></svg></div>' +
+      '<div class="ig-copy">' +
+        '<div class="ig-t">Your access link is on hold.</div>' +
+        '<div class="ig-s">We don’t have your Information Form yet, and we can’t let you into the ' + courseType + ' room without it. Complete it now and your join link appears right here — or call or text ' + csWho + ' and they can take it from you directly.</div>' +
+      '</div>' +
+      '<div class="ig-actions">' +
+        '<a class="ig-btn" href="' + escapeHtml(Portal.render._sec.infoFormUrl(data)) + '" target="_blank" rel="noopener">Complete Your Information Form <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9 6l6 6-6 6"/></svg></a>' +
+        '<a class="ig-alt" href="tel:' + escapeHtml(csTel) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.7 2z"/></svg> Call or text ' + escapeHtml(csPhoneDisplay) + '</a>' +
+      '</div>' +
+    '</div></div>';
+
   var root = document.getElementById('portal-root');
-  if(root) root.innerHTML = heroHtml + actionsHtml + assignmentsHtml + graduationHtml + rulesHtml + faqHtml + lmfBandHtml + contactHtml;
+  if(root) root.innerHTML = infoGateHtml + heroHtml + actionsHtml + assignmentsHtml + graduationHtml + rulesHtml + faqHtml + lmfBandHtml + contactHtml;
 
   // Sets #navCtaSlot's initial content (heroJoinCta's own initial state
   // was already baked into heroHtml above) and starts the live 30-
