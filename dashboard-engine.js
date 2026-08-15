@@ -3763,7 +3763,18 @@ function dashboardApplyDayAdvanced(msg){
    non-Active option" — so a live push saying someone had been set back to ACTIVE would have
    hidden them from the roster and dropped them from every metric. Worse than the f3208 case,
    because it fires on the value that is supposed to restore a record, not remove it. */
-var DASHBOARD_ATTENDANCE_RAW_FIELDS = ['f3191', 'f3056', 'f3059', 'f3208', 'f2808', 'f2871', 'f2805', 'f2806', 'f2807', 'f3190', 'f2424'];
+/* All nine note fields added 2026-08-15, and f3237/f3236 with them — those two had been
+   published raw by the server since 2026-08-14 while this list still coerced them, so a
+   saved Attendance Override or Zoom note arrived as the boolean 1 and the notes panel would
+   have rendered "1" as the note body. The queue pill happened to resolve correctly anyway
+   (it only tests the field for emptiness, and "1" is non-empty), which is exactly why this
+   went unnoticed: the visible symptom was right for the wrong reason. */
+var DASHBOARD_ATTENDANCE_RAW_FIELDS = ['f3191', 'f3056', 'f3059', 'f3208', 'f2808', 'f2871', 'f2805', 'f2806', 'f2807', 'f3190', 'f2424',
+  'f3237', 'f3236', 'f2886', 'f3270', 'f3068', 'f2891', 'f3235'];
+/* The note fields, mirroring ROSTER_NOTE_FIELDS. A change to any of them has to repaint the
+   row's note button and count — the panel reads from dashboardLastRoster, which this handler
+   keeps current, but the badge is baked into the card at build time. */
+var DASHBOARD_NOTE_FIELDS = ROSTER_NOTE_FIELDS.map(function(n){ return n.field; });
 var DASHBOARD_DAY_TICK_FIELDS = { f2801: 1, f2802: 2, f2803: 3 };
 /* The per-day minute totals the Zoom poller writes. They live inside the D-tick's detail
    pop (rosterBuildAttendanceTick bakes them into data-pop-kv at build time), so a minutes
@@ -3935,6 +3946,29 @@ function dashboardApplyAttendanceChanged(msg){
     'f2808', 'f3184', 'f3062', 'f3191', 'f3237', 'f3236', 'f2424', 'f2801', 'f2802', 'f2803'];
   if(SNAPSHOT_RECOMPUTE_FIELDS.indexOf(field) !== -1){
     dashboardRenderSnapshot(dashboardLastRoster, dashboardLastEventFields, dashboardLastStaffCount);
+  }
+
+  /* Note count badge. The panel itself always reads live — openNotes() re-parses from
+     dashboardLastRoster, which this handler has already updated — but the button's count and
+     its filled/empty state are baked into the card at render time, so a note arriving by
+     push would leave the row saying "no notes" while the panel behind it had one. */
+  if(DASHBOARD_NOTE_FIELDS.indexOf(field) !== -1){
+    var notesBtn = card.querySelector('.ev-notesbtn');
+    if(notesBtn){
+      var count = rosterNoteEntries(reg).length;
+      notesBtn.classList.toggle('has-note', count > 0);
+      notesBtn.title = count ? (count + ' note' + (count === 1 ? '' : 's')) : 'Add a note';
+      var nEl = notesBtn.querySelector('.ev-notesbtn-n');
+      if(count && !nEl){
+        nEl = document.createElement('span');
+        nEl.className = 'ev-notesbtn-n';
+        notesBtn.appendChild(nEl);
+      }
+      if(nEl){
+        nEl.textContent = count;
+        nEl.style.display = count ? '' : 'none';
+      }
+    }
   }
 
   /* Re-paginate when the flag set actually changed (2026-08-15). Everything above patches
