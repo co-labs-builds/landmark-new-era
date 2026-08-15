@@ -98,7 +98,7 @@ body.cs-dashboard h1,body.cs-dashboard h2,body.cs-dashboard h3,body.cs-dashboard
 .evt-sel svg{width:10px;height:10px;color:var(--gray);flex:none;}
 .evt-meta{display:flex;align-items:center;gap:16px;font-size:12px;color:var(--gray);min-width:0;overflow:hidden;}
 .evt-meta>span{white-space:nowrap;}
-.top-right{margin-left:auto;display:flex;align-items:center;gap:12px;position:relative;}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:14px;position:relative;}
 .profile-chip{display:flex;align-items:center;gap:9px;padding:5px 12px 5px 5px;border-radius:999px;background:var(--paper);border:1px solid var(--line);cursor:pointer;transition:border-color .15s;}
 .profile-chip:hover{border-color:var(--muted);}
 .profile-chip .av{width:26px;height:26px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;font-weight:600;flex:none;}
@@ -110,23 +110,36 @@ body.cs-dashboard h1,body.cs-dashboard h2,body.cs-dashboard h3,body.cs-dashboard
 .profile-menu-item{display:block;width:100%;text-align:left;background:none;border:none;padding:11px 14px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;}
 .profile-menu-item:hover{background:var(--paper);}
 
-/* row 2 — session strip. Day X of Y is a direct merge of "Todays Session
-   Day"; the dot/pill state is computed by comparing now to the session's
-   start instant (see script — recommend a precomputed UTC merge field
-   rather than client-side timezone math). */
-.evtstrip{position:sticky;top:var(--stick-evtstrip,64px);z-index:59;background:var(--teal-deep);color:#fff;}
-.evtstrip .row{display:flex;align-items:center;gap:24px;height:50px;}
-.es-day{flex:none;white-space:nowrap;display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;letter-spacing:.02em;}
-.es-right{margin-left:auto;margin-right:8px;display:flex;align-items:center;gap:14px;flex:none;white-space:nowrap;}
-.btn-session{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.32);border-radius:5px;padding:10px 20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;transition:background .15s,border-color .15s;}
-.btn-session:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.5);}
-.btn-session:disabled{opacity:.5;cursor:not-allowed;}
-.btn-session:disabled:hover{background:transparent;border-color:rgba(255,255,255,.32);}
+/* Day indicator + End session — relocated into .topbar 2026-08-15, replacing the
+   dedicated 50px .evtstrip bar they used to have to themselves (rules deleted, not
+   hidden: the element is gone from the body block). Both now render on white rather
+   than on teal-deep, so both need light-surface treatment.
 
-/* row 3 — page nav, two destinations only */
-.tabbar{position:sticky;top:var(--stick-tabbar,114px);z-index:58;background:var(--tabbar);}
-.tabbar .row{display:flex;gap:0;height:42px;align-items:stretch;}
-.tabbar button{background:none;border:none;cursor:pointer;color:var(--white-55);font-family:var(--sans);font-size:10.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;padding:0 26px;position:relative;transition:color .15s;display:flex;align-items:center;gap:8px;}
+   .es-day reads as a quiet companion to the event selector it sits beside, not as a
+   second headline: it is the same event, one attribute further down. Hence the muted
+   uppercase micro-label rather than the 13px bold white it carried on the dark strip. */
+.es-day{flex:none;white-space:nowrap;display:flex;align-items:center;gap:9px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gray);padding:6px 0 6px 20px;border-left:1px solid var(--line);}
+/* End session keeps its "deliberate, consequential action" weight — it advances the
+   Day for the whole event and cannot be undone from the dashboard — but expressed as
+   an outline button on paper rather than on teal. Not .btn: this must stay visually
+   distinct from the row of ordinary card actions. */
+.btn-session{background:#fff;color:var(--ink);border:1px solid var(--line-2);border-radius:7px;padding:8px 16px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;transition:background .15s,border-color .15s,color .15s;}
+.btn-session:hover{background:var(--paper);border-color:var(--muted);}
+.btn-session:disabled{opacity:.45;cursor:not-allowed;}
+.btn-session:disabled:hover{background:#fff;border-color:var(--line-2);}
+
+/* row 2 — page nav, two destinations only. Promoted onto the dark navy that
+   .evtstrip used to own (2026-08-15): with the strip gone this is the page's one
+   dark band, and the two destinations are the highest-level choice on the page, so
+   they are what earns it. Was var(--tabbar) (#41454a), a third neutral that matched
+   nothing else in the palette. */
+.tabbar{position:sticky;top:var(--stick-tabbar,64px);z-index:58;background:var(--teal-deep);}
+.tabbar .row{display:flex;gap:0;height:44px;align-items:stretch;}
+.tabbar button{background:none;border:none;cursor:pointer;color:var(--white-55);font-family:var(--sans);font-size:10.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;padding:0 22px;position:relative;transition:color .15s;display:flex;align-items:center;gap:8px;}
+/* First tab flush with the content edge — the 22px lead-in on an indented first item
+   reads as a stray gap against the logo and card edges that share the .wrap gutter. */
+.tabbar button:first-child{padding-left:0;}
+.tabbar button:first-child.active::after{left:0;}
 .tabbar button:hover{color:rgba(255,255,255,.85);}
 .tabbar button.active{color:#fff;}
 .tabbar button.active::after{content:"";position:absolute;left:20px;right:20px;bottom:0;height:3px;background:var(--green-bright);border-radius:2px 2px 0 0;}
@@ -158,19 +171,32 @@ body.cs-dashboard .tabbar button:focus-visible{outline:2px solid var(--green-bri
 
 /* In-page section nav — Event Management's sub-tabs (Roster & Classification /
    Course Materials / Guests) and Master Stats' section nav share this element.
-   Fourth and last bar in the sticky stack, so it docks below topbar+evtstrip
-   +tabbar. The --stick-* offsets are measured at runtime by
+   Third and last bar in the sticky stack, so it docks below topbar+tabbar
+   (was fourth, until .evtstrip was folded into .topbar on 2026-08-15 —
+   the fallback literals below were re-based by that bar's 50px at the same
+   time). The --stick-* offsets are measured at runtime by
    dashboardSyncStickyOffsets() rather than hardcoded — see that function for
    why. The literals here are fallbacks only, matching this stylesheet's own
    intended bar heights, so the stack still works if the JS never runs. */
-.secnav{position:sticky;top:var(--stick-secnav,156px);z-index:57;background:#fff;border-bottom:1px solid var(--line);}
-.secnav .row{display:flex;gap:4px;height:44px;align-items:center;overflow-x:auto;scrollbar-width:none;}
+/* Sub-nav, de-bulked 2026-08-15. Each item used to be a rounded 7px chip with its own
+   border box, and the active one a filled green pill — three button-shaped objects
+   stacked directly beneath two other full-width bars, which is what made this whole
+   region read as heavy. They are now plain text with an underline rule on the active
+   item: still unmistakably a nav (underline is the tab convention, and hover previews
+   it in a faint tint), but the row costs one line of text instead of three chips.
+   The active item is separated by weight and ink colour as well as the rule, so it
+   does not depend on the 3px line alone to be legible. */
+.secnav{position:sticky;top:var(--stick-secnav,108px);z-index:57;background:#fff;border-bottom:1px solid var(--line);}
+.secnav .row{display:flex;gap:26px;height:42px;align-items:stretch;overflow-x:auto;scrollbar-width:none;}
 .secnav .row::-webkit-scrollbar{display:none;}
-.secnav button{background:none;border:1px solid transparent;border-radius:7px;cursor:pointer;color:var(--gray);font-size:12px;font-weight:700;padding:7px 12px;white-space:nowrap;transition:background .15s,color .15s;display:flex;align-items:center;gap:6px;}
-.secnav button:hover{background:var(--paper);color:var(--ink);}
-.secnav button.active{background:var(--green-bg);color:var(--green);}
+.secnav button{background:none;border:none;border-radius:0;cursor:pointer;color:var(--gray-2);font-size:12px;font-weight:600;padding:0;white-space:nowrap;position:relative;transition:color .15s;display:flex;align-items:center;gap:6px;}
+.secnav button:hover{background:none;color:var(--ink);}
+.secnav button::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:transparent;transition:background .15s;}
+.secnav button:hover::after{background:var(--line-2);}
+.secnav button.active{background:none;color:var(--ink);font-weight:700;}
+.secnav button.active::after{background:var(--green-bright);}
 .secnav .n{font-family:var(--mono);font-size:10px;background:#f0eee9;border-radius:3px;padding:1px 5px;color:var(--gray);}
-.secnav button.active .n{background:#fff;color:var(--green);}
+.secnav button.active .n{background:var(--green-bg);color:var(--green);}
 
 /* ============================================================
    LAYOUT PRIMITIVES
@@ -248,24 +274,88 @@ body.cs-dashboard .btn-danger:hover{background:var(--coral-bg);border-color:var(
    row 2 (classification pills) is collapsed by default — the pills are
    prepopulated from existing data and rarely need a second look, so they
    only cost space when someone actually opens them. */
-.ev-list{display:grid;gap:10px;padding:16px 20px;}
-.ev-card{border:1px solid var(--line);border-radius:12px;padding:14px 18px;background:#fff;}
-.ev-row1{display:flex;align-items:flex-start;gap:26px;flex-wrap:wrap;}
-.ev-name{display:flex;flex-direction:column;flex:1 1 160px;min-width:150px;}
-.ev-name b{font-size:14px;font-weight:700;}
-.ev-name span{font-size:11px;color:var(--gray);font-family:var(--mono);margin-top:3px;}
-.ev-name-row{display:flex;align-items:center;gap:7px;}
-.status-sep{color:var(--gray-3);font-weight:400;}
+/* Rows separated by rules, not boxed (2026-08-15). Each row used to be its own bordered,
+   rounded, 10px-gapped card floating inside another bordered, rounded, shadowed card —
+   nested containers all the way down, which is most of why the roster read as heavy. The
+   list is now one surface with hairline dividers between records: the same grouping, at a
+   fraction of the visual cost, and the row gains back the 2px + 10px it was spending on
+   its own border and gutter. The card wrapper itself drops its shadow for the same reason
+   (see #ms-roster below). */
+.ev-list{display:block;padding:0;}
+.ev-card{border:0;border-radius:0;border-top:1px solid var(--line);padding:13px 20px;background:#fff;transition:background .15s;}
+.ev-card:first-child{border-top:0;}
+.ev-card:hover{background:var(--paper-2);}
+/* Landing target for "open their record" from a stacked avatar — a brief tint so the CS
+   can see which row answered the click after the list scrolls. */
+.ev-card-flash{background:var(--green-bg);}
+/* Grid, not flex. The row's zones have to line up into columns down the whole list, and
+   flex cannot do that: each row sized its identity zone to its own content — a long name,
+   a "goes by" line, however many queue pills that participant happened to carry — so every
+   zone after it started at a different x on every row, and the repeated CLASSIFICATION /
+   ATTENDANCE / SEMINAR & AC labels landed in a ragged diagonal instead of reading as column
+   headings. Fixed tracks make the list scannable vertically, which is the entire point of a
+   roster: a CS looking for "who has a red pill in the status column" can now run their eye
+   straight down one column instead of re-finding it on each line.
+   Identity is the only elastic track; everything else is sized to its content's real needs. */
+/* Every track is minmax(floor, share) rather than one elastic column and five rigid ones.
+   With a single 1.5fr identity track the whole of the row's spare width piled up in one
+   place, opening a ~400px void between the name and the status pills on a wide screen while
+   the five data zones stayed pinned together at the right. Sharing the slack proportionally
+   keeps the columns distributed across the row at any width, and the floors stop any zone
+   collapsing under its content. */
+.ev-row1{display:grid;grid-template-columns:minmax(210px,.9fr) minmax(140px,.72fr) minmax(172px,.8fr) minmax(106px,.58fr) minmax(150px,.72fr) 32px;align-items:center;gap:18px;}
+
+/* Identity: avatar + name block. align-items:center rather than flex-start so the avatar
+   optically centres against the two/three lines of name text beside it. */
+.ev-identity{display:flex;align-items:center;gap:12px;min-width:0;}
+.ev-name{display:flex;flex-direction:column;min-width:0;}
+.ev-name b{font-size:14px;font-weight:700;line-height:1.3;}
+/* "Goes by" — deliberately quiet. It is useful context, not a second headline, and at full
+   contrast it competed with the legal name directly above it on every single row. */
+.ev-goesby{font-size:11.5px;color:var(--gray-2);font-weight:500;line-height:1.3;margin-top:1px;}
 .ev-name .iedit{font-size:14px;font-weight:700;padding:2px 5px;margin:-2px -5px;}
+/* Retained for the Home pre-Forum readiness roster (.hr-row), which still renders a single
+   name-row badge behind a separator. The Event Management roster no longer uses it — its
+   badges moved into their own zone as a set (see .status-pills). */
+.status-sep{color:var(--gray-3);font-weight:400;}
 .ev-field{min-width:0;flex:0 0 auto;}
 .ev-l{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gray-2);margin-bottom:6px;}
 .ev-clickable{cursor:pointer;border:none;}
 .togchip.chip-check{padding:6px;border-radius:7px;}
 
-.ev-notesbtn,.kebab-btn{width:32px;height:32px;border:1px solid var(--line);border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;color:var(--gray);cursor:pointer;flex:none;transition:background .15s,transform .2s;}
-.ev-notesbtn:hover,.kebab-btn:hover{background:var(--paper);}
+/* ---- Avatar --------------------------------------------------------------
+   Falls back to a tinted monogram whenever the Contact has no profile_image (which will
+   be most of them) — see rosterAvatarFaceHtml(). The tint is derived from the name, so a
+   participant keeps the same colour across renders and sessions, which is what makes it
+   usable as a scanning anchor at all. */
+.ev-av{position:relative;flex:none;width:36px;height:36px;}
+.av-face{position:absolute;inset:0;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;letter-spacing:.02em;background-size:cover;background-position:center;box-shadow:0 0 0 2px #fff;}
+/* Stacked: the partner peeks out from behind until the stack is clicked, then the two fan
+   apart so the second face is a real, hittable target rather than a 6px sliver. */
+.ev-av-stack{width:46px;cursor:pointer;}
+.ev-av-stack .av-self{z-index:2;}
+.av-partner-btn{position:absolute;left:14px;top:0;width:36px;height:36px;padding:0;border:0;background:none;cursor:pointer;z-index:1;transition:left .18s ease;}
+.av-partner-btn .av-face{width:36px;height:36px;font-size:11px;}
+.ev-av-stack.fanned{width:80px;}
+.ev-av-stack.fanned .av-partner-btn{left:42px;z-index:3;}
+.ev-av-stack.fanned .av-partner-btn .av-face{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--green-bright);}
+.av-partner-btn[data-partner-unmatched="1"]{cursor:not-allowed;}
+.av-partner-btn[data-partner-unmatched="1"] .av-face{opacity:.55;}
+
+/* ---- Status pills --------------------------------------------------------
+   Their own zone, sized to hold two per line so a participant carrying LDP + WBO does not
+   reflow the row. Visual signals, not prose: small, unbordered, read at a glance by shape
+   and colour rather than word by word. */
+.status-pills{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:19px;margin-top:6px;}
+.status-pills .pill{font-size:9.5px;font-weight:600;letter-spacing:.04em;padding:3px 8px;border-radius:999px;}
+
+.ev-notesbtn,.kebab-btn{width:28px;height:28px;border:0;border-radius:7px;background:none;display:flex;align-items:center;justify-content:center;color:var(--gray-2);cursor:pointer;flex:none;position:relative;transition:background .15s,color .15s;}
+.ev-notesbtn:hover,.kebab-btn:hover{background:var(--paper);color:var(--ink);}
 .ev-notesbtn svg,.kebab-btn svg{width:16px;height:16px;}
-.ev-notesbtn.has-note{background:var(--green-bg);border-color:rgba(46,162,3,.35);color:var(--green);}
+/* Notes reads as "has content" by ink alone — no fill, no border. The count is the useful
+   part: it says whether opening this is worth the click. */
+.ev-notesbtn.has-note{color:var(--green);}
+.ev-notesbtn-n{position:absolute;top:-1px;right:-1px;min-width:13px;height:13px;padding:0 3px;border-radius:999px;background:var(--green);color:#fff;font-family:var(--mono);font-size:8.5px;font-weight:700;line-height:13px;text-align:center;}
 
 /* ============================================================
    PARTICIPANT ROW REDESIGN — 6-block exception-first layout.
@@ -282,8 +372,8 @@ body.cs-dashboard .btn-danger:hover{background:var(--coral-bg);border-color:var(
    Attendance Architecture spec — the prototype only had 4 states and no
    yellow, since it predates that 3-layer design being locked in.
    tk-pending still covers "day hasn't happened yet / in progress". */
-.ticks{display:inline-flex;gap:3px;flex-wrap:wrap;}
-.tick{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:20px;padding:0 5px;border-radius:4px;font-family:var(--mono);font-size:10px;font-weight:700;border:1px solid transparent;cursor:pointer;}
+.ticks{display:inline-flex;gap:3px;flex-wrap:nowrap;margin-top:6px;}
+.tick{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:20px;padding:0 6px;border-radius:5px;font-family:var(--mono);font-size:10px;font-weight:700;border:1px solid transparent;cursor:pointer;}
 .tick.tk-attended{background:var(--green-bg);color:var(--green);}
 .tick.tk-absent{background:#f0eee9;color:#7a746c;}
 .tick.tk-pending{background:var(--paper-2);color:var(--gray-2);border-color:#eae7de;}
@@ -311,18 +401,47 @@ body.cs-dashboard .btn-danger:hover{background:var(--coral-bg);border-color:var(
 .det-pop.open{opacity:1;pointer-events:auto;transform:none;}
 .det-pop-eyebrow{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green-bright);padding:14px 16px 0;}
 .det-pop-title{font-size:14px;font-weight:700;padding:2px 16px 12px;border-bottom:1px solid var(--line);}
+/* Chip strip — the Day ticks' four sessions, above a faint rule and the connection detail.
+   An unattended session is drawn as an empty outline rather than a filled grey block, so
+   four chips read as a progress row at a glance instead of as four labels. */
+.det-pop-chips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:12px 16px;border-bottom:1px solid var(--line);}
+.popchip{display:flex;align-items:center;justify-content:center;height:26px;border-radius:6px;border:1px solid var(--line);background:var(--paper-2);font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--gray-3);}
+.popchip.on{background:var(--green-bg);border-color:rgba(46,162,3,.3);color:var(--green);}
 .det-pop-kv{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;padding:12px 16px;font-size:12px;}
 .det-pop-kv dt{color:var(--gray);}
 .det-pop-kv dd{font-weight:600;text-align:right;}
 .det-pop-ft{padding:10px 16px;border-top:1px solid var(--line);background:#fcfbf8;}
 .det-pop-ft a{font-size:12px;font-weight:700;color:var(--green);cursor:pointer;}
 
-/* Zone wrapper layout — six always-visible zones in .ev-row1 (flex, gap
-   already set by .ev-row1 itself). */
-.ev-identity{flex:1 1 220px;min-width:180px;}
-.ev-sub{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;row-gap:5px;}
+/* Zone wrapper layout in .ev-row1 (flex, gap already set by .ev-row1 itself). */
+.ev-sub{display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;row-gap:4px;}
 .ev-classification{min-height:20px;}
-.class-pills{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:6px;}
+/* 3 over 2, both rows the same total width. Six columns: the top three pills span 2 each,
+   the two NP pills span 3 each. That makes the lower pair exactly half the block and
+   exactly as wide as the trio above — which a flex-wrap row cannot guarantee, since it
+   sizes each pill to its own text and lets the second line end wherever it happens to.
+   Fixed 152px block so every row's classification column starts at the same x, rather than
+   each row being as wide as its own longest pill. */
+/* max-width, not width: the block has to be able to shrink with its track at narrow widths,
+   but must not stretch to fill a wide one — five short pills spread across 230px read as
+   five unrelated buttons rather than as one classification block. */
+.class-pills{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;max-width:172px;margin-top:6px;}
+.class-pills .pill{grid-column:span 2;justify-content:center;padding:3px 4px;font-size:9px;letter-spacing:.03em;border-radius:5px;}
+.class-pills .pill[data-classtype="ac-np"],.class-pills .pill[data-classtype="sem-np"]{grid-column:span 3;}
+
+/* Follow-on: Seminar + AC + notes in one zone, replacing what used to be two separate
+   single-pill columns and a CPLT CHKPNT column between them. */
+.ev-followon{min-height:20px;}
+.followon-pills{display:flex;align-items:center;gap:6px;margin-top:6px;}
+.ev-exception{display:flex;justify-content:flex-end;}
+
+/* Below ~1180px the six fixed tracks stop fitting inside .wrap. Rather than let them
+   squeeze until pills wrap mid-word, the row reflows to two lines: identity across the top,
+   the five data zones beneath it. Still aligned — just as a narrower set of columns. */
+@media(max-width:1180px){
+  .ev-row1{grid-template-columns:minmax(0,1fr) 150px 106px 150px 32px;row-gap:12px;}
+  .ev-identity{grid-column:1 / -1;}
+}
 .p-minor{background:var(--amber-bg);color:var(--amber);}
 .p-npflag{background:var(--teal-bg);color:#3f6b6d;}
 .p-slot-off{background:var(--paper-2);color:var(--gray-3);}
@@ -352,7 +471,19 @@ body.cs-dashboard .btn-danger:hover{background:var(--coral-bg);border-color:var(
 .combo-opt:hover{background:var(--paper);}
 .combo-opt.muted{color:var(--gray);cursor:default;}
 
-.pager{display:flex;align-items:center;justify-content:center;gap:16px;padding:14px 20px;border-top:1px solid var(--line);}
+/* Pagination rebuilt 2026-08-15: right-aligned, borderless chevrons, rows-per-page.
+   Was centred with bordered Prev/Next buttons — three boxes and two words for what a pair
+   of chevrons says. Right-aligned because it belongs to the table above it, and the
+   table's right edge is where a list control is looked for. */
+.pager{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:12px 20px;border-top:1px solid var(--line);}
+.pg-chev{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:0;border-radius:6px;background:none;color:var(--gray);cursor:pointer;transition:background .15s,color .15s;}
+.pg-chev:hover:not(:disabled){background:var(--paper);color:var(--ink);}
+.pg-chev:disabled{opacity:.28;cursor:default;}
+.pg-chev svg{width:14px;height:14px;}
+.pg-label{font-size:11.5px;color:var(--gray);white-space:nowrap;}
+.pg-size{display:flex;align-items:center;gap:6px;margin-left:10px;padding-left:14px;border-left:1px solid var(--line);}
+.pg-size-l{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gray-2);}
+.pg-size select{border:1px solid var(--line);border-radius:6px;background:#fff;padding:3px 6px;font-family:var(--mono);font-size:11px;color:var(--ink);cursor:pointer;}
 
 /* Course Materials — always sectioned by day, chronological, no tabs */
 .daysec-hd{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);padding:14px 20px 8px;background:#fcfbf8;border-top:1px solid var(--line);}
@@ -372,14 +503,25 @@ body.cs-dashboard .btn-danger:hover{background:var(--coral-bg);border-color:var(
 /* stat tiles (course snapshot / in-course stats / release progress) */
 .stats{display:grid;grid-template-columns:repeat(6,1fr);border-top:1px solid var(--line);}
 .stats-7{grid-template-columns:repeat(7,1fr);}
+/* Second-row handling for the 7-wide snapshot grid (2026-08-15), matching what
+   .stats-4 already did for its own width: kill the trailing right border at the end
+   of each row, and rule off between the two rows. Without these the 14-tile grid
+   draws a border down its right edge and no divider between the course row and the
+   room row. */
+.stats-7 .stat:nth-child(7n){border-right:none;}
+.stats-7 .stat:nth-child(n+8){border-top:1px solid var(--line);}
 .stats-4{grid-template-columns:repeat(4,1fr);}
 .stats-4 .stat:nth-child(4n){border-right:none;}
 .stats-4 .stat:nth-child(n+5){border-top:1px solid var(--line);}
 .stat{padding:15px 17px;border-right:1px solid var(--line);min-width:0;}
 .stat:last-child{border-right:none;}
 .stat .l{font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gray-2);margin-bottom:6px;line-height:1.3;}
-.stat .n{font-family:var(--mono);font-size:20px;font-weight:500;letter-spacing:-.02em;color:var(--ink);min-width:0;}
+.stat .n{font-family:var(--mono);font-size:20px;font-weight:500;letter-spacing:-.02em;color:var(--ink);min-width:0;display:flex;align-items:baseline;gap:7px;}
 .stat .n .mf-lg{font-size:22px;}
+/* Numeric tag — the raw headcount riding alongside a rate (LDP, WBO). Deliberately
+   subordinate: small, cased down, on a quiet chip, so the percentage stays the value
+   the tile reads as and the count is available without competing for the glance. */
+.stat .n .ntag{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:0;color:var(--gray);background:var(--paper-2);border-radius:4px;padding:2px 6px;line-height:1.2;flex:none;}
 .stat .sub{font-size:10.5px;color:var(--gray);margin-top:3px;}
 .stat.big{background:var(--teal);}
 .stat.big .l{color:rgba(255,255,255,.6);}
@@ -395,49 +537,157 @@ body.cs-dashboard .btn-danger:hover{background:var(--coral-bg);border-color:var(
 .stat.stat-filterable.active .l{color:var(--green);}
 .stat.stat-filterable.active::after{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--green-bright);}
 
-/* ---- Snapshot tabs + title-bar attendance (2026-08-14) ----------------------
-   Course snapshot and Device & Zoom reconciliation share one card. The inactive
-   tab is greyed rather than hidden so the CS can see the other view exists — it
-   used to be a whole separate nav tab, and discoverability shouldn't drop just
-   because it moved. */
+/* ---- Snapshot title bar + Attendance now -----------------------------------
+   The .snap-tab / .snap-pane rules were deleted on 2026-08-15 along with the tabs
+   themselves — the card now shows one 7x2 grid and has nothing to switch between,
+   so a stale display:none pane rule would only be a trap for the next tile added. */
 .snap-hd{gap:0;padding-right:0;}
-.snap-tabs{display:flex;align-items:center;}
-.snap-tab{appearance:none;background:none;border:0;margin:0;padding:0 14px 0 0;font-family:inherit;font-size:13.5px;font-weight:700;letter-spacing:.01em;line-height:1.35;color:var(--gray-2);cursor:pointer;white-space:nowrap;transition:color .15s;}
-.snap-tab + .snap-tab{padding-left:14px;border-left:1px solid var(--line);}
-.snap-tab:hover{color:var(--ink);}
-.snap-tab.active{color:var(--ink);cursor:default;}
-.snap-pane{display:none;}
-.snap-pane.active{display:grid;}
+.snap-hd h3{margin-right:auto;}
 
 /* Attendance now, promoted out of the tile grid into the bar. Keeps the teal
    .stat.big treatment so it reads as the same object it always was, just sized
    to the bar height — the negative margins cancel .card-hd's 12px padding so it
-   runs edge to edge and sits flush against the card's bottom rule. */
-.snap-att{margin-left:auto;align-self:stretch;margin-top:-12px;margin-bottom:-12px;display:flex;align-items:center;gap:10px;background:var(--teal);border:0;padding:0 20px;cursor:pointer;font-family:inherit;transition:filter .15s;}
+   runs edge to edge and sits flush against the card's bottom rule.
+
+   Restructured 2026-08-15: label, percentage and "N / M" used to sit in one
+   horizontal run, which read as three peers and made the percentage — the thing
+   the tile exists to report — no more prominent than its own caption. The two
+   text lines now stack, and the percentage takes its own panel to their right,
+   stretched to the full height of that stack (align-self:stretch on a flex item
+   whose parent is itself stretched to the bar). The panel is separated by a hairline
+   rather than a fill so the whole control still reads as one teal object. */
+.snap-att{margin-left:auto;align-self:stretch;margin-top:-12px;margin-bottom:-12px;display:flex;align-items:stretch;background:var(--teal);border:0;padding:0;cursor:pointer;font-family:inherit;text-align:left;transition:filter .15s;}
 .snap-att:hover{filter:brightness(1.08);}
 .snap-att.active{box-shadow:inset 0 3px 0 var(--green-bright);}
-.snap-att-l{font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.6);}
-.snap-att-n{font-family:var(--mono);font-size:22px;font-weight:500;letter-spacing:-.02em;color:#fff;}
-.snap-att-s{font-size:10.5px;color:rgba(255,255,255,.55);}
+.snap-att-txt{display:flex;flex-direction:column;justify-content:center;gap:3px;padding:11px 16px 11px 20px;min-width:0;}
+.snap-att-l{font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.6);white-space:nowrap;}
+.snap-att-s{font-size:10.5px;color:rgba(255,255,255,.55);white-space:nowrap;}
+.snap-att-pct{display:flex;align-items:center;justify-content:center;align-self:stretch;padding:0 20px;border-left:1px solid rgba(255,255,255,.14);}
+.snap-att-n{font-family:var(--mono);font-size:24px;font-weight:500;letter-spacing:-.02em;color:#fff;line-height:1;}
 
-/* ---- LDP / WBO split tile -------------------------------------------------
-   WBO is a subset of LDP, never a peer of it. As two adjacent tiles they read as
-   two separate populations and invited adding them together; the diagonal rule
-   says "part of". Both halves stay independently filterable — they carry
-   .stat-filterable so applyStatFilter()'s existing sweep finds them — but the
-   .stat.stat-filterable rules above don't apply, since the halves aren't .stat
-   themselves, hence the explicit hover/active treatment here. */
-.stat.stat-split{display:grid;grid-template-columns:1fr auto 1fr;column-gap:4px;padding-left:14px;padding-right:14px;}
-.stat-split .split-half{min-width:0;padding:1px 4px;border-radius:4px;cursor:pointer;transition:background .15s;}
-.stat-split .split-half:hover{background:var(--paper);}
-.stat-split .split-half.active{background:var(--green-bg);}
-.stat-split .split-half.active .l{color:var(--green);}
-.stat-split .split-b{text-align:right;}
-.stat-split .split-rule{width:14px;align-self:stretch;min-height:30px;background:linear-gradient(to top right,transparent calc(50% - .5px),var(--line) calc(50% - .5px),var(--line) calc(50% + .5px),transparent calc(50% + .5px));}
-.stat-split .sub{grid-column:1 / -1;}
+/* .stat-split (the old LDP/WBO diagonal-split tile) was removed 2026-08-15 — LDP and
+   WBO are two ordinary tiles again, each leading with a rate and carrying its count
+   as a .ntag chip. The subset relationship the diagonal used to express is now stated
+   in WBO's sub-label ("of those who left"), which says it in words and survives the
+   tile being read on its own. */
 .stat.big.stat-filterable:hover{background:var(--teal-deep);}
 .stat.big.stat-filterable.active{background:var(--teal-deep);}
 .stat.big.stat-filterable.active .l{color:#fff;}
+
+/* ============================================================
+   ROSTER CARD CHROME — de-weighted 2026-08-15
+   The roster is the surface a CS lives on for three days, and it was the heaviest thing
+   on the page: a shadowed, bordered card, containing a bordered header strip of five
+   outlined controls, containing a padded list of individually bordered, rounded rows.
+   Everything below removes a layer of that box-in-box without removing a boundary the
+   eye actually needs — the card keeps its hairline, the rows keep their dividers.
+   ============================================================ */
+#ms-roster{box-shadow:none;}
+.roster-hd{padding:10px 20px;gap:10px;}
+.roster-hd .r{gap:4px;}
+
+/* Borderless icon affordances. Same 30px hit target as a .btn-sm so the row stays
+   vertically aligned and the controls stay comfortably clickable — the border was doing
+   nothing for either. */
+.icon-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:0;border-radius:7px;background:none;color:var(--gray);cursor:pointer;flex:none;transition:background .15s,color .15s;}
+.icon-btn:hover{background:var(--paper);color:var(--ink);}
+.icon-btn.on{background:var(--green-bg);color:var(--green);}
+.icon-btn svg{width:16px;height:16px;}
+/* Quiet text button — sort. A two-state toggle that says what it currently is; it needs a
+   label, not a box. */
+.btn-quiet{border:0;background:none;padding:6px 8px;border-radius:7px;font-family:var(--sans);font-size:12px;font-weight:600;color:var(--gray);cursor:pointer;white-space:nowrap;transition:background .15s,color .15s;}
+.btn-quiet:hover{background:var(--paper);color:var(--ink);}
+/* Inactive view switch. Carries its count as a chip so the CS can see there is something
+   behind it without switching; goes solid when the inactive view is the one on screen, so
+   the list can never be mistaken for the working roster. */
+.inactive-btn{display:inline-flex;align-items:center;gap:6px;}
+.inactive-btn .inactive-n{font-family:var(--mono);font-size:10px;font-weight:700;line-height:1.4;padding:1px 5px;border-radius:999px;background:var(--paper-2);color:var(--gray);}
+.inactive-btn.on{background:var(--teal);color:#fff;}
+.inactive-btn.on:hover{background:var(--teal-deep);color:#fff;}
+.inactive-btn.on .inactive-n{background:rgba(255,255,255,.18);color:#fff;}
+/* The list itself is tinted while viewing inactive records — a persistent, ambient signal
+   that these rows are not the working roster, which a single button state cannot carry once
+   the CS has scrolled away from it. */
+.ev-list.viewing-inactive{background:var(--paper-2);}
+.ev-list.viewing-inactive .ev-card{background:transparent;}
+
+/* Search expands in place from its icon. Width is the only thing that animates, so the
+   icon never moves and the controls to its right slide rather than jump. */
+.search-inline{display:flex;align-items:center;}
+.search-inline input{width:0;padding:0;border:0;border-bottom:1px solid transparent;background:none;font-family:var(--sans);font-size:12.5px;color:var(--ink);outline:none;transition:width .2s ease,padding .2s ease,border-color .2s;}
+.search-inline.open input{width:200px;padding:6px 4px;border-bottom-color:var(--line-2);}
+.search-inline.open input:focus{border-bottom-color:var(--green-bright);}
+
+/* ---- Advanced search ----------------------------------------------------
+   Collapsed until asked for, and rendered as a band inside the card rather than a popover
+   so the result count and the list it is narrowing stay visible together. */
+.advsearch{padding:12px 20px 14px;border-bottom:1px solid var(--line);background:var(--paper-2);}
+.advsearch-row{display:flex;align-items:flex-start;gap:14px;}
+.advsearch-l{flex:none;padding-top:5px;font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gray-2);}
+.advsearch-presets{display:flex;flex-wrap:wrap;gap:6px;}
+.advchip{border:1px solid var(--line-2);background:#fff;border-radius:999px;padding:4px 11px;font-family:var(--sans);font-size:11px;font-weight:600;color:var(--gray);cursor:pointer;transition:all .15s;}
+.advchip:hover{border-color:var(--muted);color:var(--ink);}
+.advchip.on{background:var(--green);border-color:var(--green);color:#fff;}
+.advsearch-rule{height:1px;background:var(--line);margin:12px 0;}
+.advsearch-conds{display:flex;flex-direction:column;gap:6px;}
+.advcond{display:flex;align-items:center;gap:8px;}
+.advcond-l{flex:none;width:44px;font-size:11px;font-weight:600;color:var(--gray-2);text-transform:lowercase;}
+.advcond select{border:1px solid var(--line-2);border-radius:6px;background:#fff;padding:5px 8px;font-family:var(--sans);font-size:12px;color:var(--ink);cursor:pointer;}
+.advcond-x{border:0;background:none;color:var(--gray-3);cursor:pointer;font-size:12px;padding:4px 6px;border-radius:6px;}
+.advcond-x:hover{background:#fff;color:var(--coral-ink);}
+.advsearch-actions{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;}
+.advsearch-match{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--gray);}
+.advsearch-match select{border:1px solid var(--line-2);border-radius:6px;background:#fff;padding:4px 7px;font-family:var(--sans);font-size:11.5px;cursor:pointer;}
+.advsearch-count{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--gray);}
+
+/* ---- Notes panel --------------------------------------------------------
+   History above the composer: what is already recorded is read first, and the textarea is
+   the last thing in the flow because adding is what you do after reading. */
+.note-list{display:flex;flex-direction:column;gap:10px;max-height:260px;overflow-y:auto;margin-bottom:14px;padding-right:4px;}
+.note-entry{border-left:2px solid var(--line-2);padding:2px 0 2px 12px;}
+.note-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px;}
+.note-cat{font-size:9px;}
+.note-when{font-family:var(--mono);font-size:10.5px;color:var(--gray-2);}
+.note-who{font-size:11px;font-weight:600;color:var(--gray);}
+.note-text{font-size:12.5px;line-height:1.5;color:var(--ink);white-space:pre-wrap;}
+.note-empty{font-size:12px;color:var(--gray-2);padding:4px 0 8px;}
+
+/* ---- Keyboard focus ------------------------------------------------------
+   De-bulking removed borders from a lot of controls, and on several of them that border
+   was the only thing a keyboard user had to locate focus — a borderless icon button with
+   the UA outline suppressed by Ontraport's reset is invisible when focused. One shared
+   :focus-visible ring covers every control this rebuild made borderless, plus the stat
+   tiles and avatar stacks that became keyboard-operable.
+
+   :focus-visible, not :focus, so the ring appears for keyboard and assistive-tech users
+   without firing on every mouse click — the same distinction the .tabbar rule above
+   already makes. Scoped under body.cs-dashboard so it outranks Ontraport's own bare-element
+   focus styles on load order, matching the established collision-fix pattern in this file. */
+body.cs-dashboard .icon-btn:focus-visible,
+body.cs-dashboard .btn-quiet:focus-visible,
+body.cs-dashboard .pg-chev:focus-visible,
+body.cs-dashboard .kebab-btn:focus-visible,
+body.cs-dashboard .ev-notesbtn:focus-visible,
+body.cs-dashboard .advchip:focus-visible,
+body.cs-dashboard .advcond-x:focus-visible,
+body.cs-dashboard .secnav button:focus-visible,
+body.cs-dashboard .tick:focus-visible,
+body.cs-dashboard .ev-clickable:focus-visible,
+body.cs-dashboard .av-partner-btn:focus-visible,
+body.cs-dashboard .ev-av-stack:focus-visible,
+body.cs-dashboard .stat-filterable:focus-visible,
+body.cs-dashboard .snap-att:focus-visible{outline:2px solid var(--green-bright);outline-offset:2px;border-radius:6px;}
+/* Tiles are large and edge-to-edge; an outset ring would be clipped by the grid's own
+   borders, so theirs sits inside. */
+body.cs-dashboard .stat-filterable:focus-visible,
+body.cs-dashboard .snap-att:focus-visible{outline-offset:-3px;border-radius:0;}
+
+/* Empty state — a filter that matches nothing must SAY so. Previously the list simply
+   rendered no rows, leaving a blank panel that reads identically to a failed load: the CS
+   cannot tell "nobody is Absent-NCNS" from "the roster is broken". */
+.ev-empty{padding:34px 20px;text-align:center;color:var(--gray);font-size:12.5px;}
+.ev-empty b{display:block;font-size:13.5px;color:var(--ink);margin-bottom:4px;}
+.ev-empty button{margin-top:10px;}
 
 .chips{display:flex;gap:6px;flex-wrap:wrap;padding:11px 20px;border-bottom:1px solid var(--line);}
 .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:11px;font-weight:600;color:var(--gray);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
@@ -648,7 +898,11 @@ body.cs-dashboard .combo-opt:hover,body.cs-dashboard .combo-opt.active{backgroun
    before an Event is entered, so it's hidden outright while the
    CS is on Home rather than just scrolled past.
    ============================================================ */
-body.home .evtstrip,body.home .tabbar,body.home #secnav,body.home .evt-sel,body.home .evt-meta{display:none;}
+/* .es-day and .btn-session join this list 2026-08-15: they moved into .topbar, which is
+   the one bar Home keeps, so hiding their old .evtstrip container no longer hides them.
+   Both are event-scoped ("Day 2 of 3", "End session") and would otherwise sit on Home
+   asserting a live session the CS has not entered yet. */
+body.home .tabbar,body.home #secnav,body.home .evt-sel,body.home .evt-meta,body.home .es-day,body.home .btn-session{display:none;}
 .home-events{max-width:600px;margin:0 auto;}
 .home-cards{display:grid;gap:16px;}
 /* Resized/restyled 2026-08-13 to match the Member Portal During-page hero

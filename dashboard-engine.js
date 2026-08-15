@@ -127,6 +127,89 @@ var ROSTER_DAY_OPTION_ORDER = ['404','405','406','456'];
 function rosterEscAttr(s){ return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/'/g, '&#39;').replace(/"/g, '&quot;'); }
 function rosterEscHtml(s){ return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function rosterIsTrue(v){ return v === '1' || v === 1 || v === true; }
+
+/* ---------- Registration Status (f2424) ----------
+   One state matters to the dashboard: Withdraw.
+
+   Cancelled (option 153) is NOT modelled. It exists on the field but is verified unused —
+   zero registrations carry it account-wide (queried 2026-08-15, not sampled), no dashboard
+   action writes it, and no workflow reads it. Modelling a state nothing ever sets buys a
+   dead branch and a badge that can never be seen or tested. If it starts being used, add it
+   beside WITHDRAWN below; do not revive the old "anything that isn't literally Active counts
+   as cancelled" logic, which flagged the majority of a real roster as cancelled.
+
+   Blank/unset reads as active. That is no longer the common case — as of 2026-08-15 every
+   one of event 218's 134 registrations carries an explicit 154 Active, where an earlier
+   snapshot found 93 blank, so the field has since been backfilled. The blank-tolerant
+   reading is kept anyway: it costs nothing, and it is the behaviour that stops a
+   newly-created registration (written before whatever step sets 154) from being treated as
+   not participating. Only an explicit option ID means anything.
+
+   The Withdraw option was created 2026-08-15 and its ID read from live field metadata, not
+   assumed: f2424 now reports `153=Cancelled, 154=Active, 491=Withdraw`. */
+var ROSTER_REG_ACTIVE = '154';
+var ROSTER_REG_WITHDRAWN = '491';
+
+/* rosterIsWithdrawn() — the specific Withdraw option. Drives the WITHDRAWN badge and the WBS
+   tile, both of which are about that one state. */
+function rosterIsWithdrawn(reg){ return !!ROSTER_REG_WITHDRAWN && String((reg && reg.f2424) || '') === ROSTER_REG_WITHDRAWN; }
+
+/* rosterIsInactive() — "this registration is not active", whatever the reason. Deliberately
+   written as "explicitly set to something that isn't Active" rather than as a list of known
+   inactive options. Two reasons:
+
+     1. It is the rule the client actually stated — a record whose status is not active gets
+        batched out of the working roster — so encoding the rule beats encoding today's
+        option list and having to revisit it whenever an option is added.
+     2. It closes the gap left by dropping Cancelled. 153 is slated for deletion but is
+        selectable until then, and with no handling of its own a CS who picked it would get a
+        fully active-looking participant. Under this predicate they are inactive instead,
+        which is the safe direction to be wrong in.
+
+   UNSET stays ACTIVE. That is the state a registration is created in before whatever step
+   writes 154, and treating unset as inactive would hide brand-new registrations from the
+   roster — the exact failure the old "anything that isn't literally Active is cancelled"
+   logic caused.
+
+   Unset on this field is the STRING "0", not null and not empty — verified 2026-08-15
+   against the 5 records account-wide that carry it (Ontraport's own IS EMPTY check matches
+   them, and they read back as "0"). This is not a detail to infer: an earlier version of
+   this predicate tested only for '' and so classified every unset registration as inactive,
+   which would have hidden them from the roster and dropped them from every metric. Both
+   sentinels are treated as unset. */
+var ROSTER_REG_UNSET = ['', '0'];
+function rosterIsInactive(reg){
+  var s = String((reg && reg.f2424) == null ? '' : (reg && reg.f2424)).trim();
+  if(ROSTER_REG_UNSET.indexOf(s) !== -1) return false;
+  return s !== ROSTER_REG_ACTIVE;
+}
+function rosterSplitActive(rows){
+  var active = [], inactive = [];
+  (rows || []).forEach(function(r){ (rosterIsInactive(r) ? inactive : active).push(r); });
+  return { active: active, inactive: inactive };
+}
+
+/* Test registrations (registrations.f2878) are excluded everywhere, not merely hidden:
+   dropped from the roster array the moment Roster Fetch resolves, before a single card is
+   built or a single tile is computed. Everything downstream — the cards, all 14 snapshot
+   tiles, the queue/PIQ derivation, sort, search, pagination, and the live-patch handler
+   (which only ever looks up a registration inside dashboardLastRoster) — reads that same
+   filtered array, so a test record cannot reach any of them.
+
+   Filtering here rather than only server-side is deliberate belt-and-braces: if the Roster
+   Fetch webhook is later changed, or an older version is still deployed, the dashboard is
+   still correct on its own. The reverse is also true and still worth doing — see the
+   webhook note in dashboardFetchRoster(). If f2878 is absent from the payload this reads
+   undefined and excludes nothing, which is the safe direction to fail. */
+function rosterIsTestRegistration(reg){ return rosterIsTrue(reg && reg.f2878); }
+function rosterExcludeTestRegistrations(rows){
+  if(!rows || !rows.length) return rows || [];
+  var kept = rows.filter(function(r){ return !rosterIsTestRegistration(r); });
+  var dropped = rows.length - kept.length;
+  if(dropped > 0) console.info('dashboard: excluded ' + dropped + ' test registration(s) (f2878) from the roster');
+  return kept;
+}
+
 // rosterListLabels() — decodes an Ontraport `list`-type field, which is NOT a
 // bare option ID the way a `drop` field is. Values arrive wrapped and joined
 // by a */* delimiter: a single selection reads as */*398*/* and a multi-select
@@ -157,6 +240,35 @@ function rosterFmtEpochTime(sec){
   return d.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
 }
 function rosterFmtMinutes(m){ var n = Number(m || 0); return n > 0 ? n.toFixed(1) : '0'; }
+/* Human duration, not a minute count. "204" is a number a CS has to do arithmetic on to
+   understand; "3h 24m" is a length of time they already know how to read. Used wherever a
+   presence duration is shown to a person — the raw minutes stay available in the same
+   popover for anyone reconciling against Zoom's own figures. */
+function rosterFmtDuration(mins){
+  var n = Math.round(Number(mins || 0));
+  if(!(n > 0)) return '—';
+  var h = Math.floor(n / 60), m = n % 60;
+  if(!h) return m + 'm';
+  return m ? (h + 'h ' + m + 'm') : (h + 'h');
+}
+
+/* Per-day session fields. The 12 session-ATTENDED checkboxes are the finest-grained
+   attendance the pipeline records, and until now 10 of the 12 had no visible target
+   anywhere on the dashboard (only D3S3/f3203 and D3S4/f3055 surfaced, as the CPLT CHKPNT
+   ticks that this rebuild removes). Opening a Day tick now shows that day's four sessions,
+   which is where the detail belonged all along — a checkpoint column at the row level was
+   spending permanent horizontal space on two of twelve values. */
+var ROSTER_DAY_SESSION_FIELDS = {
+  1: ['f3193', 'f3194', 'f3195', 'f3196'],
+  2: ['f3197', 'f3198', 'f3199', 'f3200'],
+  3: ['f3201', 'f3202', 'f3203', 'f3055']
+};
+function rosterDaySessionChips(reg, dayNum){
+  var fields = ROSTER_DAY_SESSION_FIELDS[dayNum] || [];
+  return fields.map(function(f, i){
+    return { label: 'S' + (i + 1), on: rosterIsTrue(reg[f]) };
+  });
+}
 
 function rosterBuildAttendanceTick(reg, dayNum, attendedField, minutesField, currentDayRaw){
   var dayOptionCode = dayNum === 1 ? '404' : dayNum === 2 ? '405' : '406';
@@ -165,23 +277,45 @@ function rosterBuildAttendanceTick(reg, dayNum, attendedField, minutesField, cur
   var attended = rosterIsTrue(reg[attendedField]);
   var minutes = Number(reg[minutesField] || 0);
   var cls, kv, title;
-  title = 'Day ' + dayNum + ' Attendance';
+  title = 'Day ' + dayNum;
+  /* The four connection facts the client asked for, under the session chips.
+     All four are real stored fields, confirmed against the live registrations (10001) field
+     metadata on 2026-08-15:
+       f2855 First Join Time · f2859 Most Recent Join Time · f2862 Most Recent Leave Time ·
+       f2871 Join Count
+     (An earlier pass rendered Latest Join as an em dash on the belief that no field backed
+     it — f2859 does, and was simply missed. Corrected here.)
+
+     One caveat that IS still true and matters when reading these: all four are
+     registration-level, spanning the whole event, not per-day — so they read identically
+     inside every day's popover. Only "Present for" below differs per day, because it comes
+     from the per-day minute totals f2805/f2806/f2807. Genuine per-day join/leave stamps
+     would need new fields written by the Zoom poller. */
+  var connectionKv = [
+    ['First Join', rosterFmtEpochTime(reg.f2855)],
+    ['Latest Join', rosterFmtEpochTime(reg.f2859)],
+    ['Latest Leave', rosterFmtEpochTime(reg.f2862)],
+    ['Join Count', String(Number(reg.f2871 || 0))]
+  ];
   if(isLdpDay){
     cls = 'tk-ldp';
     var leftTypeLabel = ROSTER_LEFT_TYPE_MAP[String(reg.f3056 || '')] || 'LDP';
     kv = [['Attended', 'LDP — ' + leftTypeLabel], ['Left Time', rosterFmtEpochTime(reg.f3060)]];
     if(rosterIsTrue(reg.f2688)) kv.push(['Well Being Out', 'Yes']);
+    kv = kv.concat(connectionKv);
   } else if(attended){
     cls = 'tk-attended';
-    kv = [['Attended','Yes'], ['Minutes', rosterFmtMinutes(minutes)], ['First Join', rosterFmtEpochTime(reg.f2855)], ['Most Recent Leave', rosterFmtEpochTime(reg.f2862)], ['Join Count', String(Number(reg.f2871 || 0))], ['Match', ROSTER_MATCH_METHOD_MAP[String(reg.f2808 || '')] || '—']];
+    kv = [['Attended','Yes'], ['Present for', rosterFmtDuration(minutes)]].concat(connectionKv, [['Match', ROSTER_MATCH_METHOD_MAP[String(reg.f2808 || '')] || '—']]);
   } else if(rosterDayOptionIndex(dayOptionCode) >= rosterDayOptionIndex(currentDayRaw)){
     cls = 'tk-pending';
     kv = [['Attended','Pending'], ['Match','Day not yet reached']];
   } else {
     cls = 'tk-absent';
-    kv = [['Attended','No'], ['Minutes', rosterFmtMinutes(minutes)], ['Match', ROSTER_MATCH_METHOD_MAP[String(reg.f2808 || '')] || 'No Zoom connection recorded for this day']];
+    kv = [['Attended','No'], ['Present for', rosterFmtDuration(minutes)]].concat(connectionKv, [['Match', ROSTER_MATCH_METHOD_MAP[String(reg.f2808 || '')] || 'No Zoom connection recorded for this day']]);
   }
-  return '<button class="tick ' + cls + '" data-day-num="' + dayNum + '" onclick="openDetailPop(this)" data-pop-title="' + rosterEscAttr(title) + '" data-pop-kv=\'' + rosterEscAttr(JSON.stringify(kv)) + '\'>D' + dayNum + '</button>';
+  return '<button class="tick ' + cls + '" data-day-num="' + dayNum + '" onclick="openDetailPop(this)" data-pop-title="' + rosterEscAttr(title) + '"' +
+    ' data-pop-chips=\'' + rosterEscAttr(JSON.stringify(rosterDaySessionChips(reg, dayNum))) + '\'' +
+    ' data-pop-kv=\'' + rosterEscAttr(JSON.stringify(kv)) + '\'>D' + dayNum + '</button>';
 }
 function rosterBuildChkpntTick(attended, dayLabel, tickLabel, field){
   var fieldAttr = field ? (' data-field="' + rosterEscAttr(field) + '"') : '';
@@ -195,71 +329,120 @@ function rosterClassPill(classtype, isOn, onClass, label, title, editable, kvOn,
   return '<button class="pill ' + cls + ' ev-clickable" data-classtype="' + classtype + '" onclick="openDetailPop(this)" data-pop-eyebrow="Classification" data-pop-title="' + rosterEscAttr(title) + '"' + editAttr + ' data-pop-kv=\'' + rosterEscAttr(JSON.stringify(kv)) + '\'>' + label + '</button>';
 }
 
-/* rosterNameBadge() — added 2026-08-12: the name-row badge previously
-   only ever showed ACTIVE/CANCELLED (registration status, f2424). Client
-   wants it to also surface live attendance/course-status signals so a
-   CS can see at a glance without opening a card: LIVE (green, f2853
-   Currently Present), LATE (amber, f3062 FS Late Arrival), LDP (red,
-   f2293 Left The Course — once someone's left they stay LDP for the
-   rest of the event, no day-matching needed here unlike the per-day
-   tick's LDP check), ABSENT - EXCUSED/NCNS (f3191 Attendance Status,
-   the Correct Attendance manual-resolution field). Precedence, most
-   authoritative first: CANCELLED (registration itself isn't active) >
-   LDP (they've left, nothing else matters) > manually-resolved absence
-   (f3191) > LIVE > LATE > default ACTIVE. Reused by both the initial
-   card render and the attendance.changed live-patch handler so the two
-   can never drift apart. */
-function rosterNameBadge(reg){
-  // f2424 (Registration Status) is blank/unset on most real registrations
-  // (confirmed live against event 218: 0 explicit Cancelled, 45 explicit
-  // Active, 93 blank) -- the field is apparently only set by a later
-  // confirmation step, not at registration creation. Blank must read as
-  // the normal/active state; only the explicit Cancelled option (153)
-  // should show the CANCELLED badge. The prior "anything that isn't
-  // literally Active (154) counts as cancelled" check incorrectly flagged
-  // the majority of a real event's roster as cancelled. Fixed 2026-08-13.
-  if(String(reg.f2424) === '153') return {label:'CANCELLED', cls:'p-active'};
-  if(rosterIsTrue(reg.f2293)) return {label:'LDP', cls:'p-ldp'};
-  /* LIVE now outranks f3191 (2026-08-14, CS queue spec). Turning up is itself the
-     resolution for an absent participant, and the T+20 sweep's Absent-NCNS is only a
-     provisional value until a CS confirms it — so a record that reads ABSENT while the
-     person is sitting in the meeting is simply wrong. Present wins. */
-  if(rosterIsTrue(reg.f2853)) return {label:'LIVE', cls:'p-present'};
-  var attStatus = String(reg.f3191 || '');
-  if(attStatus === '467') return {label:'ABSENT - EXCUSED', cls:'p-excused'};
-  if(attStatus === '468') return {label:'ABSENT - NCNS', cls:'p-absent'};
-  if(rosterIsTrue(reg.f3062)) return {label:'LATE', cls:'p-late'};
-  /* No badge at all by default. The old ACTIVE badge fired on every ordinary participant,
-     which made the one signal the name row exists to carry — something is off with this
-     person — invisible in a wall of identical green. Null means render nothing. */
-  return null;
+/* ---------- Status badges (2026-08-15) ----------
+   Replaces rosterNameBadge()/rosterNameBadgeHtml()/rosterApplyNameBadge(), which rendered
+   ONE badge beside the participant's name, chosen by strict precedence. Two things were
+   wrong with that. It sat next to the name, where it competed with the one piece of text
+   on the row that is never optional; and being single-valued it actively destroyed
+   information — a participant who was both LDP and Well Being Out showed only LDP, and WBO,
+   the more consequential of the two, was invisible unless you opened the card.
+
+   Now: every applicable state renders, as its own pill, in its own zone. Order is fixed
+   (most current state first) rather than exclusive, so a row reads left-to-right as
+   "what is true about this person right now" and two rows with the same states always
+   look the same.
+
+   LIVE deliberately still leads and still beats the absence states. Turning up is itself
+   the resolution for an absent participant, and the T+20 sweep's Absent-NCNS is provisional
+   until a CS confirms it — a record reading ABSENT while the person is sitting in the
+   meeting is simply wrong. So LIVE suppresses ABSENT/NSHO specifically (see below); it does
+   not suppress anything else.
+
+   Field mapping, all confirmed against the existing field map:
+     LIVE       f2853 Currently Present
+     LATE       f3062 FS Late Arrival
+     LDP        f2293 Left The Course
+     WBO        f2688 Well Being Out  (a subtype of LDP — both show, that is the point)
+     NSHO       f3191 = 468 Absent-NCNS   (no call, no show)
+     ABSENT     f3191 = 467 Absent-Excused
+     WITHDRAWN  f2424 = 491 Withdraw   (see ROSTER_REG_WITHDRAWN) */
+function rosterStatusBadges(reg){
+  var out = [];
+  var live = rosterIsTrue(reg.f2853);
+  var att = String(reg.f3191 || '');
+  if(live){
+    /* The LIVE popover answers the question a CS actually asks when they see it — how long
+       has this person been here, and did they drop out at any point. Present-for is the
+       current day's minutes, which is the only one of the three that is genuinely per-day. */
+    var todayMinutesField = { '404':'f2805', '405':'f2806', '406':'f2807' }[String(DASHBOARD_DATA.todaysSessionRaw)] || 'f2805';
+    out.push({
+      key: 'live', label: 'LIVE', cls: 'p-present live', title: 'In the meeting now',
+      kv: [
+        ['First join', rosterFmtEpochTime(reg.f2855)],
+        ['Latest join', rosterFmtEpochTime(reg.f2859)],
+        ['Latest leave', rosterFmtEpochTime(reg.f2862)],
+        ['Present for', rosterFmtDuration(reg[todayMinutesField])],
+        ['Join count', String(Number(reg.f2871 || 0))]
+      ]
+    });
+  }
+  if(rosterIsTrue(reg.f3062)) out.push({ key:'late', label:'LATE', cls:'p-late', title:'Late arrival flagged', kv:[['Status','Late arrival recorded for this session']] });
+  if(rosterIsTrue(reg.f2293)){
+    out.push({ key:'ldp', label:'LDP', cls:'p-ldp', title:'Left during the programme', kv:[
+      ['Left type', ROSTER_LEFT_TYPE_MAP[String(reg.f3056 || '')] || '—'],
+      ['Left day', String(ROSTER_LEFT_DAY_TO_NUM[String(reg.f3059 || '')] || '—')],
+      ['Left time', rosterFmtEpochTime(reg.f3060)]
+    ] });
+  }
+  if(rosterIsTrue(reg.f2688)){
+    out.push({ key:'wbo', label:'WBO', cls:'p-ldp', title:'Well Being Out', kv:[
+      ['Status','Well Being Out'],
+      ['Reason', ROSTER_WBO_REASON_MAP[String(reg.f3061 || '')] || '—']
+    ] });
+  }
+  if(!live && att === '468') out.push({ key:'nsho', label:'NSHO', cls:'p-absent', title:'Absent — no call, no show', kv:[['Status','Absent — no call, no show']] });
+  if(!live && att === '467') out.push({ key:'absent', label:'ABSENT', cls:'p-excused', title:'Absent — excused', kv:[['Status','Absent — excused'],['Note', String(reg.f3190 || '').trim() || '—']] });
+  if(rosterIsWithdrawn(reg)) out.push({ key:'withdrawn', label:'WITHDRAWN', cls:'p-absent', title:'Withdrew before the course started', kv:[['Registration','Withdrawn']] });
+  return out;
 }
 
-/* Name-row badge markup. Kept as one function used by both the initial card render and the
-   live patch so the two can never drift. When there is no badge the separator and pill are
-   still emitted but hidden, so the live patch always has a node to write into rather than
-   having to rebuild the name row. */
-function rosterNameBadgeHtml(reg){
-  var nb = rosterNameBadge(reg);
-  if(!nb) return '<span class="status-sep" data-name-sep="1" style="display:none">–</span> <span class="pill" data-name-badge="1" style="display:none"></span>';
-  return '<span class="status-sep" data-name-sep="1">–</span> <span class="pill ' + nb.cls + '" data-name-badge="1">' + rosterEscHtml(nb.label) + '</span>';
+/* Flag tokens for the whole record, published on the card as data-flags. Every filter —
+   the snapshot tiles, the Advanced search presets, and the query builder — tests this one
+   string rather than each re-deriving state by inspecting rendered pills.
+
+   That matters because the old filters did exactly that: `card.querySelector('.ev-name-row
+   .p-ldp')` and friends read the DOM for a CSS class as a proxy for a field value, so any
+   change to how a pill is styled or where it sits silently changed what the filter matched.
+   Deriving once, from the registration, keeps the tiles, the pills and the search agreeing
+   by construction. */
+function rosterRecordFlags(reg){
+  var flags = rosterStatusBadges(reg).map(function(b){ return b.key; });
+  if(rosterIsQueued(reg)) flags.push('queued');
+  rosterDeviceFlags(reg).forEach(function(f){ flags.push(f); });
+  rosterQueueReasons(reg).forEach(function(f){ if(flags.indexOf(f) === -1) flags.push(f); });
+  // Blank f2424 counts as active — see rosterIsInactive() for why.
+  if(!rosterIsInactive(reg) && !rosterIsTrue(reg.f3046) && !rosterIsTrue(reg.f2293)) flags.push('current');
+  /* The flag the roster's default view filters on. Every inactive record still renders a
+     card — it is hidden, not dropped — so the Inactive view can reveal it without a refetch,
+     and so a partner link or a direct search can still reach it. */
+  if(rosterIsInactive(reg)) flags.push('inactive');
+  if(rosterIsTrue(reg.f3044)) flags.push('reviewer');
+  if(rosterIsTrue(reg.f3046)) flags.push('se');
+  if(rosterIsTrue(reg.f3206)) flags.push('minor');
+  if(rosterIsTrue(reg.f2303)) flags.push('seminar');
+  if(rosterIsTrue(reg.f2302)) flags.push('ac');
+  if(rosterIsTrue(reg.f2801)) flags.push('d1');
+  if(rosterIsTrue(reg.f2802)) flags.push('d2');
+  if(rosterIsTrue(reg.f2803)) flags.push('d3');
+  return flags;
 }
-function rosterApplyNameBadge(card, reg){
-  var badge = card.querySelector('[data-name-badge="1"]');
-  if(!badge) return;
-  var sep = card.querySelector('[data-name-sep="1"]');
-  var nb = rosterNameBadge(reg);
-  if(!nb){
-    badge.style.display = 'none';
-    badge.className = 'pill';
-    badge.textContent = '';
-    if(sep) sep.style.display = 'none';
-    return;
-  }
-  badge.style.display = '';
-  badge.className = 'pill ' + nb.cls;
-  badge.textContent = nb.label;
-  if(sep) sep.style.display = '';
+function rosterFlagsAttr(reg){ return ' ' + rosterRecordFlags(reg).join(' ') + ' '; }
+function rosterHasFlag(card, flag){ return (card.dataset.flags || '').indexOf(' ' + flag + ' ') !== -1; }
+
+/* One badge-row builder, used by both the initial render and the live patch so the two can
+   never drift. The zone is always emitted even when empty, so the live patch always has a
+   node to write into rather than having to rebuild the identity block. */
+function rosterStatusBadgesHtml(reg){
+  return rosterStatusBadges(reg).map(function(b){
+    return '<button class="pill ' + b.cls + ' ev-clickable" data-statusbadge="' + b.key + '" onclick="openDetailPop(this)"' +
+      ' data-pop-eyebrow="Status" data-pop-title="' + rosterEscAttr(b.label) + '" title="' + rosterEscAttr(b.title) + '"' +
+      ' data-pop-kv=\'' + rosterEscAttr(JSON.stringify(b.kv)) + '\'>' + rosterEscHtml(b.label) + '</button>';
+  }).join('');
+}
+function rosterApplyStatusBadges(card, reg){
+  var zone = card.querySelector('[data-status-zone="1"]');
+  if(zone) zone.innerHTML = rosterStatusBadgesHtml(reg);
+  card.dataset.flags = rosterFlagsAttr(reg);
 }
 
 /* ---------- The CS queue (2026-08-14) ----------
@@ -278,7 +461,7 @@ function rosterApplyNameBadge(card, reg){
      shareddevice — f3207, paired with another participant on one device.
    The three device/match reasons all resolve on a saved Zoom/Exception note (f3236).
 
-   Cancelled and LDP records are never queued — they have left the course, so there is
+   Withdrawn and LDP records are never queued — they have left the course, so there is
    nothing for a CS to chase. */
 var ROSTER_QUEUE_META = {
   attention:    { label: 'ATTN!',         cls: 'p-needsattn', title: 'Needs attention', action: 'correctAttendance' },
@@ -288,7 +471,7 @@ var ROSTER_QUEUE_META = {
 };
 function rosterQueueReasons(reg){
   var out = [];
-  if(String(reg.f2424) === '153' || rosterIsTrue(reg.f2293)) return out;
+  if(rosterIsWithdrawn(reg) || rosterIsTrue(reg.f2293)) return out;
   var att = String(reg.f3191 || '');
   var attFlagged = rosterIsTrue(reg.f3062) || att === '467' || att === '468';
   if(attFlagged && !rosterIsTrue(reg.f2853) && !String(reg.f3237 || '').trim()) out.push('attention');
@@ -306,7 +489,7 @@ function rosterIsQueued(reg){ return rosterQueueReasons(reg).length > 0; }
    attribute and so never reach PIQ or the queue filter. */
 function rosterDeviceFlags(reg){
   var out = [];
-  if(String(reg.f2424) === '153' || rosterIsTrue(reg.f2293)) return out;
+  if(rosterIsWithdrawn(reg) || rosterIsTrue(reg.f2293)) return out;
   if(rosterIsTrue(reg.f3184)) out.push('multidevice');
   if(String(reg.f3207 || '').trim()) out.push('shareddevice');
   return out;
@@ -340,16 +523,244 @@ function rosterQueuePillAction(el, which){
   else if(which === 'deviceException') openDeviceException(card);
 }
 
-function rosterBuildCardHtml(reg, currentDayRaw, localeAbbr){
+/* ---------- Notes (2026-08-15) ----------
+   The row now carries a notes button that opens the full history rather than a single
+   write-only textarea. Two things make that possible without a new backend object.
+
+   First, notes were never in one place to begin with. Five different fields on a
+   registration hold CS-written prose, each written by a different modal, and a CS had no
+   way to see them together — which meant the Attendance Override note that explains why
+   someone is marked absent was invisible from everywhere except the modal that wrote it.
+   They are aggregated here, each carrying the category it came from.
+
+   Second, the general note field (f2886) is append-only, so its contents are a log already.
+   rosterParseNoteBlock() reads the canonical header this dashboard writes —
+     [YYYY-MM-DD HH:MM] Author Name — note text
+   — and falls back to treating an unrecognised block as a single undated entry rather than
+   dropping it. That fallback matters: the append is performed server-side by
+   CS Dashboard : Add Note, so existing notes predate the convention and will have no
+   header at all until that workflow is updated to write one. They still render, just
+   without a timestamp or author, which is an honest representation of what is stored.
+
+   Ordering is newest-first across all categories. */
+/* Every longtext field on registrations (10001) that holds CS-written prose, enumerated
+   against the live field metadata on 2026-08-15 rather than from memory — the first pass of
+   this list was assembled from what the dashboard's own modals happened to write, and missed
+   four fields that other surfaces write into. Category is the field's own Ontraport alias,
+   so a CS reading the panel sees where each note came from.
+
+   Deliberately excluded, though also longtext: the participant-authored fields (f2583 What I
+   Want to Accomplish, f2676 Anything You'd Like Us to Know, f2580 Dietary Restrictions,
+   f2582 Forum Participants You Know, f3187-f3189 portal feedback, f2992 Feedback Form,
+   f3006 FDBK). Those are the participant's words on their registration form, not CS
+   operational notes — surfacing them in a "notes" log would mix two very different things
+   and would put someone's dietary and health disclosures into a general operational feed. */
+var ROSTER_NOTE_FIELDS = [
+  { field: 'f3270', category: 'Note' },
+  { field: 'f2886', category: 'Operational' },
+  { field: 'f3237', category: 'Attendance override' },
+  { field: 'f3236', category: 'Zoom / device' },
+  { field: 'f3209', category: 'Device exception' },
+  { field: 'f3068', category: 'Classification override' },
+  { field: 'f3190', category: 'Excused reason' },
+  { field: 'f3235', category: 'Course status' },
+  { field: 'f2891', category: 'AC registration' }
+];
+/* Two patterns, tried in order, matching what CS Dashboard : Add Note has written over time:
+     FULL   [YYYY-MM-DD HH:mm] Author — note   (current, since 2026-08-15)
+     LEGACY [M/d h:mm a] note                  (original; timestamp, no author)
+   The separator is a SPACED em-dash so hyphenated author names parse correctly, and the
+   author group excludes newlines so it can never swallow the body. Falling back to the
+   legacy pattern rather than only matching the current one matters: every note written
+   before today uses it, and treating those as unparseable would strip real timestamps off
+   existing history and render the raw "[8/14 9:12 AM]" prefix as if it were note text. */
+var ROSTER_NOTE_HEADER_RE = /^\[([^\]]+)\]\s*([^\n]*?)\s+—\s+([\s\S]*)$/;
+var ROSTER_NOTE_LEGACY_RE = /^\[([^\]]+)\]\s*([\s\S]*)$/;
+function rosterParseNoteBlock(raw, category){
+  var text = String(raw == null ? '' : raw).trim();
+  if(!text) return [];
+  /* Split before each line that opens with a "[" timestamp header — that is the only
+     boundary marker an append-only text field can carry. A note whose own body contains a
+     bracketed line at the start of a line would split wrongly; accepted, because the
+     alternative is a single opaque blob and this degrades to exactly that anyway. */
+  return text.split(/\n(?=\[)/).map(function(block){
+    var b = block.trim();
+    if(!b) return null;
+    var m = ROSTER_NOTE_HEADER_RE.exec(b);
+    if(m) return { category: category, when: m[1].trim(), who: m[2].trim(), text: m[3].trim() };
+    var legacy = ROSTER_NOTE_LEGACY_RE.exec(b);
+    if(legacy) return { category: category, when: legacy[1].trim(), who: '', text: legacy[2].trim() };
+    return { category: category, when: '', who: '', text: b };
+  }).filter(Boolean);
+}
+function rosterNoteEntries(reg){
+  var out = [];
+  ROSTER_NOTE_FIELDS.forEach(function(spec){
+    out = out.concat(rosterParseNoteBlock(reg[spec.field], spec.category));
+  });
+  /* Undated entries sort last rather than first: they are the legacy blobs, and a CS
+     opening the panel wants the most recent real activity at the top. */
+  out.sort(function(a, b){
+    if(!a.when && !b.when) return 0;
+    if(!a.when) return 1;
+    if(!b.when) return -1;
+    return a.when < b.when ? 1 : (a.when > b.when ? -1 : 0);
+  });
+  return out;
+}
+
+/* ---------- Participant avatar (2026-08-15) ----------
+   The row had no avatar at all: identity was a name, a legal name and a PID, three lines of
+   text with nothing to anchor them. An avatar gives the eye something to scan down a
+   143-row roster by, which is how a CS actually finds a person they are looking at in Zoom.
+
+   Image source is the linked Contact's standard Ontraport `profile_image`, reached the same
+   `f2213//` way the row already reads firstname/lastname/f2792 — so it needs the Roster
+   Fetch webhook to include `f2213//profile_image` in its listFields. Until it does, this
+   reads undefined and every avatar falls back to initials, which is the intended graceful
+   state rather than a failure: a monogram on the participant's own colour is a perfectly
+   good anchor, and most Contacts will never have an image at all.
+
+   Only http(s) values are accepted as an image. Ontraport stores this field inconsistently
+   across accounts (sometimes a bare filename, sometimes a full CDN URL) and a bare filename
+   resolved against the dashboard's own origin would issue a 404 per row per render. */
+function rosterInitials(name){
+  var parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if(!parts.length) return '?';
+  if(parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+/* Deterministic tint per person, so the same participant is the same colour on every
+   render and between sessions. Hash the display name rather than the record id: the id is
+   sequential, which would band adjacent rows into near-identical hues. */
+var ROSTER_AVATAR_TINTS = ['#0d2d31', '#217a00', '#3f6b6d', '#b8730a', '#c8452a', '#4a5b8c', '#6b4a7c', '#2f6b57'];
+function rosterAvatarTint(seed){
+  var s = String(seed || ''), h = 0;
+  for(var i = 0; i < s.length; i++){ h = (h * 31 + s.charCodeAt(i)) >>> 0; }
+  return ROSTER_AVATAR_TINTS[h % ROSTER_AVATAR_TINTS.length];
+}
+function rosterAvatarFaceHtml(name, imgUrl, extraClass){
+  var url = String(imgUrl || '').trim();
+  var isImg = /^https?:\/\//i.test(url);
+  var cls = 'av-face' + (extraClass ? ' ' + extraClass : '');
+  if(isImg){
+    return '<span class="' + cls + '" style="background-image:url(' + rosterEscAttr(url) + ')" role="img" aria-label="' + rosterEscAttr(name) + '"></span>';
+  }
+  return '<span class="' + cls + '" style="background:' + rosterAvatarTint(name) + '" aria-hidden="true">' + rosterEscHtml(rosterInitials(name)) + '</span>';
+}
+
+/* Stacked avatar — "here with someone".
+   Source is f3207 Shared Device, the only real pairing signal on the record: it holds the
+   OTHER participant's name as free text (not an id), written by the Device Exception modal.
+   partnerIndex is a name -> registration lookup built once per render in
+   dashboardRenderRoster(), so resolving the partner to a clickable record is O(1) per row
+   rather than a scan of the roster per row.
+
+   Name matching is inherently lossy — the CS types the name into Device Exception, so
+   "Jo Blyth" will not match a roster entry of "Joanna Blyth". When it fails we still stack
+   the avatar (the pairing is real and worth showing) but the second face is not clickable
+   and the popover says who we were told they are paired with. Failing to a non-clickable
+   avatar is the honest outcome; inventing a link to the wrong person is not.
+
+   Interaction: the stack is collapsed by default (one face, one peeking behind). Clicking
+   it fans the two apart; clicking the partner's face then jumps to their row. */
+function rosterAvatarHtml(reg, displayName, partnerIndex){
+  var img = reg['f2213//profile_image'];
+  var partnerName = String(reg.f3207 || '').trim();
+  var self = rosterAvatarFaceHtml(displayName, img, 'av-self');
+  if(!partnerName) return '<div class="ev-av">' + self + '</div>';
+  var partner = partnerIndex ? partnerIndex[partnerName.toLowerCase()] : null;
+  var partnerImg = partner ? partner['f2213//profile_image'] : '';
+  var partnerFace = rosterAvatarFaceHtml(partnerName, partnerImg, 'av-partner');
+  var partnerAttrs = partner
+    ? ' data-partner-reg="' + rosterEscAttr(partner.id) + '" title="' + rosterEscAttr('Shared device with ' + partnerName + ' — open their record') + '"'
+    : ' data-partner-unmatched="1" title="' + rosterEscAttr('Shared device with ' + partnerName + ' — no matching roster record') + '"';
+  /* role/tabindex, not a <button>: this element CONTAINS the partner button, and a button
+     inside a button is invalid and behaves unpredictably. The delegated Enter/Space handler
+     gives it real keyboard operation; aria-expanded reports the fanned state. */
+  return '<div class="ev-av ev-av-stack" role="button" tabindex="0" aria-expanded="false"' +
+      ' onclick="rosterToggleAvatarStack(event, this)" title="' +
+      rosterEscAttr('Sharing a device with ' + partnerName) + '">' +
+      self +
+      '<button type="button" class="av-partner-btn"' + partnerAttrs + ' onclick="rosterOpenPartner(event, this)">' + partnerFace + '</button>' +
+    '</div>';
+}
+function rosterToggleAvatarStack(e, el){
+  /* Only the collapsed stack toggles. Once fanned, a click on the partner face has to reach
+     its own handler — swallowing it here would make the second avatar permanently inert,
+     which is the whole point of fanning it out. */
+  if(e.target.closest('.av-partner-btn')) return;
+  e.stopPropagation();
+  el.setAttribute('aria-expanded', el.classList.toggle('fanned') ? 'true' : 'false');
+}
+function rosterOpenPartner(e, btn){
+  e.stopPropagation();
+  var id = btn.dataset.partnerReg;
+  if(!id){ toast('No roster record matches that name — open Device Exception to re-link them.', 'err'); return; }
+  var target = document.querySelector('#rosterList .ev-card[data-reg-id="' + id + '"]');
+  if(!target){ toast('That participant is not on the current roster.', 'err'); return; }
+  /* The partner may be filtered out or on another page. Clear the filter state and page to
+     them rather than silently doing nothing — "navigate to their record" has to work from
+     wherever the CS happens to be standing. */
+  rosterRevealCard(target);
+}
+/* Bring a specific card into view regardless of the current filter/search/page state, then
+   mark it so the CS can see which row answered their click. */
+function rosterRevealCard(card){
+  var list = document.getElementById('rosterList');
+  if(!list || !card) return;
+  /* Jumping to the partner may require dropping whatever narrowing is in force — they can
+     easily be filtered out or on another page. Say so rather than doing it silently: a CS
+     who had a PNA filter running and finds it gone, with no explanation, will read the
+     dashboard as having lost their place on its own. Only announced when something was
+     actually cleared. */
+  var cleared = (rosterStatFilter ? 1 : 0) + (rosterAdvancedQuery ? 1 : 0) +
+                ((document.getElementById('rosterSearch') || {}).value ? 1 : 0);
+  if(cleared) rosterClearAllFilters();
+  /* The partner may be an inactive registration, which the default view hides — switch
+     population if so, or the scroll below would target a card that is display:none and the
+     click would appear to do nothing. */
+  var targetInactive = rosterHasFlag(card, 'inactive');
+  if(targetInactive !== rosterShowInactive){
+    rosterShowInactive = targetInactive;
+    list.classList.toggle('viewing-inactive', rosterShowInactive);
+    rosterSyncInactiveButton();
+  }
+  var cards = Array.prototype.filter.call(list.children, function(c){ return c.classList.contains('ev-card'); });
+  var idx = cards.indexOf(card);
+  if(idx !== -1) pageState.roster = Math.floor(idx / rosterPageSize) + 1;
+  paginate('roster');
+  card.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  card.classList.add('ev-card-flash');
+  setTimeout(function(){ card.classList.remove('ev-card-flash'); }, 1800);
+  if(cleared) toast('Filters cleared to show this participant.');
+}
+
+/* Rebuilt 2026-08-15. The row's information architecture changed, not just its skin:
+     - Identity leads with an avatar and the participant's LEGAL first+last name, with the
+       preferred name ("Name Likes") demoted to a quiet second line. It used to be the other
+       way round, with the legal name and PID crammed into one mono sub-line.
+     - PID is gone. It is an internal Zoom registrant identifier; a CS never reads it, never
+       types it, and it was occupying the most-read line on the row. It stays in data-search,
+       so anyone who does have a PID can still paste it into the search box and find them.
+     - Status badges moved out of the name row into their own zone (see rosterStatusBadges).
+     - CPLT CHKPNT is gone as a column; its two values now live inside the Day 3 tick's
+       session detail alongside the ten sibling sessions that never had a home.
+     - Seminar and AC share one Follow-on zone rather than a column each, and a notes button
+       joins them.
+   Every zone below is a plain flex/grid cell so the row can reflow without the six
+   fixed-width columns it used to assume. */
+function rosterBuildCardHtml(reg, currentDayRaw, localeAbbr, partnerIndex){
   var first = reg['f2213//firstname'] || '';
   var last = reg['f2213//lastname'] || '';
   var nameLikes = reg['f2213//f2792'] || '';
   var legalName = (first + ' ' + last).trim() || 'Unknown Participant';
   var displayFirst = nameLikes || first;
   var displayName = (displayFirst + ' ' + last).trim() || legalName;
-  var pid = 'PID-' + (reg.f2794 || reg.id);
-  var nameBadgeHtml = rosterNameBadgeHtml(reg);
-  var searchStr = (displayName + ' ' + legalName + ' ' + (reg.f2794 || '') + ' ' + reg.id).toLowerCase();
+  /* data-sort-name stays the DISPLAY name (see rosterApplySort) but the row now LEADS with
+     the legal name, so the two can differ. Sorting on what the eye reads is still right:
+     the preferred name is the line a CS scans when hunting alphabetically. */
+  var searchStr = (displayName + ' ' + legalName + ' ' + nameLikes + ' ' + (reg.f2794 || '') + ' ' + reg.id).toLowerCase();
 
   var mnrOn = rosterIsTrue(reg.f3206);
   var revOn = rosterIsTrue(reg.f3044);
@@ -372,8 +783,13 @@ function rosterBuildCardHtml(reg, currentDayRaw, localeAbbr){
   var d1Tick = rosterBuildAttendanceTick(reg, 1, 'f2801', 'f2805', currentDayRaw);
   var d2Tick = rosterBuildAttendanceTick(reg, 2, 'f2802', 'f2806', currentDayRaw);
   var d3Tick = rosterBuildAttendanceTick(reg, 3, 'f2803', 'f2807', currentDayRaw);
-  var s3Tick = rosterBuildChkpntTick(rosterIsTrue(reg.f3203), 'Day 3 Session 3 Checkpoint', 'S3', 'f3203');
-  var s4Tick = rosterBuildChkpntTick(rosterIsTrue(reg.f3055), 'Day 3 Session 4 Attendance Check', 'S4', 'f3055');
+  /* The S3/S4 CPLT CHKPNT ticks that used to render here are gone. They showed two of the
+     twelve per-session attendance flags as a permanent row column, while the other ten had
+     no representation anywhere. Both values now appear as session chips inside the Day 3
+     tick's popover, together with D3S1 and D3S2 — same data, in the place where the rest of
+     it already lives, and a whole column recovered. rosterBuildChkpntTick() is retained: the
+     attendance.changed live handler still uses it, and f3203/f3055 remain individually
+     patchable fields. */
 
   var semReg = rosterIsTrue(reg.f2303) ? 1 : 0;
   var semPot = String(reg.f2882) === '371' ? 1 : 0;
@@ -390,20 +806,36 @@ function rosterBuildCardHtml(reg, currentDayRaw, localeAbbr){
   var acKv = acReg ? [['Registered','Yes'],['Course', reg.f3186 || '—']] : [['Potential', acPot ? 'Yes' : 'No'],['Registered','No']];
   var acPill = '<button class="pill p-neutral ev-clickable prog-ac" onclick="openDetailPop(this)" data-pot="' + acPot + '" data-confirmed="0" data-reg="' + acReg + '" data-desig="' + acDesig + '" data-alt="' + acAlt + '" data-pop-title="Advanced Course Registration" data-pop-kv=\'' + rosterEscAttr(JSON.stringify(acKv)) + '\'>—</button>';
 
-  return '<div class="ev-card" data-search="' + rosterEscAttr(searchStr) + '" data-sort-name="' + rosterEscAttr(displayName) + '" data-reg-id="' + rosterEscAttr(reg.id) + '">' +
+  var notesCount = rosterNoteEntries(reg).length;
+  var notesBtn = '<button class="ev-notesbtn' + (notesCount ? ' has-note' : '') + '" onclick="openNotes(this)" title="' +
+    (notesCount ? rosterEscAttr(notesCount + ' note' + (notesCount === 1 ? '' : 's')) : 'Add a note') + '" aria-label="Notes">' +
+    '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg>' +
+    (notesCount ? '<span class="ev-notesbtn-n">' + notesCount + '</span>' : '') + '</button>';
+
+  return '<div class="ev-card" data-search="' + rosterEscAttr(searchStr) + '" data-sort-name="' + rosterEscAttr(displayName) + '" data-reg-id="' + rosterEscAttr(reg.id) + '" data-flags="' + rosterEscAttr(rosterFlagsAttr(reg)) + '">' +
     '<div class="ev-row1">' +
       '<div class="ev-field ev-identity">' +
-        '<div class="ev-name"><div class="ev-name-row"><b>' + rosterEscHtml(displayName) + '</b> ' + nameBadgeHtml + '</div><span>Legal: ' + rosterEscHtml(legalName) + ' · ' + rosterEscHtml(pid) + '</span></div>' +
-        '<div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv=\'' + rosterEscAttr(JSON.stringify([['Value', localeAbbr.full]])) + '\'>' + localeAbbr.abbr + '</button>' + queuePills + '</div>' +
+        rosterAvatarHtml(reg, displayName, partnerIndex) +
+        /* Legal name leads; "goes by" sits under it, quiet enough not to compete. A CS
+           matching a Zoom tile to a roster row is usually reading whichever of the two the
+           participant typed into Zoom, so both have to be present — but only one can be the
+           headline, and the legal name is the one that also appears on every other system. */
+        '<div class="ev-name">' +
+          '<b>' + rosterEscHtml(legalName) + '</b>' +
+          (nameLikes ? '<span class="ev-goesby">(' + rosterEscHtml(nameLikes) + ')</span>' : '') +
+          '<div class="ev-sub"><button class="pill p-locale ev-clickable" onclick="openDetailPop(this)" data-pop-title="Locale" data-pop-kv=\'' + rosterEscAttr(JSON.stringify([['Value', localeAbbr.full]])) + '\'>' + localeAbbr.abbr + '</button>' + queuePills + '</div>' +
+        '</div>' +
       '</div>' +
+      '<div class="ev-field ev-status"><div class="ev-l">Status</div><div class="status-pills" data-status-zone="1">' + rosterStatusBadgesHtml(reg) + '</div></div>' +
+      /* 3 over 2. The .class-pills grid is 6 columns wide: the three top pills span 2 each
+         and the two NP pills span 3 each, so the lower pair is evenly divided and exactly
+         as wide as the trio above it. */
       '<div class="ev-field ev-classification">' +
         '<div class="ev-l">Classification</div>' +
         '<div class="class-pills">' + mnrPill + revPill + sePill + acNpPill + semNpPill + '</div>' +
       '</div>' +
       '<div class="ev-field"><div class="ev-l">Attendance</div><div class="ticks">' + d1Tick + d2Tick + d3Tick + '</div></div>' +
-      '<div class="ev-field"><div class="ev-l">CPLT CHKPNT</div><div class="ticks">' + s3Tick + s4Tick + '</div></div>' +
-      '<div class="ev-field"><div class="ev-l">Seminar</div>' + seminarPill + '</div>' +
-      '<div class="ev-field"><div class="ev-l">AC</div>' + acPill + '</div>' +
+      '<div class="ev-field ev-followon"><div class="ev-l">Seminar &amp; AC</div><div class="followon-pills">' + seminarPill + acPill + notesBtn + '</div></div>' +
       '<div class="ev-field ev-exception"><button class="kebab-btn" onclick="openRowMenu(this)" aria-label="Actions"><svg viewBox="0 0 4 16" fill="currentColor"><circle cx="2" cy="2" r="1.6"/><circle cx="2" cy="8" r="1.6"/><circle cx="2" cy="14" r="1.6"/></svg></button></div>' +
     '</div>' +
   '</div>';
@@ -415,11 +847,28 @@ function dashboardRenderRoster(registrations){
   var localeFull = dashboardEventFormat();
   var localeAbbr = { full: localeFull, abbr: ROSTER_LOCALE_ABBR[localeFull] || localeFull };
   var currentDayRaw = DASHBOARD_DATA.todaysSessionRaw;
-  var html = registrations.map(function(reg){ return rosterBuildCardHtml(reg, currentDayRaw, localeAbbr); }).join('');
+  /* Shared-device partner lookup, built once per render rather than per row. f3207 holds the
+     partner's NAME as free text, so this indexes every roster record under both the name the
+     CS sees and the legal name — a CS filling in Device Exception could reasonably have
+     typed either. Lower-cased and trimmed on both sides; nothing fuzzier than that, because
+     a near-match that resolves to the wrong participant is worse than no link at all. */
+  var partnerIndex = {};
+  registrations.forEach(function(r){
+    var f = r['f2213//firstname'] || '', l = r['f2213//lastname'] || '', nl = r['f2213//f2792'] || '';
+    [(f + ' ' + l), ((nl || f) + ' ' + l)].forEach(function(n){
+      var key = n.trim().toLowerCase();
+      if(key && !partnerIndex[key]) partnerIndex[key] = r;
+    });
+  });
+  var html = registrations.map(function(reg){ return rosterBuildCardHtml(reg, currentDayRaw, localeAbbr, partnerIndex); }).join('');
   list.innerHTML = html;
   document.querySelectorAll('#rosterList .ev-card').forEach(updateProgramPills);
-  var totalEl = list.closest('.card').querySelector('.card-hd .sub .mf');
-  if(totalEl) totalEl.textContent = registrations.length;
+  /* The card header's "Showing N of M participants" line was removed 2026-08-15, and with
+     it the `.card-hd .sub .mf` node this used to write. paginate() already maintains the
+     real counts (#rosterShowingCount / #rosterTotalCount, both guarded), and pagination now
+     states the position in the list at the point the CS acts on it. */
+  rosterRenderAdvanced();
+  rosterSyncInactiveButton();
   /* Re-apply before paginating. This runs on every Ably live push as well as
      the initial load, so without it an attendance change arriving mid-Forum
      would silently drop the CS's chosen sort back to server order. No-ops
@@ -444,7 +893,19 @@ function dashboardRenderRoster(registrations){
    Starts (Day 1) is no longer a permanent "—": it reads a locked value
    written at Day 1 close. Material Released tile cut entirely (locked
    spec). Reviewer/SE split into two single-stat tiles per the locked
-   spec (was one combined "4/5" tile in the prototype). ---------- */
+   spec (was one combined "4/5" tile in the prototype).
+
+   Detabbed and re-scoped 2026-08-15 to the client's locked 14-tile set (one 7x2
+   grid — see the body block's #em-snapshot comment for the row semantics). Six
+   keys the Event Management card no longer displays — seminarPct, acPct,
+   invitationsSent, reviewer, se, drReconciled — are still computed and still
+   written below on purpose: the Reporting Dashboard renders them off the same
+   data-stat keys, and dashboardSetStat() writes every matching element on the
+   page rather than a specific card. Deleting the computation to match the tile
+   removal would have silently blanked Reporting.
+
+   Four keys are new: totalRegistrations, wbs, absent, and drSharedCount, plus
+   ldpPct/wboPct and the pna alias for piq. ---------- */
 function dashboardFmtPct(num, den){ return den ? Math.round((num / den) * 100) + '%' : '—'; }
 function dashboardSetStat(key, value){ document.querySelectorAll('[data-stat="' + key + '"]').forEach(function(el){ el.textContent = value; }); }
 function dashboardSetSub(key, value){ document.querySelectorAll('[data-stat-sub="' + key + '"]').forEach(function(el){ el.textContent = value; }); }
@@ -452,27 +913,72 @@ function dashboardSetSub(key, value){ document.querySelectorAll('[data-stat-sub=
 function dashboardRenderSnapshot(registrations, eventFields, staffCount){
   eventFields = eventFields || {};
   staffCount = Number(staffCount || 0);
-  var total = registrations.length;
-  var ldpRows = registrations.filter(function(r){ return String(r.f2293) === '1'; });
-  // f2424 blank must count as active, not excluded -- see the matching
-  // fix/explanation in rosterNameBadge() above (2026-08-13).
-  var current = registrations.filter(function(r){ return String(r.f2424) !== '153' && String(r.f3046) !== '1' && String(r.f2293) !== '1'; }).length;
+
+  /* Inactive registrations are excluded from EVERY metric below, not merely hidden in the
+     list (client instruction 2026-08-15: "ignored for all reasons"). The split happens once,
+     here, and every count downstream reads `active` — so there is no per-tile decision to
+     get wrong and no way for one tile to disagree with another about who counts.
+
+     `inactiveRows` is kept, not discarded, for exactly two purposes: the WBS tile, whose job
+     is to count withdrawals, and the roster's Inactive view. Everything else ignores it.
+
+     ONE deliberate exception, client-confirmed 2026-08-15: "Total event registrations" counts
+     EVERY registration, inactive included. It is the only tile that answers "how many people
+     ever registered for this event", so a withdrawal must not decrement it — otherwise the
+     event appears to have been smaller than it was, and WBS would have nothing to be a
+     proportion of. Every other number on the page, including the Reporting Dashboard's
+     participant total, counts actives only.
+
+     Hence two variables, named to make misuse obvious at the call site:
+       totalAll  — every registration. Used by exactly one tile.
+       total     — active registrations. The denominator for everything else. */
+  var split = rosterSplitActive(registrations);
+  var active = split.active;
+  var inactiveRows = split.inactive;
+
+  var totalAll = registrations.length;
+  var total = active.length;
+  var ldpRows = active.filter(function(r){ return String(r.f2293) === '1'; });
+  var current = active.filter(function(r){ return String(r.f3046) !== '1' && String(r.f2293) !== '1'; }).length;
   var ldp = ldpRows.length;
-  var wbo = registrations.filter(function(r){ return String(r.f2688) === '1'; }).length;
-  var completions = registrations.filter(function(r){ return String(r.f2809) === '1'; }).length;
-  var attendingNow = registrations.filter(function(r){ return String(r.f2853) === '1'; }).length;
-  var seminarReg = registrations.filter(function(r){ return String(r.f2303) === '1'; }).length;
-  var seminarPotential = registrations.filter(function(r){ return String(r.f2882) === '371'; }).length;
-  var acReg = registrations.filter(function(r){ return String(r.f2302) === '1'; }).length;
-  var acPotential = registrations.filter(function(r){ return String(r.f2887) === '382'; }).length;
-  var invitationsWithGuests = registrations.filter(function(r){ return Number(r.f2272 || 0) > 0; }).length;
-  var reviewer = registrations.filter(function(r){ return String(r.f3044) === '1'; }).length;
-  var se = registrations.filter(function(r){ return String(r.f3046) === '1'; }).length;
-  /* PIQ counts participants, not reasons — someone flagged both multi-device and unmatched
-     is one person for a CS to work, and the tile is a workload number. rosterQueueReasons()
-     is shared with the roster pills so the count and the pills can never disagree. */
-  var piqRows = registrations.filter(rosterIsQueued);
+  var wbo = active.filter(function(r){ return String(r.f2688) === '1'; }).length;
+  var completions = active.filter(function(r){ return String(r.f2809) === '1'; }).length;
+  var attendingNow = active.filter(function(r){ return String(r.f2853) === '1'; }).length;
+  var seminarReg = active.filter(function(r){ return String(r.f2303) === '1'; }).length;
+  var seminarPotential = active.filter(function(r){ return String(r.f2882) === '371'; }).length;
+  var acReg = active.filter(function(r){ return String(r.f2302) === '1'; }).length;
+  var acPotential = active.filter(function(r){ return String(r.f2887) === '382'; }).length;
+  var invitationsWithGuests = active.filter(function(r){ return Number(r.f2272 || 0) > 0; }).length;
+  var reviewer = active.filter(function(r){ return String(r.f3044) === '1'; }).length;
+  var se = active.filter(function(r){ return String(r.f3046) === '1'; }).length;
+  /* PNA (formerly PIQ) counts participants, not reasons — someone flagged both multi-device
+     and unmatched is one person for a CS to work, and the tile is a workload number.
+     rosterQueueReasons() is shared with the roster pills so the count and the pills can
+     never disagree. Renamed on the tile 2026-08-15; the derivation is untouched. */
+  var piqRows = active.filter(rosterIsQueued);
   var piq = piqRows.length;
+
+  /* WBS — Withdraw Before Start. The one tile that reads the INACTIVE set, because counting
+     withdrawals is what it is for; every other tile above ignores them. Counts the specific
+     Withdraw option (f2424=491) rather than all inactive states, so if another non-Active
+     option ever appears it is batched out of the roster without being silently miscounted
+     as a withdrawal here. */
+  var wbs = inactiveRows.filter(rosterIsWithdrawn).length;
+
+  /* Absent — the manually-resolved absence states on f3191 Attendance Status: 467
+     Absent-Excused and 468 Absent-NCNS. Both count, with the sub-label splitting them,
+     because the tile answers "how many people are unaccounted for" and a CS needs the
+     NCNS share of that to know how much of it is still chaseable.
+     Currently-present records are excluded for the same reason rosterNameBadge() ranks
+     LIVE above f3191: the T+20 sweep's Absent-NCNS is provisional until a CS confirms it,
+     and a record reading Absent while the person is sitting in the meeting is simply
+     wrong. Present wins, in the tile exactly as on the card. */
+  var absentRows = active.filter(function(r){
+    var s = String(r.f3191 || '');
+    return (s === '467' || s === '468') && !rosterIsTrue(r.f2853);
+  });
+  var absent = absentRows.length;
+  var absentNcns = absentRows.filter(function(r){ return String(r.f3191) === '468'; }).length;
 
   /* Starts (Day 1) — read, never derived. It is locked once by CS Dashboard : Day Advance
      when Day 1 closes (count of registrations present for D1S1 or D1S2, the 15-minute start
@@ -486,10 +992,34 @@ function dashboardRenderSnapshot(registrations, eventFields, staffCount){
   dashboardSetStat('starts', startsLocked > 0 ? startsLocked : '—');
   dashboardSetSub('starts', startsLocked > 0 ? 'locked at Day 1 close' : 'locks at Day 1 close');
 
+  /* The one tile that counts inactive registrations too — see totalAll above. The sub-line
+     says so when the two differ, because a CS comparing this against Active participants
+     needs to know the gap is withdrawals rather than a miscount. */
+  dashboardSetStat('totalRegistrations', totalAll);
+  dashboardSetSub('totalRegistrations', inactiveRows.length
+    ? total + ' active · ' + inactiveRows.length + ' inactive'
+    : 'on the roster');
+  // Numeric only — no sub-label. A headcount of withdrawals needs no qualifier.
+  dashboardSetStat('wbs', wbs);
+  dashboardSetStat('absent', absent);
+  dashboardSetSub('absent', absent === 0 ? 'none outstanding' : absentNcns + ' NCNS · ' + (absent - absentNcns) + ' excused');
+
   dashboardSetStat('current', current);
   dashboardSetStat('ldp', ldp);
   dashboardSetStat('wbo', wbo);
   dashboardSetSub('wbo', wbo + ' of ' + ldp + ' who left');
+  /* LDP/WBO as rates. The LDP denominator is the locked Day 1 starts where that exists and
+     total registrations before it does — "lost during the programme" is a proportion of the
+     people who actually began it, but that number does not exist until Day 1 closes, and a
+     tile reading "—" for the whole of Day 1 is worse than one reading a slightly wide rate.
+     The sub-label always names the denominator in use, so the two phases are never confused
+     for each other. WBO is always a share of LDP: it is a reason for having left, not an
+     independent population. */
+  var ldpDen = startsLocked > 0 ? startsLocked : total;
+  dashboardSetStat('ldpPct', dashboardFmtPct(ldp, ldpDen));
+  dashboardSetSub('ldpPct', 'of ' + ldpDen + (startsLocked > 0 ? ' who started' : ' registrations'));
+  dashboardSetStat('wboPct', dashboardFmtPct(wbo, ldp));
+  dashboardSetSub('wboPct', ldp === 0 ? 'nobody has left' : 'of ' + ldp + ' who left');
   dashboardSetStat('completions', completions);
   dashboardSetStat('attendanceNow', dashboardFmtPct(attendingNow, current));
   dashboardSetSub('attendanceNow', attendingNow + ' / ' + current);
@@ -501,8 +1031,13 @@ function dashboardRenderSnapshot(registrations, eventFields, staffCount){
   dashboardSetSub('invitationsSent', invitationsWithGuests + ' participants invited');
   dashboardSetStat('reviewer', reviewer);
   dashboardSetStat('se', se);
+  /* Both keys, one number. 'pna' is what the tile reads today; 'piq' is kept written
+     because it is the key the Reporting Dashboard and any saved view still reference —
+     the rename was to the label, not to the measure. */
   dashboardSetStat('piq', piq);
   dashboardSetSub('piq', piq === 0 ? 'nothing outstanding' : piq + ' need CS action');
+  dashboardSetStat('pna', piq);
+  dashboardSetSub('pna', piq === 0 ? 'nothing outstanding' : piq + ' need CS action');
 
   // Raw counts (as opposed to the % tiles above) — needed for Reporting
   // Dashboard's Seminar/AC/Invitations bands, which show Potential/
@@ -531,14 +1066,14 @@ function dashboardRenderSnapshot(registrations, eventFields, staffCount){
      so it does NOT move a headcount either way. It used to be subtracted, which quietly
      made expected too low by one per occurrence. It is now surfaced as its own informational
      count rather than folded into the arithmetic. */
-  var sharedDeviceCount = registrations.filter(function(r){ return String(r.f3207 || '').trim() !== ''; }).length;
+  var sharedDeviceCount = active.filter(function(r){ return String(r.f3207 || '').trim() !== ''; }).length;
   var sharedAdj = -Math.floor(sharedDeviceCount / 2);
   /* Counts the poller's auto-detected f3184 as well as the CS-declared f3208=474, so the
      tile moves when the Zoom poller raises multi-device on its own — previously only a
      manual Device Exception save could shift it, leaving it at 0 all session while the
      roster showed MULTI-DEVICE pills. */
-  var multiDeviceCount = registrations.filter(function(r){ return String(r.f3208) === '474' || rosterIsTrue(r.f3184); }).length;
-  /* Built from `current`, never `total`: total includes cancelled and LDP records, who are
+  var multiDeviceCount = active.filter(function(r){ return String(r.f3208) === '474' || rosterIsTrue(r.f3184); }).length;
+  /* Built from `current`, never `total`: total includes withdrawn and LDP records, who are
      never going to appear in Zoom, so a single cancellation made ✓ permanently unreachable
      for the whole event. */
   var expected = current + staffCount + sharedAdj;
@@ -548,6 +1083,13 @@ function dashboardRenderSnapshot(registrations, eventFields, staffCount){
   dashboardSetStat('drParticipants', total);
   dashboardSetStat('drStaff', staffCount);
   dashboardSetStat('drSharedAdj', sharedAdj);
+  /* The Shared device tile shows the headcount of people paired on a shared connection —
+     the plain count of the flag. drSharedAdj (the negative half-pair correction the
+     Expected arithmetic applies) is still written for anything reading that key, but it is
+     the wrong number to put on a tile labelled "Shared device": a CS reading "-3" would
+     reasonably assume something had gone wrong rather than that six people are doubled up. */
+  dashboardSetStat('drSharedCount', sharedDeviceCount);
+  dashboardSetSub('drSharedCount', sharedDeviceCount === 0 ? 'none reported' : 'expected count adjusted by ' + sharedAdj);
   dashboardSetStat('drDupAdj', multiDeviceCount);
   /* Drop-in viewers — events.f3262, written by LM | Zoom | Live Attendance Poller for live
      participants matching neither a Registration nor an oEventTeam row. Read straight off
@@ -558,6 +1100,15 @@ function dashboardRenderSnapshot(registrations, eventFields, staffCount){
   dashboardSetStat('drObserved', observed);
   dashboardSetStat('drReconciled', reconciled ? '✓' : '✗');
   dashboardSetSub('drReconciled', observed + ' / ' + expected + (reconciled ? ' · reconciled' : ' · ' + Math.abs(expected - observed) + ' unresolved'));
+  /* Live now's own sub, rather than borrowing drReconciled's. That string is written for a
+     tile whose VALUE is a ✓/✗ and so has to restate both sides of the comparison — on Live
+     now it repeated the number already printed directly above it ("27" over "27 / 53"). This
+     says only the part Live now doesn't already show: how far off expected it is, and in
+     which direction. Reporting's Reconciled tile keeps the fuller string above. */
+  var gap = observed - expected;
+  dashboardSetSub('drObserved', reconciled
+    ? 'matches expected'
+    : (gap > 0 ? '+' + gap + ' more than expected' : Math.abs(gap) + ' fewer than expected'));
 }
 
 function dashboardFetchRoster(){
@@ -569,9 +1120,17 @@ function dashboardFetchRoster(){
     return res.json().then(function(result){ return { ok: res.ok, result: result }; });
   }).then(function(r){
     if(!r.ok || !r.result || r.result.success !== true) throw new Error((r.result && r.result.error) || 'Request failed');
-    dashboardRenderRoster(r.result.registrations);
-    dashboardRenderSnapshot(r.result.registrations, r.result.eventFields, r.result.staffCount);
-    dashboardLastRoster = r.result.registrations;
+    /* Single choke point for the test-registration exclusion: every later consumer reads
+       either this local `registrations` or dashboardLastRoster, and both are the filtered
+       array. Note the two counts this does NOT reach, because they are computed server-side
+       and never pass through here: Home's participantCount/notReadyCount from
+       CS Dashboard : Bootstrap (step 3/4 of the bootstrap spec count registrations with
+       "no exclusions of any kind"). Those need the same f2878 exclusion added to the n8n
+       workflow, or Home will keep counting test records the roster no longer shows. */
+    var registrations = rosterExcludeTestRegistrations(r.result.registrations);
+    dashboardRenderRoster(registrations);
+    dashboardRenderSnapshot(registrations, r.result.eventFields, r.result.staffCount);
+    dashboardLastRoster = registrations;
     dashboardLastEventFields = r.result.eventFields;
     dashboardLastStaffCount = r.result.staffCount;
     dashboardLastStaffPresence = {};
@@ -814,13 +1373,18 @@ function currentActorName(){ return DASHBOARD_DATA.csFirstName; }
 function currentRoleLabel(){ return dashboardCsRole(); }
 
 /* ---------- sticky header stack ----------
-   Four stacked position:sticky bars, each of which has to dock directly
+   Three stacked position:sticky bars, each of which has to dock directly
    below the one above it:
-     1 .topbar    logo / event selector / profile avatar
-     2 .evtstrip  dark session strip (End Session)      — hidden on Home
-     3 .tabbar    Event Management / Master Stats / Reporting Dashboard
-     4 .secnav    Roster & Classification / Course Materials / Guests,
-                  and Master Stats' section nav         — Event Management only
+     1 .topbar    logo / event selector / Day X of Y / End session / profile
+     2 .tabbar    Event Management / Reporting Dashboard  — hidden on Home
+     3 .secnav    Roster & Classification / Course Materials / Guests
+                                                          — Event Management only
+
+   Was four bars until 2026-08-15: .evtstrip, a dedicated dark band holding only the
+   Day indicator and End session, was removed and both controls folded into .topbar.
+   That is why --stick-evtstrip is gone rather than merely unused — nothing docks
+   against it any more, and leaving it published would have been a variable the
+   stylesheet could silently read a stale value from.
 
    Those dock offsets used to be hardcoded (top:64px / 114px / 156px): a sum
    of the heights this stylesheet *intends* each bar to have. That is correct
@@ -847,11 +1411,9 @@ function dashboardBarHeight(sel){
 function dashboardSyncStickyOffsets(){
   var root = document.documentElement;
   var topbar = dashboardBarHeight('.topbar');
-  var evtstrip = dashboardBarHeight('.evtstrip');
   var tabbar = dashboardBarHeight('.tabbar');
-  root.style.setProperty('--stick-evtstrip', topbar + 'px');
-  root.style.setProperty('--stick-tabbar', (topbar + evtstrip) + 'px');
-  root.style.setProperty('--stick-secnav', (topbar + evtstrip + tabbar) + 'px');
+  root.style.setProperty('--stick-tabbar', topbar + 'px');
+  root.style.setProperty('--stick-secnav', (topbar + tabbar) + 'px');
 }
 var dashboardStickySyncQueued = false;
 function dashboardQueueStickySync(){
@@ -878,27 +1440,17 @@ function go(view){
   document.getElementById('v-' + view).classList.add('active');
   document.querySelectorAll('.tabbar button[data-v]').forEach(function(b){ b.classList.toggle('active', b.dataset.v === view); });
   document.getElementById('secnav').style.display = view === 'em' ? '' : 'none';
-  /* Home hides .evtstrip/.tabbar/.secnav and the other views hide .secnav, so
-     the stack's total height changes on every view switch — re-measure before
-     the next paint or the remaining bars keep the previous view's offsets. */
+  /* Home hides .tabbar/.secnav and the other views hide .secnav, so the stack's
+     total height changes on every view switch — re-measure before the next paint
+     or the remaining bars keep the previous view's offsets. */
   dashboardSyncStickyOffsets();
   window.scrollTo({top:0, behavior:'instant'});
 }
 
-/* Course snapshot / Device & Zoom reconciliation tab switch (2026-08-14). Both panes stay
-   in the DOM and both keep being written on every render — dashboardRenderSnapshot() sets
-   every data-stat regardless of which pane is visible — so switching is display-only and
-   the hidden pane is never stale when the CS comes back to it. */
-function snapTab(btn, key){
-  document.querySelectorAll('.snap-tab').forEach(function(b){
-    var on = b === btn;
-    b.classList.toggle('active', on);
-    b.setAttribute('aria-selected', on ? 'true' : 'false');
-  });
-  document.querySelectorAll('.snap-pane').forEach(function(p){ p.classList.remove('active'); });
-  var pane = document.getElementById('snap-' + key);
-  if(pane) pane.classList.add('active');
-}
+/* snapTab() was deleted 2026-08-15 along with the Course snapshot / Device & Zoom
+   reconciliation tabs it switched between — the card now renders one 7x2 grid with nothing
+   to switch. Removed rather than left in place because a live onclick handler with no
+   matching markup is a trap for whoever next reads the body block looking for the tabs. */
 
 function emTab(btn, key){
   document.querySelectorAll('#secnav button').forEach(function(b){ b.classList.remove('active'); });
@@ -1134,7 +1686,38 @@ function toast(msg, kind){
   toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 3200);
 }
 function tog(el){ el.classList.toggle('on'); }
-document.addEventListener('keydown', function(e){ if(e.key === 'Escape') dismissModal(); });
+/* Escape used to dismiss modals only, so the three lighter-weight overlays this page also
+   opens — the anchored detail popover, the row kebab menu, and the Advanced search panel —
+   had no keyboard dismissal at all. They close innermost-first: a CS with a popover open on
+   top of the Advanced panel expects one Escape to close the popover, not both. */
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Escape') return;
+  var pop = document.getElementById('detailPop');
+  var rowMenu = document.getElementById('rowMenu');
+  var advPanel = document.getElementById('rosterAdvPanel');
+  if(pop && pop.classList.contains('open')){ closeDetailPop(); return; }
+  if(rowMenu && rowMenu.classList.contains('open')){ closeRowMenu(); return; }
+  if(document.querySelector('.modal.open, .drawer.open, .scrim.show')){ dismissModal(); return; }
+  if(advPanel && !advPanel.hidden){ rosterToggleAdvanced(); return; }
+  dismissModal();
+});
+
+/* Enter/Space on anything marked role="button" that is not already a real <button>.
+   Several controls on this page are clickable <div>s — the snapshot stat tiles and the
+   shared-device avatar stack — which means they are unreachable by keyboard however they
+   are styled. Making them focusable in the markup (tabindex/role) only gets them focus;
+   a div does not fire click on Enter or Space the way a button does, so without this a
+   keyboard user could tab onto a tile and have nothing happen when they pressed it.
+   Delegated rather than per-element so any future role="button" div is covered too. */
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+  var el = e.target;
+  if(!el || typeof el.closest !== 'function') return;
+  var target = el.closest('[role="button"]');
+  if(!target || target.tagName === 'BUTTON') return;
+  e.preventDefault();   // Space would otherwise scroll the page
+  target.click();
+});
 
 /* ---------- audit ----------
    Both the global audit-trail drawer and the inline Release audit list
@@ -1271,6 +1854,26 @@ function openNotes(btn){
   var nameEl = card.querySelector('.ev-name b, .ev-name input, .hr-name b');
   document.getElementById('notesName').textContent = nameEl ? (nameEl.value || nameEl.textContent) : 'this record';
   document.getElementById('notesText').value = '';
+  /* Show what is already on the record before asking for another note. The panel used to be
+     write-only: a CS could add a note but had no way to see the five existing ones, so the
+     same observation got re-entered every session. */
+  var listEl = document.getElementById('notesList');
+  if(listEl){
+    var reg = rosterFindRegById(card.dataset.regId);
+    var entries = reg ? rosterNoteEntries(reg) : [];
+    listEl.innerHTML = entries.length
+      ? entries.map(function(n){
+          return '<div class="note-entry">' +
+            '<div class="note-meta">' +
+              '<span class="pill p-neutral note-cat">' + rosterEscHtml(n.category) + '</span>' +
+              (n.when ? '<span class="note-when">' + rosterEscHtml(n.when) + '</span>' : '') +
+              (n.who ? '<span class="note-who">' + rosterEscHtml(n.who) + '</span>' : '') +
+            '</div>' +
+            '<div class="note-text">' + rosterEscHtml(n.text) + '</div>' +
+          '</div>';
+        }).join('')
+      : '<div class="note-empty">No notes on this record yet.</div>';
+  }
   openModal('mNotes');
 }
 function confirmNotes(){
@@ -1312,7 +1915,14 @@ function confirmNotes(){
     pendingNotesCard = null;
     dismissModal();
     toast('Note saved.');
+    /* Refetch on BOTH paths as of 2026-08-15. Guests always refetched; the roster never did,
+       which was invisible while the roster had no notes UI at all — but the row now shows a
+       note-count badge and the panel now lists existing notes, so without this a CS saved a
+       note, reopened the panel and saw neither it nor an updated count. The write had
+       succeeded; the page was just showing pre-write state, which is the worst version of
+       that failure because it looks like the save was lost. */
     if(isRealGuest) dashboardFetchGuests();
+    else dashboardFetchRoster();
   }).catch(function(err){
     console.error('confirmNotes failed:', err);
     saveBtn.disabled = false;
@@ -1367,6 +1977,19 @@ function openDetailPop(trigger){
   eyebrowEl.textContent = trigger.dataset.popEyebrow || '';
   eyebrowEl.style.display = trigger.dataset.popEyebrow ? '' : 'none';
   document.getElementById('detailPopTitle').textContent = trigger.dataset.popTitle || '';
+  /* Optional chip strip above the key/value list, separated by a faint rule (2026-08-15).
+     Added for the Day ticks, which now open onto that day's four sessions — S1-S4 across the
+     top, then the connection detail beneath. Any trigger can use it; triggers without
+     data-pop-chips render exactly as before, chip strip and rule both hidden. */
+  var chipWrap = document.getElementById('detailPopChips');
+  if(chipWrap){
+    var chips = [];
+    try { chips = JSON.parse(trigger.dataset.popChips || '[]'); } catch(e){}
+    chipWrap.innerHTML = chips.map(function(c){
+      return '<span class="popchip' + (c.on ? ' on' : '') + '">' + rosterEscHtml(c.label) + '</span>';
+    }).join('');
+    chipWrap.style.display = chips.length ? '' : 'none';
+  }
   var kv = [];
   try { kv = JSON.parse(trigger.dataset.popKv || '[]'); } catch(e){}
   document.getElementById('detailPopKv').innerHTML = kv.map(function(pair){
@@ -1875,9 +2498,16 @@ function confirmDeviceException(){
    plus Edit Name and Spouse, relocated here from the row (§0t). ---------- */
 function openParticipantDrawer(card){
   var nameEl = card.querySelector('.ev-name b');
-  var legalEl = card.querySelector('.ev-name span');
+  /* Was `.ev-name span`, which pointed at the row's "Legal: … · PID-…" line. That line is
+     gone — the row now LEADS with the legal name and carries the preferred name beneath it
+     — and the old selector would have silently matched .ev-goesby instead, printing the
+     nickname into a field labelled "Legal". Reads the goes-by explicitly and labels it as
+     such; the PID is deliberately not restored here (it is an internal Zoom identifier the
+     drawer has no more use for than the row did). */
+  var goesByEl = card.querySelector('.ev-goesby');
+  var goesBy = goesByEl ? goesByEl.textContent.replace(/^\(|\)$/g, '').trim() : '';
   document.getElementById('dwName').textContent = nameEl ? nameEl.textContent : 'Participant details';
-  document.getElementById('dwLegalPid').textContent = legalEl ? legalEl.textContent : '';
+  document.getElementById('dwLegalPid').textContent = goesBy ? 'Goes by ' + goesBy : '';
   var nameInput = document.getElementById('dwNameInput');
   nameInput.value = nameEl ? nameEl.textContent : '';
   nameInput.dataset.targetCard = card.dataset.regId || '';
@@ -1885,7 +2515,12 @@ function openParticipantDrawer(card){
   var spouseInput = document.getElementById('dwSpouseInput');
   spouseInput.value = card.dataset.spouse || '';
   spouseInput.onblur = function(){ comboBlur(this); card.dataset.spouse = this.value; inlineSave(this); };
-  var status = (card.querySelector('.ev-name-row .p-ldp, .ev-name-row .p-nsho') || {}).textContent || 'Active';
+  /* Status line for the drawer. Was a single lookup for an LDP/NSHO pill inside .ev-name-row
+     — a selector that no longer matches anything, since the status pills moved into their
+     own zone and became a set rather than one exclusive badge. Reads the whole set now and
+     joins it, so a participant who is both LDP and WBO says so here as well. */
+  var statusPills = Array.prototype.map.call(card.querySelectorAll('[data-statusbadge]'), function(p){ return p.textContent.trim(); });
+  var status = statusPills.length ? statusPills.join(' · ') : 'Active';
   var seminarText = (card.querySelector('.prog-seminar') || {}).textContent || '—';
   var acText = (card.querySelector('.prog-ac') || {}).textContent || '—';
   document.getElementById('dwSummary').innerHTML =
@@ -2060,79 +2695,111 @@ function spouseBlur(input){ comboBlur(input); }
 function participantBlur(input){ comboBlur(input); }
 
 /* ---------- Roster & Guests: search + 10-per-page pagination ---------- */
-/* ---------- Course snapshot metrics as roster filters (§0y) — Event
-   Management only; each predicate reads state already rendered on the
-   card (course status pill, classification pill, prog-seminar/prog-ac
-   text, attendance/checkpoint ticks) rather than tracking anything
-   new. Invitations sent / Final Session expected are deliberately NOT
-   wired here — neither is a per-registration boolean the roster row
-   actually carries (invitations are an oInvitation/guest concept,
-   Final Session expected isn't modeled per participant on this card).
-   Material Released tile was cut entirely per the locked spec. ---------- */
+/* ---------- Course snapshot metrics as roster filters (§0y) — Event Management only.
+   Rewritten 2026-08-15 to test the card's data-flags string (see rosterRecordFlags())
+   instead of interrogating rendered markup. The old predicates asked questions like
+   `card.querySelector('.ev-name-row .p-ldp')` — using the presence of a CSS class, in a
+   specific DOM position, as a stand-in for a field value. That coupled every filter to the
+   row's visual structure: this rebuild moved the status pills out of .ev-name-row, which
+   would have silently broken four of them with no error anywhere. Flags are derived once
+   from the registration, so tile, pill and filter cannot disagree.
+
+   Two exceptions still read the DOM, and legitimately so: `starts` and `attendanceNow`
+   are about a specific day's tick, which is genuinely a rendered, day-relative thing. ---- */
 var rosterStatFilter = null;
+function rosterFlagFilter(label, flag){
+  return { label: label, test: function(card){ return rosterHasFlag(card, flag); } };
+}
 var ROSTER_STAT_FILTERS = {
+  /* 'all' is the Total event registrations tile. It matches everything — its purpose is to
+     be the obvious way back out of any other filter, since the tile a CS is most likely to
+     click after narrowing is the total. */
+  all: { label: 'All participants', test: function(){ return true; } },
   starts: { label: 'Starts (Day 1)', test: function(card){
-    var t = card.querySelector('[data-pop-title="Day 1 Attendance"]');
-    return !!t && t.classList.contains('tk-attended');
+    return !!card.querySelector('.tick[data-day-num="1"].tk-attended');
   } },
-  current: { label: 'Current', test: function(card){
-    return !card.querySelector('.ev-name-row .p-ldp, .ev-name-row .p-nsho');
-  } },
-  ldp: { label: 'LDP', test: function(card){
-    return !!card.querySelector('.ev-name-row .p-ldp');
-  } },
-  wbo: { label: 'WBO', test: function(card){
-    var pill = card.querySelector('.ev-name-row .p-ldp');
-    if(!pill) return false;
-    try { return JSON.parse(pill.dataset.popKv || '[]').some(function(pair){ return pair[0] === 'WBO' && pair[1] === 'Yes'; }); }
-    catch(e){ return false; }
-  } },
+  current: rosterFlagFilter('Active participants', 'current'),
+  ldp: rosterFlagFilter('LDP', 'ldp'),
+  wbo: rosterFlagFilter('WBO', 'wbo'),
+  wbs: rosterFlagFilter('WBS — withdrew before start', 'withdrawn'),
+  /* Absent covers both resolved absence states, matching the tile it drives — the tile
+     counts f3191 467 and 468 together and splits them in its sub-label. */
+  absent: { label: 'Absent', test: function(card){ return rosterHasFlag(card, 'absent') || rosterHasFlag(card, 'nsho'); } },
+  nsho: rosterFlagFilter('Absent — NCNS', 'nsho'),
+  late: rosterFlagFilter('Late', 'late'),
+  liveNow: rosterFlagFilter('Live now', 'live'),
+  sharedDevice: rosterFlagFilter('Shared device', 'shareddevice'),
+  multiDevice: rosterFlagFilter('Multi-device', 'multidevice'),
+  unmatched: rosterFlagFilter('Zoom match unresolved', 'unmatched'),
   completions: { label: 'Completions', test: function(card){
-    var s3 = card.querySelector('[data-pop-title="Day 3 Session 3 Checkpoint"]');
-    var s4 = card.querySelector('[data-pop-title="Day 3 Session 4 Attendance Check"]');
-    return (!!s3 && !s3.classList.contains('tk-pending')) || (!!s4 && !s4.classList.contains('tk-pending'));
+    return rosterHasFlag(card, 'd3');
   } },
   attendanceNow: { label: 'Attendance now', test: function(card){
-    var t = card.querySelector('[data-pop-title="Day 2 Attendance"]');
-    return !!t && t.classList.contains('tk-attended');
+    var day = { '404':1, '405':2, '406':3 }[String(DASHBOARD_DATA.todaysSessionRaw)] || 1;
+    return !!card.querySelector('.tick[data-day-num="' + day + '"].tk-attended');
   } },
-  seminar: { label: 'Seminar registered', test: function(card){
-    var el = card.querySelector('.prog-seminar');
-    return !!el && el.textContent.trim() === 'REG';
-  } },
-  ac: { label: 'AC registered', test: function(card){
-    var el = card.querySelector('.prog-ac');
-    return !!el && el.textContent.trim() === 'REG';
-  } },
-  reviewer: { label: 'Reviewer', test: function(card){
-    return !!card.querySelector('[data-classtype="reviewer"].p-review');
-  } },
-  se: { label: 'SE', test: function(card){
-    return !!card.querySelector('[data-classtype="se"].p-excluded');
-  } },
-  /* PIQ — the participants a CS still has to work. Tests for any queue pill rather than
-     re-deriving the reasons from the DOM: the pills are already rendered from
-     rosterQueueReasons(), so this stays correct by construction as reasons are added. */
-  piq: { label: 'Participants in queue', test: function(card){
-    return !!card.querySelector('[data-queue="1"]');
-  } }
+  seminar: rosterFlagFilter('Seminar registered', 'seminar'),
+  ac: rosterFlagFilter('AC registered', 'ac'),
+  reviewer: rosterFlagFilter('Reviewer', 'reviewer'),
+  se: rosterFlagFilter('SE', 'se'),
+  /* PNA (formerly PIQ) — the participants a CS still has to work. Both keys resolve to the
+     same predicate so the rename could not strand an existing caller. */
+  piq: rosterFlagFilter('Participants needing attention', 'queued'),
+  pna: rosterFlagFilter('Participants needing attention', 'queued')
 };
+/* aria-pressed alongside the .active class throughout. These tiles are toggles — clicking
+   the active one clears it — and that on/off state was previously carried by background
+   colour alone, which conveys nothing to a screen reader and nothing to a CS who cannot
+   distinguish the tint. */
+function rosterMarkTiles(activeEl){
+  document.querySelectorAll('#em-snapshot .stat-filterable').forEach(function(s){
+    var on = s === activeEl;
+    s.classList.toggle('active', on);
+    s.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+}
 function applyStatFilter(key, el){
   if(rosterStatFilter === key){ clearStatFilter(); return; }
   rosterStatFilter = key;
-  document.querySelectorAll('#em-snapshot .stat-filterable').forEach(function(s){ s.classList.remove('active'); });
-  el.classList.add('active');
-  document.getElementById('rosterFilterLabel').textContent = ROSTER_STAT_FILTERS[key].label;
-  document.getElementById('rosterFilterChip').style.display = '';
+  rosterMarkTiles(el);
+  rosterSyncFilterChip();
   pageState.roster = 1;
   paginate('roster');
 }
 function clearStatFilter(){
   rosterStatFilter = null;
-  document.querySelectorAll('#em-snapshot .stat-filterable').forEach(function(s){ s.classList.remove('active'); });
-  document.getElementById('rosterFilterChip').style.display = 'none';
+  rosterMarkTiles(null);
+  rosterSyncFilterChip();
   pageState.roster = 1;
   paginate('roster');
+}
+/* One chip describes whatever narrowing is currently in force, whether it came from a
+   snapshot tile or from Advanced search, so there is never a hidden filter the CS can't see
+   or clear. Clicking it clears both. */
+function rosterSyncFilterChip(){
+  var chip = document.getElementById('rosterFilterChip');
+  var label = document.getElementById('rosterFilterLabel');
+  if(!chip || !label) return;
+  var parts = [];
+  if(rosterStatFilter && ROSTER_STAT_FILTERS[rosterStatFilter]) parts.push(ROSTER_STAT_FILTERS[rosterStatFilter].label);
+  if(rosterAdvancedQuery) parts.push(rosterAdvancedQuery.label);
+  if(!parts.length){ chip.style.display = 'none'; return; }
+  label.textContent = parts.join(' + ');
+  chip.style.display = '';
+}
+/* Clears every kind of narrowing at once — tile filter, preset/built query, AND the search
+   term. All three are surfaced by the same chip and the same empty state, so a control
+   labelled "Clear filters" that left a search term in place would appear not to work. */
+function rosterClearAllFilters(){
+  rosterAdvancedQuery = null;
+  var input = document.getElementById('rosterSearch');
+  if(input && input.value){
+    input.value = '';
+    var wrap = document.getElementById('rosterSearchWrap');
+    if(wrap) wrap.classList.remove('open');
+  }
+  rosterRenderAdvanced();
+  clearStatFilter();
 }
 /* ---------- Roster name sort ----------
    Reorders the .ev-card elements inside #rosterList rather than re-rendering
@@ -2195,40 +2862,337 @@ function rosterToggleSort(){
   paginate('roster');
   rosterUpdateSortButton();
 }
+/* Rows per page. Was a hardcoded 10 in three places inside paginate(); now one variable so
+   the roster's new rows-per-page control can move it. Guests stay at 10 — that list is
+   short and has no control of its own. */
+var rosterPageSize = 10;
+
+/* ---------- Active / Inactive view mode (2026-08-15) ----------
+   The roster shows ACTIVE registrations by default and nothing else. Inactive records are
+   batched behind their own view rather than removed, so they remain inspectable without
+   cluttering the list a CS works during a live session.
+
+   Modelled as a mode rather than as another entry in ROSTER_STAT_FILTERS on purpose: a
+   filter narrows the current population, whereas this SWAPS which population is on screen.
+   Treating it as a filter would have made "no filter" mean "everyone", which is exactly the
+   mixed list this is meant to prevent. */
+var rosterShowInactive = false;
+function rosterToggleInactive(){
+  rosterShowInactive = !rosterShowInactive;
+  /* Filters are cleared on the way in and out. They were chosen against the other
+     population, so carrying them across would silently narrow the view the CS just switched
+     to — and an empty Inactive list caused by a stale Late filter reads as "no inactive
+     records", which is wrong and unfalsifiable from the screen. */
+  rosterStatFilter = null;
+  rosterAdvancedQuery = null;
+  rosterMarkTiles(null);
+  var input = document.getElementById('rosterSearch');
+  if(input && input.value){
+    input.value = '';
+    var wrap = document.getElementById('rosterSearchWrap');
+    if(wrap) wrap.classList.remove('open');
+  }
+  rosterRenderAdvanced();
+  rosterSyncFilterChip();
+  pageState.roster = 1;
+  paginate('roster');
+  rosterSyncInactiveButton();
+}
+function rosterSyncInactiveButton(){
+  var btn = document.getElementById('rosterInactiveBtn');
+  if(!btn) return;
+  var list = document.getElementById('rosterList');
+  var count = list ? list.querySelectorAll('.ev-card[data-flags*=" inactive "]').length : 0;
+  var label = btn.querySelector('.inactive-lbl');
+  var num = btn.querySelector('.inactive-n');
+  if(label) label.textContent = rosterShowInactive ? 'Back to active' : 'Inactive';
+  if(num){
+    num.textContent = count;
+    // The count is only meaningful on the way IN; once inside, it is the list you are
+    // looking at, and repeating it beside "Back to active" reads as a second population.
+    num.style.display = (!rosterShowInactive && count > 0) ? '' : 'none';
+  }
+  btn.classList.toggle('on', rosterShowInactive);
+  btn.setAttribute('aria-pressed', rosterShowInactive ? 'true' : 'false');
+  // Nothing inactive and not currently viewing it — the control has nothing to offer.
+  btn.style.display = (count === 0 && !rosterShowInactive) ? 'none' : '';
+}
+function rosterSetPageSize(size){
+  var n = Number(size) || 10;
+  rosterPageSize = n;
+  /* Back to page 1 rather than trying to keep the CS's scroll position: after a size change
+     the old page number points at a different set of people, and silently landing them on
+     page 4 of a re-cut list is more disorienting than an honest reset. */
+  pageState.roster = 1;
+  paginate('roster');
+}
 function paginate(kind){
   var list = document.getElementById(kind + 'List');
   var searchEl = document.getElementById(kind + 'Search');
   var q = (searchEl.value || '').toLowerCase().trim();
   var cards = Array.prototype.filter.call(list.children, function(c){ return c.classList.contains('ev-card'); });
   var filtered = cards.filter(function(c){
+    /* Inactive records are batched out of the working roster before any other filter runs.
+       This is a VIEW MODE, not a filter: the CS's default list is the people they can
+       actually act on, and inactive records are reachable only by switching into the
+       Inactive view. Applied first so it cannot be accidentally defeated by a search term
+       or a stat filter that happens to match a withdrawn record. */
+    if(kind === 'roster'){
+      var isInactive = rosterHasFlag(c, 'inactive');
+      if(rosterShowInactive !== isInactive) return false;
+    }
     if(q && (c.dataset.search || '').indexOf(q) === -1) return false;
     if(kind === 'roster' && rosterStatFilter && !ROSTER_STAT_FILTERS[rosterStatFilter].test(c)) return false;
+    if(kind === 'roster' && rosterAdvancedQuery && !rosterAdvancedQuery.test(c)) return false;
     return true;
   });
-  var totalPages = Math.max(1, Math.ceil(filtered.length / 10));
+  var perPage = kind === 'roster' ? rosterPageSize : 10;
+  var totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   if(pageState[kind] > totalPages) pageState[kind] = totalPages;
   if(pageState[kind] < 1) pageState[kind] = 1;
-  var start = (pageState[kind] - 1) * 10, end = start + 10;
+  var start = (pageState[kind] - 1) * perPage, end = start + perPage;
   cards.forEach(function(c){ c.style.display = 'none'; });
   filtered.slice(start, end).forEach(function(c){ c.style.display = ''; });
+
+  /* Empty state. With every row hidden the list rendered as blank space, which reads exactly
+     like a failed load — a CS filtering to "Absent NCNS" and seeing nothing could not tell
+     whether nobody matched or whether the dashboard had broken. Says which, names the reason,
+     and offers the way out, since the narrowing that caused it may be a tile, a preset, a
+     built query or a search term (or several at once). */
+  var emptyId = kind + 'Empty';
+  var emptyEl = document.getElementById(emptyId);
+  if(!filtered.length && cards.length){
+    if(!emptyEl){
+      emptyEl = document.createElement('div');
+      emptyEl.id = emptyId;
+      emptyEl.className = 'ev-empty';
+      list.appendChild(emptyEl);
+    }
+    var why = [];
+    if(q) why.push('the search “' + q + '”');
+    if(kind === 'roster' && rosterStatFilter && ROSTER_STAT_FILTERS[rosterStatFilter]) why.push('the ' + ROSTER_STAT_FILTERS[rosterStatFilter].label + ' filter');
+    if(kind === 'roster' && rosterAdvancedQuery) why.push('the query “' + rosterAdvancedQuery.label + '”');
+    /* Names the population as well as the filters. "No participants match" inside the
+       Inactive view, with no mention of which list is on screen, would read as though the
+       whole roster were empty. */
+    var where = (kind === 'roster' && rosterShowInactive) ? 'inactive registrations' : 'this roster';
+    emptyEl.innerHTML = '<b>No participants match</b>' +
+      (why.length ? 'Nobody in ' + where + ' matches ' + why.join(' and ') + '.'
+                  : (kind === 'roster' && rosterShowInactive ? 'There are no inactive registrations.' : 'Nothing to show.')) +
+      (kind === 'roster' && why.length ? '<div><button class="btn btn-sm" onclick="rosterClearAllFilters()">Clear filters</button></div>' : '');
+    emptyEl.style.display = '';
+  } else if(emptyEl){
+    emptyEl.style.display = 'none';
+  }
   document.getElementById(kind + 'PageLabel').textContent = 'Page ' + pageState[kind] + ' of ' + totalPages;
-  document.getElementById(kind === 'roster' ? 'rosterShowingCount' : 'guestShowingCount').textContent = filtered.length;
-  /* Roster header shows "Showing N of M participants". M is the card count, not
-     filtered.length — it has to stay the whole roster while a search or stat filter is
-     narrowing N, or the header reads "showing 4 of 4" and hides the fact that a filter
-     is on at all. */
+  var showingEl = document.getElementById(kind === 'roster' ? 'rosterShowingCount' : 'guestShowingCount');
+  if(showingEl) showingEl.textContent = filtered.length;
   if(kind === 'roster'){
+    list.classList.toggle('viewing-inactive', rosterShowInactive);
     var totalEl = document.getElementById('rosterTotalCount');
     if(totalEl) totalEl.textContent = cards.length;
+    /* Chevrons disable at the ends. Prev/Next used to be always-enabled buttons that
+       no-opped at the boundaries — pressable controls that do nothing read as broken. */
+    var prev = document.getElementById('rosterPagePrev');
+    var next = document.getElementById('rosterPageNext');
+    if(prev) prev.disabled = pageState.roster <= 1;
+    if(next) next.disabled = pageState.roster >= totalPages;
+    var advCount = document.getElementById('rosterAdvCount');
+    if(advCount) advCount.textContent = filtered.length + ' of ' + cards.length + ' match';
   }
 }
 function filterList(kind){ pageState[kind] = 1; paginate(kind); }
 function pagerGo(kind, delta){ pageState[kind] = (pageState[kind] || 1) + delta; paginate(kind); }
 
+/* ---------- Roster search + Advanced search (2026-08-15) ----------
+   The search box is collapsed to its icon until used. Everything below queries the roster
+   already in the browser — dashboardLastRoster and the data-flags the rows were built with
+   — so there is no webhook, no server round trip, and no new field to keep in sync. */
+/* Three states, not two, so a typed query is never destroyed by one stray click:
+     closed            -> open and focus
+     open + has text   -> clear the text and STAY open (focused, ready to retype)
+     open + empty      -> collapse
+   The obvious two-state version (toggle open/closed, clearing on close) meant a CS who
+   mis-clicked the magnifier lost the query they had just typed with no undo. It also can't
+   simply collapse while keeping the value: a hidden search box still filtering the list is
+   the invisible-filter problem the chip and the empty state exist to prevent. Clearing in
+   place resolves both — nothing is hidden, and nothing is lost without the CS seeing it go. */
+function rosterToggleSearch(){
+  var wrap = document.getElementById('rosterSearchWrap');
+  var input = document.getElementById('rosterSearch');
+  if(!wrap || !input) return;
+  if(!wrap.classList.contains('open')){ wrap.classList.add('open'); input.focus(); return; }
+  if(input.value){ input.value = ''; filterList('roster'); input.focus(); return; }
+  wrap.classList.remove('open');
+}
+
+/* Presets — the named cases a CS works from every session, straight off the flag model.
+   These are exactly the ones the client named, plus the two device states, since a CS
+   chasing "who is unaccounted for" almost always wants those in the same sweep. */
+var ROSTER_ADV_PRESETS = [
+  { key: 'queued',       label: 'Needs attention' },
+  { key: 'late',         label: 'Late' },
+  { key: 'absent',       label: 'Absent' },
+  { key: 'nsho',         label: 'Absent NCNS' },
+  { key: 'live',         label: 'Live' },
+  { key: 'ldp',          label: 'LDP' },
+  { key: 'wbo',          label: 'WBO' },
+  { key: 'withdrawn',    label: 'Withdrawn' },
+  { key: 'unmatched',    label: 'Zoom unmatched' },
+  { key: 'shareddevice', label: 'Shared device' },
+  { key: 'multidevice',  label: 'Multi-device' }
+];
+
+/* Queryable fields for the builder. Each is a flag token plus a human label — deliberately
+   the same vocabulary the presets and the snapshot tiles use, so a CS who has learned one
+   has learned all three. Everything is boolean because everything on this row is: the
+   record either carries the flag or it doesn't. */
+var ROSTER_ADV_FIELDS = [
+  { key: 'live', label: 'Present now' },
+  { key: 'late', label: 'Late arrival' },
+  { key: 'absent', label: 'Absent — excused' },
+  { key: 'nsho', label: 'Absent — NCNS' },
+  { key: 'ldp', label: 'Left during programme' },
+  { key: 'wbo', label: 'Well Being Out' },
+  { key: 'withdrawn', label: 'Withdrawn' },
+  { key: 'queued', label: 'Needs attention' },
+  { key: 'unmatched', label: 'Zoom match unresolved' },
+  { key: 'shareddevice', label: 'Shared device' },
+  { key: 'multidevice', label: 'Multi-device' },
+  { key: 'current', label: 'Still participating' },
+  { key: 'reviewer', label: 'Reviewer' },
+  { key: 'se', label: 'Statistical exclusion' },
+  { key: 'minor', label: 'Minor' },
+  { key: 'seminar', label: 'Seminar registered' },
+  { key: 'ac', label: 'AC registered' },
+  { key: 'd1', label: 'Attended Day 1' },
+  { key: 'd2', label: 'Attended Day 2' },
+  { key: 'd3', label: 'Attended Day 3' }
+];
+
+var rosterAdvancedQuery = null;   // {label, test} once applied
+var rosterAdvConditions = [];      // [{field, op}] while being edited
+
+function rosterToggleAdvanced(){
+  var panel = document.getElementById('rosterAdvPanel');
+  if(!panel) return;
+  panel.hidden = !panel.hidden;
+  document.getElementById('rosterAdvBtn').classList.toggle('on', !panel.hidden);
+  if(!panel.hidden){
+    if(!rosterAdvConditions.length) rosterAdvConditions = [{ field: ROSTER_ADV_FIELDS[0].key, op: 'is' }];
+    rosterRenderAdvanced();
+    paginate('roster');
+  }
+}
+function rosterAddCondition(){
+  rosterAdvConditions.push({ field: ROSTER_ADV_FIELDS[0].key, op: 'is' });
+  rosterRenderAdvanced();
+}
+function rosterRemoveCondition(i){
+  rosterAdvConditions.splice(i, 1);
+  rosterRenderAdvanced();
+}
+function rosterCondChanged(i, what, value){
+  if(!rosterAdvConditions[i]) return;
+  rosterAdvConditions[i][what] = value;
+}
+function rosterRenderAdvanced(){
+  /* Seed the first condition here rather than only in rosterToggleAdvanced(). The builder
+     is useless with zero rows — there is nothing to edit and "+ Add condition" is the only
+     way in — and seeding at the single point that draws it means the panel is always usable
+     however it came to be shown. */
+  if(!rosterAdvConditions.length) rosterAdvConditions = [{ field: ROSTER_ADV_FIELDS[0].key, op: 'is' }];
+  var presetWrap = document.getElementById('rosterAdvPresets');
+  if(presetWrap){
+    presetWrap.innerHTML = ROSTER_ADV_PRESETS.map(function(p){
+      var on = rosterAdvancedQuery && rosterAdvancedQuery.preset === p.key;
+      // aria-pressed for the same reason as the tiles: these are toggles whose only other
+      // on/off signal is a colour change.
+      return '<button class="advchip' + (on ? ' on' : '') + '" aria-pressed="' + (on ? 'true' : 'false') +
+        '" onclick="rosterApplyPreset(\'' + p.key + '\')">' + rosterEscHtml(p.label) + '</button>';
+    }).join('');
+  }
+  var condWrap = document.getElementById('rosterAdvConds');
+  if(condWrap){
+    condWrap.innerHTML = rosterAdvConditions.map(function(c, i){
+      var opts = ROSTER_ADV_FIELDS.map(function(f){
+        return '<option value="' + f.key + '"' + (f.key === c.field ? ' selected' : '') + '>' + rosterEscHtml(f.label) + '</option>';
+      }).join('');
+      return '<div class="advcond">' +
+        '<span class="advcond-l">' + (i === 0 ? 'Where' : '<span class="advcond-join" data-join="1"></span>') + '</span>' +
+        '<select onchange="rosterCondChanged(' + i + ',\'field\',this.value)">' + opts + '</select>' +
+        '<select onchange="rosterCondChanged(' + i + ',\'op\',this.value)">' +
+          '<option value="is"' + (c.op === 'is' ? ' selected' : '') + '>is</option>' +
+          '<option value="not"' + (c.op === 'not' ? ' selected' : '') + '>is not</option>' +
+        '</select>' +
+        '<button class="advcond-x" onclick="rosterRemoveCondition(' + i + ')" aria-label="Remove condition" title="Remove">✕</button>' +
+      '</div>';
+    }).join('');
+    rosterSyncCondJoinLabels();
+  }
+}
+/* The "and"/"or" word between rows mirrors the Match selector, so the builder reads as the
+   sentence it will actually evaluate rather than leaving the CS to infer it from a dropdown
+   at the bottom. */
+function rosterSyncCondJoinLabels(){
+  var mode = (document.getElementById('rosterAdvMatch') || {}).value || 'all';
+  document.querySelectorAll('#rosterAdvConds [data-join="1"]').forEach(function(el){
+    el.textContent = mode === 'any' ? 'or' : 'and';
+  });
+}
+function rosterApplyPreset(key){
+  var preset = ROSTER_ADV_PRESETS.filter(function(p){ return p.key === key; })[0];
+  if(!preset) return;
+  if(rosterAdvancedQuery && rosterAdvancedQuery.preset === key){ rosterClearAdvanced(); return; }
+  rosterAdvancedQuery = {
+    preset: key,
+    label: preset.label,
+    test: function(card){ return rosterHasFlag(card, key); }
+  };
+  rosterRenderAdvanced();
+  rosterSyncFilterChip();
+  pageState.roster = 1;
+  paginate('roster');
+}
+function rosterApplyAdvanced(){
+  rosterSyncCondJoinLabels();
+  var mode = (document.getElementById('rosterAdvMatch') || {}).value || 'all';
+  var conds = rosterAdvConditions.filter(function(c){ return !!c.field; });
+  if(!conds.length){ rosterClearAdvanced(); return; }
+  var labelFor = function(k){
+    var f = ROSTER_ADV_FIELDS.filter(function(x){ return x.key === k; })[0];
+    return f ? f.label : k;
+  };
+  rosterAdvancedQuery = {
+    preset: null,
+    label: conds.map(function(c){ return (c.op === 'not' ? 'not ' : '') + labelFor(c.field); }).join(mode === 'any' ? ' or ' : ' and '),
+    test: function(card){
+      var results = conds.map(function(c){
+        var has = rosterHasFlag(card, c.field);
+        return c.op === 'not' ? !has : has;
+      });
+      return mode === 'any' ? results.some(Boolean) : results.every(Boolean);
+    }
+  };
+  rosterRenderAdvanced();
+  rosterSyncFilterChip();
+  pageState.roster = 1;
+  paginate('roster');
+}
+function rosterClearAdvanced(){
+  rosterAdvancedQuery = null;
+  rosterRenderAdvanced();
+  rosterSyncFilterChip();
+  pageState.roster = 1;
+  paginate('roster');
+}
+
 /* ---------- 4.7 / §8 Live Material Release — sectioned by day, no tabs.
-   Each row is just the toggle, title + type, and a single timestamp cell
-   (children[2]) showing when the item was first shown — no separate
-   Hidden/Visible pill, no notification-status pill, no Resend button.
+   Each row is just the toggle and title + type — no separate
+   Hidden/Visible pill, no notification-status pill, no Resend button,
+   and since 2026-08-14 no "first shown" timestamp cell either (it was
+   never wired to a real release time, so it sat on hardcoded demo
+   values; the handlers below no longer write to children[2]).
    Rows carrying data-key + data-toggle write through the matching
    webhook on confirm — semantic key + explicit boolean, server flips the
    field directly (no read-then-toggle). data-toggle="materials" covers
@@ -2445,16 +3409,11 @@ function dashboardApplyMaterialChanged(msg){
     if(btn.dataset.title !== data.name) continue;
     var wantOn = !!data.visible;
     if(btn.classList.contains('on') === wantOn) return;
-    var row = btn.closest('.res-row');
-    var timeCell = row ? row.children[2] : null;
     if(wantOn){
       btn.classList.add('on');
       btn.dataset.notified = '1';
-      btn.dataset.notifat = 'just now';
-      if(timeCell) timeCell.innerHTML = 'First shown <b>just now</b>';
     } else {
       btn.classList.remove('on');
-      if(timeCell) timeCell.innerHTML = '—';
     }
     return;
   }
@@ -2475,16 +3434,11 @@ function dashboardApplyAnnouncementChanged(msg){
     if(!btn.dataset.key || btn.dataset.key.toLowerCase() !== String(data.key).toLowerCase()) continue;
     var wantOn = !!data.open;
     if(btn.classList.contains('on') === wantOn) return;
-    var row = btn.closest('.res-row');
-    var timeCell = row ? row.children[2] : null;
     if(wantOn){
       btn.classList.add('on');
       btn.dataset.notified = '1';
-      btn.dataset.notifat = 'just now';
-      if(timeCell) timeCell.innerHTML = 'First shown <b>just now</b>';
     } else {
       btn.classList.remove('on');
-      if(timeCell) timeCell.innerHTML = '—';
     }
     return;
   }
@@ -2525,9 +3479,18 @@ var DASHBOARD_DAY_TICK_FIELDS = { f2801: 1, f2802: 2, f2803: 3 };
    full roster fetch. Added 2026-08-14 — previously these arrived, updated dashboardLastRoster
    and repainted nothing. */
 var DASHBOARD_DAY_MINUTES_FIELDS = { f2805: 1, f2806: 2, f2807: 3 };
+/* Reverse index of ROSTER_DAY_SESSION_FIELDS: session field -> day number. Built rather
+   than written out so the two can never disagree if a session mapping is corrected. */
+var DASHBOARD_SESSION_FIELD_TO_DAY = (function(){
+  var out = {};
+  Object.keys(ROSTER_DAY_SESSION_FIELDS).forEach(function(day){
+    ROSTER_DAY_SESSION_FIELDS[day].forEach(function(f){ out[f] = Number(day); });
+  });
+  return out;
+})();
 /* Fields that can change queue membership — the four raising conditions plus the two note
    fields that resolve them, plus the states that remove a record from the queue entirely
-   (present, left the course, cancelled). Must stay in step with rosterQueueReasons(). */
+   (present, left the course, withdrawn). Must stay in step with rosterQueueReasons(). */
 var DASHBOARD_QUEUE_FIELDS = ['f3062', 'f3191', 'f2853', 'f2808', 'f3184', 'f3207', 'f3237', 'f3236', 'f2293', 'f2424'];
 function dashboardApplyAttendanceChanged(msg){
   var data = (msg && msg.data) || {};
@@ -2548,13 +3511,22 @@ function dashboardApplyAttendanceChanged(msg){
   var card = document.querySelector('#rosterList .ev-card[data-reg-id="' + regId + '"]');
   if(!card) return;
 
-  // Name badge: LIVE/LATE/LDP/ABSENT/CANCELLED — any of these can flip it, including into
-  // and out of the no-badge state, which is why this delegates to the shared applier.
-  if(field === 'f2853' || field === 'f3062' || field === 'f2293' || field === 'f3191' || field === 'f2424'){
-    rosterApplyNameBadge(card, reg);
+  // Status badges: LIVE/LATE/LDP/WBO/NSHO/ABSENT/WITHDRAWN — any of these can add or remove
+  // a pill, so the shared applier rebuilds the whole zone rather than patching one node.
+  // It also refreshes data-flags, which every filter and the Advanced search read.
+  // f2688 (Well Being Out) joins the list 2026-08-15: it now has its own badge, where
+  // previously it only ever appeared inside the LDP tick's popover.
+  if(field === 'f2853' || field === 'f3062' || field === 'f2293' || field === 'f3191' || field === 'f2424' ||
+     field === 'f2688' || field === 'f3056' || field === 'f3059' || field === 'f3061'){
+    rosterApplyStatusBadges(card, reg);
   }
 
-  // S3/S4 checkpoint ticks (existing behavior, unchanged).
+  /* S3/S4 checkpoint ticks. These no longer render as their own row column — they moved
+     into the Day 3 tick's session chips — so this only fires if a .tick[data-field] node is
+     actually present. Kept rather than deleted because rosterBuildChkpntTick() is still the
+     correct patch for anywhere those two fields ARE rendered individually, and the guard
+     already made it a no-op when they are not. The live session-chip refresh is handled by
+     the day-tick rebuild below, which f3203/f3055 now also trigger. */
   var tickMeta = DASHBOARD_ATTENDANCE_TICK_FIELDS[field];
   if(tickMeta){
     var oldTick = card.querySelector('.tick[data-field="' + field + '"]');
@@ -2568,7 +3540,12 @@ function dashboardApplyAttendanceChanged(msg){
   // D1/D2/D3 attendance ticks — f2801-f2803 directly, or f2293/f3059
   // since LDP overrides whichever day's tick matches (rebuild all 3,
   // simplest correct approach given the day match can shift).
-  if(DASHBOARD_DAY_TICK_FIELDS[field] || DASHBOARD_DAY_MINUTES_FIELDS[field] || field === 'f2293' || field === 'f3059'){
+  // The 12 per-session fields join this list 2026-08-15: they are now baked into each day
+  // tick's data-pop-chips at build time, so a session flip has to rebuild the tick or the
+  // popover keeps showing yesterday's chips until the next full roster fetch — the same
+  // staleness DASHBOARD_DAY_MINUTES_FIELDS was added to fix.
+  if(DASHBOARD_DAY_TICK_FIELDS[field] || DASHBOARD_DAY_MINUTES_FIELDS[field] || field === 'f2293' || field === 'f3059' ||
+     DASHBOARD_SESSION_FIELD_TO_DAY[field]){
     [1, 2, 3].forEach(function(dayNum){
       var attendedField = 'f280' + dayNum, minutesField = 'f280' + (dayNum + 4);
       var oldDayTick = card.querySelector('.tick[data-day-num="' + dayNum + '"]');
@@ -2612,6 +3589,10 @@ function dashboardApplyAttendanceChanged(msg){
       queueWrap.innerHTML = rosterQueuePills(reg);
       while(queueWrap.firstChild) evSub.appendChild(queueWrap.firstChild);
     }
+    /* Queue membership is part of data-flags (the `queued` token and each reason), and the
+       PNA tile, the Needs-attention preset and the query builder all read it — so the flag
+       string has to be rewritten here too, not only when a status badge changes. */
+    card.dataset.flags = rosterFlagsAttr(reg);
   }
 
   // Seminar/AC NP-POT-REG pills — update the data-* attrs updateProgramPills()
@@ -2649,7 +3630,7 @@ function dashboardApplyAttendanceChanged(msg){
   // previously had no live path under any code path at all.
   // f2808/f3184/f3062/f3191/f3237/f3236 added 2026-08-14 — every one of them can change
   // queue membership, and PIQ is a tile like any other, so it has to recompute on the same
-  // pass. f2424 too: it decides both the CANCELLED badge and whether a record counts as
+  // pass. f2424 too: it decides both the WITHDRAWN badge and whether a record counts as
   // Current at all.
   /* f2801-f2803 added 2026-08-14. A Day-attended flip rebuilt that card's tick but never
      recomputed the aggregate tiles, so Master Stats/Reporting sat stale behind the roster

@@ -25,11 +25,29 @@
     <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4.5 6 7.5 9 4.5"/></svg>
   </div>
 
+  <!-- Day X of Y is a direct merge of events.f3025 "Todays Session (Day)" —
+       only ever advanced by confirming End Session, no separate Day-advance
+       control (CS Dashboard discovery, Session strip section).
+
+       Relocated into the topbar 2026-08-15, together with End session below.
+       These two were the entire contents of a dedicated 50px .evtstrip bar,
+       which meant the page spent a full band of vertical chrome on one label
+       and one button before any content started. Both belong to the event the
+       selector immediately to the left already names, so they read correctly
+       sitting beside it — and dropping the strip returns 50px to the roster on
+       every screen. -->
+  <div class="es-day" id="esDay">
+    <span id="esDayLabel">Day 2 of 3</span>
+  </div>
+
   <div class="evt-meta">
     <span>Event Leader: <span id="evtLeaderName">—</span></span>
   </div>
 
   <div class="top-right">
+    <!-- End session sits to the LEFT of the profile chip, at normal SaaS
+         spacing: the chip is the account anchor and stays hard right. -->
+    <button class="btn-session" id="btnSession" onclick="openEndSessionModal()">End session</button>
     <!-- Single-logged-in-user page: role is resolved by authentication, not
          chosen client-side. This is now purely a profile chip (name + role)
          with a logout action — no dropdown, no role switching. -->
@@ -42,21 +60,6 @@
         <button class="profile-menu-item" onclick="dashboardLogout()">Log out</button>
       </div>
     </div>
-  </div>
-</div></div>
-
-<!-- Day X of Y is a direct merge of events.f3025 "Todays Session (Day)" —
-     only ever advanced by confirming End Session, no separate Day-advance
-     control (CS Dashboard discovery, Session strip section). The former
-     Not Started/In Session live pill next to the Day indicator is cut per
-     client decision (Ably live-push makes it redundant) — see esDot/
-     esState removed below, not just hidden. -->
-<div class="evtstrip"><div class="wrap row">
-  <div class="es-day" id="esDay">
-    <span id="esDayLabel">Day 2 of 3</span>
-  </div>
-  <div class="es-right">
-    <button class="btn-session" id="btnSession" onclick="openEndSessionModal()">End session</button>
   </div>
 </div></div>
 
@@ -166,75 +169,71 @@
          timestamp on a live-updating card is worse than no timestamp: it
          invites the CS to trust stale-looking numbers that are actually
          current. The card is Ably-pushed, so it needs no staleness stamp. -->
-    <!-- Two tile sets, one card (2026-08-14). Device & Zoom reconciliation used to live on
-         the Master Stats tab, which is the tab a CS never opens mid-session — exactly when
-         reconciliation matters most. Tabbing it alongside Course snapshot puts the live
-         operational view and the course-performance view one click apart on the surface the
-         CS already works from. Attendance now is promoted out of the tile grid into the
-         title bar: it is the number that changes most and is glanced at most, and it was
-         costing a full tile slot to say one percentage. -->
+    <!-- Detabbed 2026-08-15. The two panes were Course snapshot and Device & Zoom
+         reconciliation, and the tab between them was the problem: a CS working a live
+         session needs the course numbers AND the room numbers in the same glance, and a
+         tab guarantees one of the two is always hidden. The client's locked 14-tile list
+         below fits one 7x2 grid, so there is nothing left for a tab to hide. -->
     <div class="card-hd snap-hd">
-      <div class="snap-tabs" role="tablist">
-        <button class="snap-tab active" role="tab" aria-selected="true" data-snap="course" onclick="snapTab(this,'course')">Course snapshot</button>
-        <button class="snap-tab" role="tab" aria-selected="false" data-snap="device" onclick="snapTab(this,'device')">Device &amp; Zoom reconciliation</button>
-      </div>
+      <h3>Course snapshot</h3>
+      <!-- Attendance now keeps its promoted spot in the title bar: it is the number that
+           changes most and is glanced at most. Restructured 2026-08-15 — the label and
+           the "N / M" detail now stack as two lines with the percentage in its own
+           full-height panel alongside, so the percentage reads as the value and the two
+           text lines as one supporting block, rather than three items competing across a
+           single row. -->
       <button class="snap-att stat-filterable" onclick="applyStatFilter('attendanceNow', this)" title="Show only records attending today">
-        <span class="snap-att-l">Attendance now</span>
-        <span class="snap-att-n" data-stat="attendanceNow">—</span>
-        <span class="snap-att-s" data-stat-sub="attendanceNow">—</span>
+        <span class="snap-att-txt">
+          <span class="snap-att-l">Attendance now</span>
+          <span class="snap-att-s" data-stat-sub="attendanceNow">—</span>
+        </span>
+        <span class="snap-att-pct"><span class="snap-att-n" data-stat="attendanceNow">—</span></span>
       </button>
     </div>
 
-    <div class="stats snap-pane active" id="snap-course">
-      <div class="stat" title="Locked at the end of Day 1"><div class="l">Starts (Day 1)</div><div class="n"><span class="mf-lg" data-stat="starts">—</span></div><div class="sub" data-stat-sub="starts">locked at Day 1 close</div></div>
-      <div class="stat stat-filterable" onclick="applyStatFilter('current', this)" title="Show only records still participating"><div class="l">Current</div><div class="n"><span class="mf-lg" data-stat="current">—</span></div><div class="sub" data-stat-sub="current">still participating</div></div>
-      <!-- LDP and WBO merged (2026-08-14): WBO is a subset of LDP, never a peer of it, and
-           showing them as two equal tiles read as two separate populations. The diagonal
-           split says "part of" in a way two tiles cannot. Both halves stay independently
-           filterable, so the drill-down behaviour is unchanged. -->
-      <div class="stat stat-split">
-        <div class="split-half split-a stat-filterable" onclick="applyStatFilter('ldp', this)" title="Show only LDP records">
-          <div class="l">LDP</div><div class="n"><span class="mf-lg" data-stat="ldp">—</span></div>
-        </div>
-        <div class="split-rule" aria-hidden="true"></div>
-        <div class="split-half split-b stat-filterable" onclick="applyStatFilter('wbo', this)" title="Show only WBO records">
-          <div class="l">WBO</div><div class="n"><span class="mf-lg" data-stat="wbo">—</span></div>
-        </div>
-        <div class="sub" data-stat-sub="wbo">of those who left</div>
-      </div>
-      <!-- PIQ — participants in queue. The CS's actual worklist: anyone carrying an
-           unresolved ATTN / unmatched / multi-device / shared-device flag. Filterable like
-           every other tile so it can be worked one record at a time. -->
-      <div class="stat stat-filterable" onclick="applyStatFilter('piq', this)" title="Show only participants still needing CS action"><div class="l">PIQ</div><div class="n"><span class="mf-lg" data-stat="piq">—</span></div><div class="sub" data-stat-sub="piq">participants in queue</div></div>
-      <div class="stat stat-filterable" onclick="applyStatFilter('seminar', this)" title="Show only Seminar-registered records"><div class="l">Seminar registered</div><div class="n"><span class="mf-lg" data-stat="seminarPct">—</span></div><div class="sub" data-stat-sub="seminarPct">of potential</div></div>
-      <div class="stat stat-filterable" onclick="applyStatFilter('ac', this)" title="Show only AC-registered records"><div class="l">AC registered</div><div class="n"><span class="mf-lg" data-stat="acPct">—</span></div><div class="sub" data-stat-sub="acPct">of potential</div></div>
-      <div class="stat"><div class="l">Invitations sent</div><div class="n"><span class="mf-lg" data-stat="invitationsSent">—</span></div><div class="sub" data-stat-sub="invitationsSent">by participants</div></div>
-      <div class="stat stat-filterable" onclick="applyStatFilter('reviewer', this)" title="Show only Reviewer-flagged records"><div class="l">Reviewer</div><div class="n"><span class="mf-lg" data-stat="reviewer">—</span></div><div class="sub">flagged this event</div></div>
-      <div class="stat stat-filterable" onclick="applyStatFilter('se', this)" title="Show only SE-flagged records"><div class="l">SE</div><div class="n"><span class="mf-lg" data-stat="se">—</span></div><div class="sub">flagged this event</div></div>
-      <!-- Cut 2026-08-14: "Final Session expected" (CS confirmed they don't know what the
-           number means, and its formula was never settled) and "Completions" (empty until
-           the end of Day 3, so it burned a slot for two and a half days — it remains on
-           Reporting, where end-of-course numbers belong). -->
-    </div>
+    <!-- The client's locked 14-tile set, read left-to-right then top-to-bottom.
+         Row 1 is the COURSE: how many registered, who withdrew before it began, who
+         actually started, who needs a human right now, who was lost and why, who is
+         unaccounted for.
+         Row 2 is the ROOM: who should be connected, and who actually is.
 
-    <!-- 8 tiles on stats-4 (2 rows of 4), not stats-7. There is no .stats-8 rule in the
-         header CSS, and .stats-4 already carries the second-row border handling
-         (nth-child(4n) / nth-child(n+5)) — so adding the Drop-ins tile needed no header
-         change and therefore no second Ontraport paste.
-         Relabelled 2026-08-14: this card compares HEADCOUNTS, not devices. The dashboard
-         never receives Zoom's live connection total, so "Expected Zoom devices" was naming
-         something the data could not express. Multi-device is now an informational count
-         rather than an adjustment — one person on two connections is still one person and
-         does not move a headcount. See dashboardRenderSnapshot() for the full reasoning. -->
-    <div class="stats stats-4 snap-pane" id="snap-device">
-      <div class="stat"><div class="l">Participants</div><div class="n"><span class="mf-lg" data-stat="drParticipants">—</span></div><div class="sub">enrolled this Event</div></div>
+         Tiles dropped from this card in the rebuild — Seminar registered, AC registered,
+         Invitations sent, Reviewer, SE, Reconciled, Participants (a duplicate of Total
+         event registrations). Each is a longer-horizon course-performance number rather
+         than something acted on mid-session, and each still renders on the Reporting
+         Dashboard off the same data-stat key. dashboardRenderSnapshot() still computes
+         and writes every one of them, so removing the tiles here changes nothing there. -->
+    <div class="stats stats-7" id="snap-course">
+      <!-- ROW 1 — the course -->
+      <div class="stat stat-filterable" role="button" tabindex="0" onclick="applyStatFilter('all', this)" title="Clear filters and show every participant"><div class="l">Total event registrations</div><div class="n"><span class="mf-lg" data-stat="totalRegistrations">—</span></div><div class="sub" data-stat-sub="totalRegistrations">on the roster</div></div>
+      <!-- Numeric only, no sub-label (client decision 2026-08-15) — a withdrawal headcount
+           needs no qualifier under it. The .sub element is dropped rather than emptied so
+           the tile doesn't reserve a blank line the others fill. -->
+      <div class="stat stat-filterable" role="button" tabindex="0" onclick="applyStatFilter('wbs', this)" title="Show only records withdrawn before the course started"><div class="l">WBS</div><div class="n"><span class="mf-lg" data-stat="wbs">—</span></div></div>
+      <div class="stat" title="Locked at the end of Day 1"><div class="l">Total starts (Day 1)</div><div class="n"><span class="mf-lg" data-stat="starts">—</span></div><div class="sub" data-stat-sub="starts">locks at Day 1 close</div></div>
+      <div class="stat stat-filterable" role="button" tabindex="0" onclick="applyStatFilter('pna', this)" title="Show only participants still needing CS action"><div class="l">PNA</div><div class="n"><span class="mf-lg" data-stat="pna">—</span></div><div class="sub" data-stat-sub="pna">in queue, needs attention</div></div>
+      <!-- LDP and WBO lead with the rate and carry the headcount as a tag. A CS reads
+           these to judge whether this course is losing people unusually fast, which is a
+           proportion question; the raw count is the follow-up, not the headline. The two
+           were a single diagonal-split tile until this rebuild — the split existed to say
+           "WBO is a subset of LDP", which the sub-labels now say in words instead. -->
+      <div class="stat stat-filterable" role="button" tabindex="0" onclick="applyStatFilter('ldp', this)" title="Show only LDP records"><div class="l">LDP</div><div class="n"><span class="mf-lg" data-stat="ldpPct">—</span><span class="ntag" data-stat="ldp">—</span></div><div class="sub" data-stat-sub="ldpPct">left during programme</div></div>
+      <div class="stat stat-filterable" role="button" tabindex="0" onclick="applyStatFilter('wbo', this)" title="Show only WBO records"><div class="l">WBO</div><div class="n"><span class="mf-lg" data-stat="wboPct">—</span><span class="ntag" data-stat="wbo">—</span></div><div class="sub" data-stat-sub="wboPct">of those who left</div></div>
+      <div class="stat stat-filterable" role="button" tabindex="0" onclick="applyStatFilter('absent', this)" title="Show only records marked absent"><div class="l">Absent</div><div class="n"><span class="mf-lg" data-stat="absent">—</span></div><div class="sub" data-stat-sub="absent">excused or NCNS</div></div>
+
+      <!-- ROW 2 — the room, right now -->
+      <!-- Plain .sub, no data-stat-sub: nothing writes this key (it never did), and the
+           attribute implied a live value that was actually a static caption. -->
+      <div class="stat stat-filterable" role="button" tabindex="0" onclick="applyStatFilter('current', this)" title="Show only records still participating"><div class="l">Active participants</div><div class="n"><span class="mf-lg" data-stat="current">—</span></div><div class="sub">still participating</div></div>
       <div class="stat"><div class="l">Staff</div><div class="n"><span class="mf-lg" data-stat="drStaff">—</span></div><div class="sub">Zoom-connected now</div></div>
       <div class="stat"><div class="l">Drop-ins</div><div class="n"><span class="mf-lg" data-stat="drDropIns">—</span></div><div class="sub">no registration match</div></div>
-      <div class="stat"><div class="l">Shared-device adj.</div><div class="n"><span class="mf-lg" data-stat="drSharedAdj">—</span></div><div class="sub">known shared devices</div></div>
-      <div class="stat"><div class="l">Multi-device</div><div class="n"><span class="mf-lg" data-stat="drDupAdj">—</span></div><div class="sub">on two connections</div></div>
-      <div class="stat"><div class="l">Expected present</div><div class="n"><span class="mf-lg" data-stat="drExpected">—</span></div><div class="sub">current + staff, adjusted</div></div>
-      <div class="stat"><div class="l">Observed</div><div class="n"><span class="mf-lg" data-stat="drObserved">—</span></div><div class="sub">connected now</div></div>
-      <div class="stat big"><div class="l">Reconciled</div><div class="n"><span class="mf-lg" data-stat="drReconciled">—</span></div><div class="sub" style="color:rgba(255,255,255,.55);" data-stat-sub="drReconciled">—</div></div>
+      <div class="stat stat-filterable" role="button" tabindex="0" onclick="applyStatFilter('sharedDevice', this)" title="Show only records paired on a shared device"><div class="l">Shared device</div><div class="n"><span class="mf-lg" data-stat="drSharedCount">—</span></div><div class="sub" data-stat-sub="drSharedCount">paired on one connection</div></div>
+      <div class="stat stat-filterable" role="button" tabindex="0" onclick="applyStatFilter('multiDevice', this)" title="Show only records on more than one connection"><div class="l">Multi-device</div><div class="n"><span class="mf-lg" data-stat="drDupAdj">—</span></div><div class="sub">on two connections</div></div>
+      <div class="stat"><div class="l">Expected</div><div class="n"><span class="mf-lg" data-stat="drExpected">—</span></div><div class="sub">active + staff, adjusted</div></div>
+      <!-- Live now is the observed headcount that Expected exists to be compared against,
+           so the two sit adjacent and this tile carries the gap in its own sub line
+           rather than spending a 15th tile on a separate Reconciled verdict. -->
+      <div class="stat stat-filterable" role="button" tabindex="0" onclick="applyStatFilter('liveNow', this)" title="Show only records present right now"><div class="l">Live now</div><div class="n"><span class="mf-lg" data-stat="drObserved">—</span></div><div class="sub" data-stat-sub="drObserved">—</div></div>
     </div>
   </div>
   <!-- 4.2 Roster and classification — the current Event's oRegistrations,
@@ -251,38 +250,76 @@
        ••• menu (#rowMenu) and its contextual modals. Search filters, 10
        per page. -->
   <div class="card msec" id="ms-roster">
-    <div class="card-hd">
-      <!-- Was "188 on oRegistrations for this Event · showing 12" — the 188 was a hardcoded
-           fixture the engine never wrote, and "oRegistrations" is an internal object name
-           that means nothing to a CS. Both counts are now real and written by paginate(). -->
+    <!-- Action bar de-weighted 2026-08-15. It previously ran four bordered .btn boxes plus
+         a bordered input across the top of the card; five outlined rectangles competing for
+         attention above a list whose own rows were also boxed. Search and Export are now
+         borderless icon affordances that expand/act on click, sort stays a quiet text
+         toggle, and Take Attendance keeps a real button because it is the one destructive-ish
+         action here (it fires a live Zoom poll and writes attendance for the whole roster).
+         The "Showing N of M participants" tag line is gone — pagination states the same
+         thing, at the point where the CS is acting on it. -->
+    <div class="card-hd roster-hd">
       <h3>Roster</h3>
-      <span class="sub">Showing <span class="mf" id="rosterShowingCount">—</span> of <span class="mf" id="rosterTotalCount">—</span> participants</span>
-      <span class="pill p-neutral" id="rosterFilterChip" style="display:none;cursor:pointer;gap:6px;" onclick="clearStatFilter()" title="Clear filter">Filtered: <span id="rosterFilterLabel"></span> ✕</span>
+      <span class="pill p-neutral" id="rosterFilterChip" style="display:none;cursor:pointer;gap:6px;" onclick="rosterClearAllFilters()" title="Clear filter">Filtered: <span id="rosterFilterLabel"></span> ✕</span>
       <div class="r">
-        <div class="search" style="position:relative;">
-          <input type="text" id="rosterSearch" oninput="filterList('roster')" placeholder="Search preferred name, legal name, PID…" style="border:1px solid var(--line);border-radius:7px;padding:8px 12px;font-size:12.5px;width:240px;">
+        <!-- Collapsed to an icon until used. The search box was 240px of permanently
+             outlined chrome for something used intermittently; the magnifier reads as
+             "search" on its own and expands in place on click or focus. -->
+        <div class="search-inline" id="rosterSearchWrap">
+          <button class="icon-btn" id="rosterSearchBtn" onclick="rosterToggleSearch()" aria-label="Search roster" title="Search">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="9" r="5.5"/><path d="m13.2 13.2 3.3 3.3"/></svg>
+          </button>
+          <input type="text" id="rosterSearch" oninput="filterList('roster')" placeholder="Search name or PID…" aria-label="Search roster">
         </div>
+        <!-- Advanced search — presets plus a real condition builder over the roster already
+             in memory. No webhook: everything it queries is a field the row was built from. -->
+        <button class="icon-btn" id="rosterAdvBtn" onclick="rosterToggleAdvanced()" aria-label="Advanced search" title="Advanced search">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5h14M6 10h8M9 15h2"/></svg>
+        </button>
         <!-- Name sort. A button rather than a <select> on purpose: this is a
              two-state toggle, and the select/input rendering collision with
              Ontraport's CSS is a known hazard on this page (see the header
-             code's collision fixes). .btn is already hardened against it.
-             Label states what the NEXT click gives you is the other common
-             convention; here it states the CURRENT order instead, matching
+             code's collision fixes). Label states the CURRENT order, matching
              the sorted list the CS is looking at. -->
-        <button class="btn btn-sm" id="rosterSortBtn" onclick="rosterToggleSort()" aria-pressed="false" title="Sort the roster by participant name">Name A–Z</button>
+        <button class="btn-quiet" id="rosterSortBtn" onclick="rosterToggleSort()" aria-pressed="false" title="Sort the roster by participant name">Name A–Z</button>
+        <!-- Active/Inactive view switch. Inactive registrations are batched out of the
+             default list so the CS works only records they can act on; this is the way
+             back to them. Hidden entirely when there are none. -->
+        <button class="btn-quiet inactive-btn" id="rosterInactiveBtn" onclick="rosterToggleInactive()" aria-pressed="false" title="Show registrations that are no longer active" style="display:none;"><span class="inactive-lbl">Inactive</span><span class="inactive-n">0</span></button>
         <!-- Take Attendance — REAL BUILD 2026-08-12. Attendance Architecture
-             Layer 2. Replaces the old separate "Checkpoint Attendance" /
-             "Attendance Check" buttons (formerly runCheckpointPoll(), a
-             prototype stub that only toasted a fake aggregate — no real
-             webhook existed). CS picks Session (S1-S4) from a floating menu;
-             Day is never client-supplied — the server resolves it from
-             events.f3025. The browser never sets an individual participant's
-             attendance flag directly; a fresh Zoom Live Dashboard poll runs
-             server-side at click-time and the aggregate result is toasted,
-             then the roster is refetched from server truth. See
+             Layer 2. CS picks Session (S1-S4) from a floating menu; Day is never
+             client-supplied — the server resolves it from events.f3025. The browser never
+             sets an individual participant's attendance flag directly; a fresh Zoom Live
+             Dashboard poll runs server-side at click-time and the aggregate result is
+             toasted, then the roster is refetched from server truth. See
              openTakeAttendanceMenu()/confirmTakeAttendance(). -->
         <button class="btn btn-sm" id="takeAttendanceBtn" onclick="openTakeAttendanceMenu(this)">Take Attendance</button>
-        <button class="btn btn-sm" onclick="toast('Export queued — audit entry recorded.')">Export</button>
+        <button class="icon-btn" onclick="toast('Export queued — audit entry recorded.')" aria-label="Export roster" title="Export">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3v9m0 0 3.2-3.2M10 12 6.8 8.8"/><path d="M4 14v2a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Advanced search panel. Collapsed by default so it costs nothing until asked for.
+         Presets are the named cases a CS works from every session; the builder below covers
+         everything else without needing each combination pre-blessed. -->
+    <div class="advsearch" id="rosterAdvPanel" hidden>
+      <div class="advsearch-row">
+        <span class="advsearch-l">Popular</span>
+        <div class="advsearch-presets" id="rosterAdvPresets"></div>
+      </div>
+      <div class="advsearch-rule"></div>
+      <div class="advsearch-build">
+        <div class="advsearch-conds" id="rosterAdvConds"></div>
+        <div class="advsearch-actions">
+          <button class="btn-quiet" onclick="rosterAddCondition()">+ Add condition</button>
+          <span class="advsearch-match">Match
+            <select id="rosterAdvMatch" onchange="rosterApplyAdvanced()"><option value="all">all</option><option value="any">any</option></select>
+          </span>
+          <span class="advsearch-count" id="rosterAdvCount"></span>
+          <button class="btn-quiet" onclick="rosterClearAdvanced()">Clear</button>
+          <button class="btn btn-sm btn-primary" onclick="rosterApplyAdvanced()">Apply</button>
+        </div>
       </div>
     </div>
     <div class="card-bd flush">
@@ -299,10 +336,28 @@
       <div class="tokline" id="rosterLoadingState" style="padding:12px 20px;">Loading roster…</div>
       <!-- end repeat -->
       </div>
+      <!-- Pagination rebuilt 2026-08-15: right-aligned, borderless chevrons, and a
+           rows-per-page control. Prev/Next were bordered buttons labelled with words, which
+           is two more boxes and two more strings than a chevron needs — and with the
+           "Showing N of M" tag line removed from the card header, this is now the one place
+           that states position in the list, so it says it here where the CS is acting.
+           Chevrons disable at the ends rather than silently no-opping. -->
       <div class="pager" id="rosterPager">
-        <button class="btn btn-sm" onclick="pagerGo('roster',-1)">Prev</button>
-        <span class="mf" id="rosterPageLabel">Page 1 of 2</span>
-        <button class="btn btn-sm" onclick="pagerGo('roster',1)">Next</button>
+        <button class="pg-chev" id="rosterPagePrev" onclick="pagerGo('roster',-1)" aria-label="Previous page" title="Previous page">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3 5 8l5 5"/></svg>
+        </button>
+        <span class="mf pg-label" id="rosterPageLabel">Page 1 of 1</span>
+        <button class="pg-chev" id="rosterPageNext" onclick="pagerGo('roster',1)" aria-label="Next page" title="Next page">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 3 5 5-5 5"/></svg>
+        </button>
+        <label class="pg-size">
+          <span class="pg-size-l">Rows</span>
+          <select id="rosterPageSize" onchange="rosterSetPageSize(this.value)">
+            <option value="10" selected>10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+          </select>
+        </label>
       </div>
     </div>
     <!-- Field-provenance legend removed 2026-08-13. It documented which
@@ -332,7 +387,6 @@
       <span class="sub">Hidden by default · release when the Forum Leader reaches the topic, not on a clock</span>
       <div class="r">
         <span style="font-size:12px;color:var(--gray);">Released <b class="mf" id="relProgCard">4 / 5</b> today</span>
-        <button class="btn btn-sm" onclick="openModal('mPreview')">Participant preview</button>
       </div>
     </div>
 
@@ -340,26 +394,25 @@
          → Day 3 → Graduation. There is deliberately no "Always" or "Prep"
          section: nothing on this course defaults to always-visible: every
          resource is released manually, on a day, when the Forum Leader
-         reaches it. Each row is just the toggle, the title + material
-         type, and a single "first shown" timestamp — no separate Hidden/
-         Visible pill (the toggle already shows that), no topic or
-         engagement metrics under the title, no Resend button. -->
+         reaches it. Each row is just the toggle and the title + material
+         type — no separate Hidden/Visible pill (the toggle already shows
+         that), no topic or engagement metrics under the title, no Resend
+         button, and no "first shown" timestamp (removed 2026-08-14: the
+         stamp was never wired to a real release time, so it rendered
+         hardcoded demo values on the live dashboard). -->
     <div class="relview" id="rel-day1">
       <h4 class="daysec-hd">Day 1</h4>
       <div class="res-row">
-        <div><button class="tog" data-key="day1-assignments" data-toggle="materials" data-title="Day 1 Assignments" data-kind="Assignment" data-notified="1" data-notifat="Sat 2:14 pm" onclick="directToggle(this)"></button></div>
+        <div><button class="tog" data-key="day1-assignments" data-toggle="materials" data-title="Day 1 Assignments" data-kind="Assignment" data-notified="1" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Day 1 Assignments</div><div class="mt"><span>Assignment</span></div></div>
-        <div class="res-time">First shown <b>Sat 2:14 pm</b></div>
       </div>
       <div class="res-row">
-        <div><button class="tog" data-key="day1-agreements" data-toggle="materials" data-title="Day 1 Agreements" data-kind="Agreement" data-notified="1" data-notifat="Sat 2:14 pm" onclick="directToggle(this)"></button></div>
+        <div><button class="tog" data-key="day1-agreements" data-toggle="materials" data-title="Day 1 Agreements" data-kind="Agreement" data-notified="1" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Day 1 Agreements</div><div class="mt"><span>Agreement</span></div></div>
-        <div class="res-time">First shown <b>Sat 2:14 pm</b></div>
       </div>
       <div class="res-row">
-        <div><button class="tog" data-key="day1-letter" data-toggle="materials" data-title="Day 1 Letter" data-kind="Letter" data-notified="1" data-notifat="Sat 2:14 pm" onclick="directToggle(this)"></button></div>
+        <div><button class="tog" data-key="day1-letter" data-toggle="materials" data-title="Day 1 Letter" data-kind="Letter" data-notified="1" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Day 1 Letter</div><div class="mt"><span>Letter</span></div></div>
-        <div class="res-time">First shown <b>Sat 2:14 pm</b></div>
       </div>
     </div>
 
@@ -367,14 +420,12 @@
       <h4 class="daysec-hd">Day 2 (today)</h4>
       <!-- LOOP: repeat: content.subjects (Day 2) — each resource carries its own release state -->
       <div class="res-row">
-        <div><button class="tog" data-key="day2-assignments" data-toggle="materials" data-title="Day 2 Assignments" data-kind="Assignment" data-notified="1" data-notifat="6:58 pm" onclick="directToggle(this)"></button></div>
+        <div><button class="tog" data-key="day2-assignments" data-toggle="materials" data-title="Day 2 Assignments" data-kind="Assignment" data-notified="1" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Day 2 Assignments</div><div class="mt"><span>Assignment</span></div></div>
-        <div class="res-time">First shown <b>6:58 pm</b></div>
       </div>
       <div class="res-row">
-        <div><button class="tog" data-key="day2-letter" data-toggle="materials" data-title="Day 2 Letter" data-kind="Letter" data-notified="1" data-notifat="6:58 pm" onclick="directToggle(this)"></button></div>
+        <div><button class="tog" data-key="day2-letter" data-toggle="materials" data-title="Day 2 Letter" data-kind="Letter" data-notified="1" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Day 2 Letter</div><div class="mt"><span>Letter</span></div></div>
-        <div class="res-time">First shown <b>6:58 pm</b></div>
       </div>
       <!-- end repeat -->
     </div>
@@ -384,7 +435,6 @@
       <div class="res-row">
         <div><button class="tog" data-key="day3-follow-through" data-toggle="materials" data-title="Day 3 Follow-Through" data-kind="Assignment" data-notified="0" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Day 3 Follow-Through</div><div class="mt"><span>Assignment</span></div></div>
-        <div class="res-time">—</div>
       </div>
     </div>
   </div>
@@ -405,17 +455,14 @@
       <div class="res-row">
         <div><button class="tog" data-key="seminar-open" data-toggle="announcements" data-title="Seminar announcement" data-kind="Announcement" data-notified="0" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Seminar</div><div class="mt"><span>Registration announcement</span></div></div>
-        <div class="res-time">—</div>
       </div>
       <div class="res-row">
         <div><button class="tog" data-key="AC-open" data-toggle="announcements" data-title="Advanced Course announcement" data-kind="Announcement" data-notified="0" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Advanced Course</div><div class="mt"><span>Registration announcement</span></div></div>
-        <div class="res-time">—</div>
       </div>
       <div class="res-row">
         <div><button class="tog" data-key="gift-open" data-toggle="announcements" data-title="Gift a Forum announcement" data-kind="Announcement" data-notified="0" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Gift a Forum</div><div class="mt"><span>Gifting announcement</span></div></div>
-        <div class="res-time">—</div>
       </div>
     </div>
   </div>
@@ -448,22 +495,18 @@
       <div class="res-row">
         <div><button class="tog" data-key="invite-guests-email" data-toggle="announcements" data-title="Invite Your Guests email" data-kind="Email" data-notified="0" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Invite Your Guests</div><div class="mt"><span>Email</span></div></div>
-        <div class="res-time">—</div>
       </div>
       <div class="res-row">
         <div><button class="tog" data-key="day1-complete-email" data-toggle="announcements" data-title="Day 1 Complete email" data-kind="Email" data-notified="0" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Day 1 Complete</div><div class="mt"><span>Email</span></div></div>
-        <div class="res-time">—</div>
       </div>
       <div class="res-row">
         <div><button class="tog" data-key="day2-complete-email" data-toggle="announcements" data-title="Day 2 Complete email" data-kind="Email" data-notified="0" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Day 2 Complete</div><div class="mt"><span>Email</span></div></div>
-        <div class="res-time">—</div>
       </div>
       <div class="res-row">
         <div><button class="tog" data-key="forum-complete-email" data-toggle="announcements" data-title="Forum Complete email" data-kind="Email" data-notified="0" onclick="directToggle(this)"></button></div>
         <div class="res-t"><div class="nm">Forum Complete</div><div class="mt"><span>Email</span></div></div>
-        <div class="res-time">—</div>
       </div>
     </div>
   </div>
@@ -675,6 +718,10 @@
 <div class="det-pop" id="detailPop">
   <div class="det-pop-eyebrow" id="detailPopEyebrow"></div>
   <div class="det-pop-title" id="detailPopTitle"></div>
+  <!-- Optional chip strip (2026-08-15). The Day ticks use it to show that day's four
+       sessions across the top, above a faint rule; triggers that set no data-pop-chips
+       hide it entirely and render exactly as before. -->
+  <div class="det-pop-chips" id="detailPopChips" style="display:none;"></div>
   <dl class="det-pop-kv" id="detailPopKv"></dl>
   <div class="det-pop-ft" id="detailPopFt" style="display:none;"><a onclick="onEditFromPop()">Edit</a></div>
 </div>
@@ -900,9 +947,18 @@
      only performs the real write when opened from a real .ev-card with a real
      numeric data-reg-id, otherwise falls back to the old demo-only behavior so a
      fixture .hr-row can't send a fake ID to the real webhook. -->
+<!-- Read + write as of 2026-08-15. This was write-only: a CS could add a note but could
+     not see any note already on the record, so the same observation was re-entered every
+     session and the Attendance Override / Zoom exception notes written by the other modals
+     were invisible from everywhere except the modal that wrote them. #notesList now renders
+     the aggregated history across all five note fields, newest first, each carrying the
+     category it came from — see ROSTER_NOTE_FIELDS / rosterNoteEntries() in the engine. -->
 <div class="modal" id="mNotes">
-  <div class="modal-hd"><h3>Update Operational Note for <span class="serif-it" id="notesName">this record</span></h3><div class="hd-rule"></div></div>
-  <div class="modal-bd"><div class="field"><textarea id="notesText" rows="5" placeholder="Add an operational note…"></textarea></div></div>
+  <div class="modal-hd"><h3>Notes for <span class="serif-it" id="notesName">this record</span></h3><div class="hd-rule"></div></div>
+  <div class="modal-bd">
+    <div class="note-list" id="notesList"></div>
+    <div class="field"><textarea id="notesText" rows="4" placeholder="Add a note…"></textarea></div>
+  </div>
   <div class="modal-ft"><button class="btn btn-primary" id="notesSaveBtn" onclick="confirmNotes()">Save note</button><button class="btn" onclick="dismissModal()">Cancel</button></div>
 </div>
 
@@ -1034,20 +1090,9 @@
   <div class="modal-ft"><button class="btn btn-primary" id="deSaveBtn" onclick="confirmDeviceException()">Save</button><button class="btn" onclick="dismissModal()">Cancel</button></div>
 </div>
 
-<!-- Participant preview -->
-<div class="modal" id="mPreview">
-  <div class="modal-hd"><h3>Participant view</h3><p>Exactly what a participant sees right now on Day 2. Hidden items never appear in navigation, search, notifications or direct links.</p></div>
-  <div class="modal-bd">
-    <div class="preview">
-      <div class="preview-hd"><span class="pill p-visible"><i class="dot"></i>Live</span> Day 2</div>
-      <div class="preview-bd">
-        <div class="pv-item"><div class="t">Day 2 Letter</div><div class="d">Visible · released 6:58 pm</div></div>
-        <div class="pv-item" style="border-left-color:#d8d4c9;opacity:.55;"><div class="t"><span class="v-na">Nothing further is visible</span></div><div class="d">Remaining Day 2 items are hidden and do not appear anywhere in the participant experience.</div></div>
-      </div>
-    </div>
-  </div>
-  <div class="modal-ft"><button class="btn" onclick="dismissModal()">Close preview</button></div>
-</div>
+<!-- Participant preview modal removed 2026-08-14 along with its trigger
+     button in the Course materials card header. Its body was hardcoded
+     Day 2 demo content, not a render of real material state. -->
 
 <!-- Event selector — limited to events this Contact is authorized for (brief §2 event selector rule) -->
 <div class="modal" id="mEvents">

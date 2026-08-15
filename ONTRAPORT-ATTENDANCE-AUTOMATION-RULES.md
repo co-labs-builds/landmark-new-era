@@ -100,11 +100,17 @@ As of today, 4 of the CS Dashboard's own write-back n8n workflows (`Override Cla
 
 ## Name badge precedence (for reference)
 
-CANCELLED (registration itself inactive) → LDP (f2293) → ABSENT - EXCUSED/NCNS (f3191) → LIVE (f2853) → LATE (f3062) → ACTIVE (default).
+**Superseded 2026-08-15.** Badges are no longer a single exclusive value chosen by precedence — the roster renders every applicable state as its own pill, in fixed order: LIVE (f2853) · LATE (f3062) · LDP (f2293) · WBO (f2688) · NSHO (f3191=468) · ABSENT (f3191=467) · WITHDRAWN (f2424=491). LIVE still suppresses NSHO/ABSENT specifically, since turning up resolves a provisional absence; it suppresses nothing else. A participant who is both LDP and WBO now shows both, where the old precedence chain hid WBO — the more consequential of the two. See `rosterStatusBadges()` in `dashboard-engine.js`.
 
-## Known, separate, non-buildable gap: Registration Status (`f2424`)
+## Registration Status (`f2424`) — half built, half outstanding
 
-Confirmed not in the Ably whitelist at all, and no dashboard action writes it (registration cancellation isn't part of any kebab action) — the roster's CANCELLED badge state only ever refreshes on a full page reload. This is a pre-existing limitation, not a regression from any of today's work. Only worth building out (whitelist `f2424` + a native rule + a small `rosterNameBadge()` client-side change) if the client confirms it's actually needed for Friday — flagging here rather than building speculatively.
+**Corrected 2026-08-15. The paragraph previously here said `f2424` was "confirmed not in the Ably whitelist at all". That is out of date and misled a later build session — `f2424` was added to `PORTAL : Ably Publish` (both `ATTENDANCE_FIELDS` and `RAW_VALUE_FIELDS`) on 2026-08-14, one day after this doc's last rewrite. Verified live on 2026-08-15: `POST /webhook/ably-publish {"eventId":"218","registrationId":"1207","field":"f2424"}` returns `{"ok":true}`, while an unknown field still correctly 400s.**
+
+What this field now drives: the **WITHDRAWN** badge and the **WBS** tile, via the new option `491=Withdraw` (added 2026-08-15). It also decides whether a record counts as an Active participant and whether it can enter the CS queue.
+
+`153=Cancelled` is **not handled by the dashboard at all** — it is verified unused (zero registrations account-wide) and the client models only `491`. If someone selects Cancelled while that option still exists, the dashboard will treat them as fully active. The option is slated for removal in the Ontraport admin.
+
+**Still outstanding:** the native Ontraport rule. The publish path works, but nothing triggers it on a direct field edit, so setting Withdraw in raw Ontraport still won't reach a live dashboard until someone reloads. Build it with the "Common setup, every rule" recipe above, pointing at Registration → Registration Status, body `{"eventId":"[Event//ID]","registrationId":"[ID]","field":"f2424"}`.
 
 ## 🚨 Separate, urgent, non-buildable blocker: Zoom S2S credential
 
