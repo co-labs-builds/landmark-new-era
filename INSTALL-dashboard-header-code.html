@@ -892,6 +892,30 @@ body.cs-dashboard .field select{-webkit-appearance:menulist !important;appearanc
    a validation error. Only ever applied to one field at a time; marking
    several would defeat the whole point of the cue. */
 body.cs-dashboard .field.attn input,body.cs-dashboard .field.attn select,body.cs-dashboard .field.attn textarea,body.cs-dashboard .ev-field.attn input{border-color:rgba(33,122,0,.55) !important;box-shadow:0 0 0 3px rgba(33,122,0,.09) !important;}
+
+/* ---- Blocked submit (2026-08-15) ----------------------------------------
+   A field that stopped a save states why, next to itself, and pulses until it takes focus.
+   Previously the only signals were a green border tint and a toast at the page edge — in a
+   modal the eye is on the Save button, so the tint was missable and the toast explained the
+   problem somewhere the CS was not looking.
+
+   Coral, not the green .attn tint: this is a blocked action, not a hint about where to go
+   next, and the two should not look the same. The pulse is on box-shadow only — animating
+   border-color or transform would shift layout or fight the focus ring. */
+.field.attn-pulse input,.field.attn-pulse select,.field.attn-pulse textarea,.ev-field.attn-pulse input{
+  border-color:var(--coral) !important;animation:attnPulse 1.15s ease-out 3;}
+@keyframes attnPulse{
+  0%{box-shadow:0 0 0 0 rgba(240,100,73,.45) !important;}
+  70%{box-shadow:0 0 0 7px rgba(240,100,73,0) !important;}
+  100%{box-shadow:0 0 0 0 rgba(240,100,73,0) !important;}
+}
+.attn-prompt{margin-top:6px;font-size:11.5px;font-weight:600;color:var(--coral-ink);display:flex;align-items:center;gap:5px;}
+.attn-prompt::before{content:"!";flex:none;width:14px;height:14px;border-radius:50%;background:var(--coral);color:#fff;font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+/* Respect a reduced-motion preference — the message alone still carries the information,
+   so dropping the animation costs nothing. */
+@media(prefers-reduced-motion:reduce){
+  .field.attn-pulse input,.field.attn-pulse select,.field.attn-pulse textarea,.ev-field.attn-pulse input{animation:none;}
+}
 /* Native control accent, 2026-08-13. Browsers paint their own selection
    fills on form controls in the OS/browser accent (blue by default), which
    no ordinary rule reaches — accent-color is the only supported lever.

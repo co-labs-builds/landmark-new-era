@@ -364,7 +364,9 @@
           <span class="pg-size-l">Rows</span>
           <select id="rosterPageSize" onchange="rosterSetPageSize(this.value)">
             <option value="10" selected>10</option>
-            <option value="25">25</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+            <option value="40">40</option>
             <option value="50">50</option>
           </select>
         </label>
@@ -1034,11 +1036,21 @@
 <div class="modal" id="mCourseStatus">
   <div class="modal-hd"><h3>Update Course Status for <span class="serif-it" id="csName">this participant</span></h3><div class="hd-rule"></div></div>
   <div class="modal-bd">
-    <div class="field"><label>Left course?</label>
+    <!-- Three outcomes in one control (2026-08-15). Withdraw is not a kind of "left course":
+         LDP means left DURING the programme and carries a day, time and refund-bearing type,
+         whereas a withdrawal is the registration itself ending. One select keeps them
+         mutually exclusive — there is no way to record both. -->
+    <div class="field"><label>Course status</label>
       <select id="csLeftCourse" onchange="onCsLeftCourseChange()">
-        <option value="no">No</option>
-        <option value="yes">Yes</option>
+        <option value="no">Active — still participating</option>
+        <option value="yes">Left the course (LDP)</option>
+        <option value="withdraw">Withdrew</option>
       </select>
+    </div>
+    <!-- Withdraw collects a note and nothing else: there is no day, session or type to
+         record for someone who never started. -->
+    <div id="csWithdrawFields" style="display:none;">
+      <div class="field"><label>Note</label><textarea id="csWithdrawNote" rows="3" placeholder="Optional — why they withdrew. Visible to staff only."></textarea></div>
     </div>
     <div id="csLeftFields" style="display:none;">
       <div class="field"><label>Left type</label>

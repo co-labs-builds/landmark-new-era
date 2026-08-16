@@ -1762,6 +1762,10 @@ function closeAll(keepScrim){
   if(!keepScrim) document.getElementById('scrim').classList.remove('open');
 }
 function dismissModal(){
+  /* Clear any blocked-submit message so a reopened modal never shows the previous attempt's
+     complaint against a field the CS has since filled in. Also covers the success path,
+     where no new prompt is raised and the old one would otherwise linger. */
+  attnClearPrompt(document);
   if(modalStack.length){
     var prevId = modalStack.pop();
     document.querySelectorAll('.modal.open').forEach(function(el){ el.classList.remove('open'); });
@@ -2202,7 +2206,12 @@ function openCourseStatus(card){
      428/430/432, which silently pre-answered the question and could be
      saved through untouched. They now fall back to '' so the placeholder
      option shows and csNextUnsetField() can see they still need input. */
-  document.getElementById('csLeftCourse').value = isLeft ? 'yes' : 'no';
+  /* Withdrawn outranks left-the-course when both somehow read true. The server clears the
+     LDP cluster on a withdraw so the combination should not occur, but a record predating
+     that — or edited directly in Ontraport — could still carry both, and showing the more
+     final of the two is the safer reading. */
+  document.getElementById('csLeftCourse').value = rosterIsWithdrawn(reg) ? 'withdraw' : (isLeft ? 'yes' : 'no');
+  document.getElementById('csWithdrawNote').value = rosterIsWithdrawn(reg) ? (reg.f3235 || '') : '';
   document.getElementById('csLeftType').value = ROSTER_LEFT_TYPE_MAP[String(reg.f3056 || '')] ? String(reg.f3056) : '';
   document.getElementById('csDay').value = ROSTER_LEFT_DAY_TO_NUM[String(reg.f3059 || '')] ? String(reg.f3059) : '';
   /* Was hardcoded '15:42' — a prototype artefact that wrote a fabricated
@@ -2218,7 +2227,14 @@ function openCourseStatus(card){
   openModal('mCourseStatus');
 }
 function onCsLeftCourseChange(){
-  document.getElementById('csLeftFields').style.display = document.getElementById('csLeftCourse').value === 'yes' ? 'block' : 'none';
+  var v = document.getElementById('csLeftCourse').value;
+  document.getElementById('csLeftFields').style.display = v === 'yes' ? 'block' : 'none';
+  /* Withdraw shows a note and nothing else — the LDP block's day, time, type and WBO
+     reason all describe leaving DURING the programme and have no meaning for someone who
+     never started. Hiding rather than disabling them: a disabled control still reads as
+     "something I might have to fill in". */
+  var wd = document.getElementById('csWithdrawFields');
+  if(wd) wd.style.display = v === 'withdraw' ? 'block' : 'none';
   csUpdateAttention();
 }
 function onCsLeftTypeOrReasonChange(){
@@ -2246,9 +2262,51 @@ function attnApply(modalId, nextFn){
   var modal = document.getElementById(modalId);
   if(!modal) return null;
   modal.querySelectorAll('.attn').forEach(function(f){ f.classList.remove('attn'); });
+  attnClearPrompt(modal);
   var next = nextFn();
   if(next) next.classList.add('attn');
   return next;
+}
+
+/* ---------- Blocked-submit feedback (2026-08-15) ----------
+   Attempting to save with a required field empty used to do two quiet things: tint the
+   field's border and fire a toast at the edge of the screen. In a modal the eye is on the
+   Save button, so the tint was easy to miss entirely and the toast named the problem
+   somewhere the CS was not looking — leaving "I pressed Save and nothing happened".
+
+   Now the field itself says what it needs, next to itself, and pulses until acknowledged.
+   The pulse stops the moment the field takes focus: it exists to find the field, and an
+   animation that continues while you are answering it is just noise. */
+function attnClearPrompt(scope){
+  (scope || document).querySelectorAll('.attn-prompt').forEach(function(p){ p.remove(); });
+  (scope || document).querySelectorAll('.attn-pulse').forEach(function(f){ f.classList.remove('attn-pulse'); });
+}
+function attnPrompt(fieldEl, message){
+  if(!fieldEl) return;
+  var modal = fieldEl.closest('.modal') || document;
+  attnClearPrompt(modal);
+  fieldEl.classList.add('attn', 'attn-pulse');
+  var tip = document.createElement('div');
+  tip.className = 'attn-prompt';
+  tip.setAttribute('role', 'alert');
+  tip.textContent = message;
+  fieldEl.appendChild(tip);
+  var ctl = fieldEl.querySelector('select,input,textarea');
+  if(ctl){
+    /* Deliberately NOT auto-focused. The pulse exists to draw the eye to the field, and
+       focusing it programmatically stops the pulse on the same tick — the two cancel out and
+       nothing ever animates. Scroll it into view instead and let the pulse do its job until
+       the CS actually goes there.
+
+       Keyboard and screen-reader users are not left behind by this: the message carries
+       role="alert", so it is announced on insertion without stealing focus. */
+    var stop = function(){
+      fieldEl.classList.remove('attn-pulse');
+      ctl.removeEventListener('focus', stop);
+    };
+    ctl.addEventListener('focus', stop);
+    try{ fieldEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }catch(e){}
+  }
 }
 /* Each next*UnsetField() lists that modal's required answers in the order
    the form reveals them, returning the first still outstanding or null.
@@ -2294,7 +2352,12 @@ function confirmCourseStatus(){
   if(!card){ dismissModal(); return; }
   var saveBtn = document.getElementById('csSaveBtn');
   var originalLabel = saveBtn.textContent;
-  var left = document.getElementById('csLeftCourse').value === 'yes';
+  // Clear the previous attempt's message before re-validating, so a resolved field's
+  // complaint does not survive into a successful save.
+  attnClearPrompt(document.getElementById('mCourseStatus'));
+  var statusVal = document.getElementById('csLeftCourse').value;
+  var left = statusVal === 'yes';
+  var isWithdraw = statusVal === 'withdraw';
   /* Guard added alongside the placeholder options. leftType/leftDay — and
      wboReason on an LDP 2/4 type — are genuinely empty until chosen now,
      and the server rejects empties with a 400. Catching it here means the
@@ -2305,13 +2368,19 @@ function confirmCourseStatus(){
     var missing = csNextUnsetField();
     if(missing){
       csUpdateAttention();
-      var ctl = missing.querySelector('select,input,textarea');
-      if(ctl) ctl.focus();
-      toast('Choose an option for the highlighted field.', 'err');
+      attnPrompt(missing, 'Required — choose an option to continue.');
       return;
     }
   }
-  var payload = { eventTeamId: DASHBOARD_DATA.eventTeamId, registrationId: Number(card.dataset.regId), leftCourse: left };
+  /* courseStatus is the field the server now reads; leftCourse is still sent so an older
+     deployed workflow keeps working if the two ever get out of step. */
+  var payload = {
+    eventTeamId: DASHBOARD_DATA.eventTeamId,
+    registrationId: Number(card.dataset.regId),
+    courseStatus: isWithdraw ? 'withdraw' : (left ? 'left' : 'active'),
+    leftCourse: left
+  };
+  if(isWithdraw) payload.note = document.getElementById('csWithdrawNote').value.trim();
   var type = '', reason = '', isWbo = false;
   if(left){
     type = document.getElementById('csLeftType').value;
@@ -2462,12 +2531,11 @@ function confirmCorrectAttendance(){
   var session = document.getElementById('corrAttSession').value;
   var status = document.getElementById('corrAttStatus').value;
   var note = document.getElementById('corrAttNote').value.trim();
+  attnClearPrompt(document.getElementById('mCorrectAttendance'));
   var attMissing = corrAttNextUnsetField();
   if(attMissing){
     corrAttUpdateAttention();
-    var attCtl = attMissing.querySelector('select,input,textarea');
-    if(attCtl) attCtl.focus();
-    toast(attMissing.id === 'corrAttNoteField' ? 'A reason is required for Absent - Excused.' : 'Choose an option for the highlighted field.', 'err');
+    attnPrompt(attMissing, attMissing.id === 'corrAttNoteField' ? 'A reason is required for Absent — Excused.' : 'Required — choose an option to continue.');
     return;
   }
   var overrideNote = document.getElementById('corrAttOverrideNote').value.trim();
@@ -2570,12 +2638,11 @@ function confirmDeviceException(){
   if(!card){ dismissModal(); return; }
   var saveBtn = document.getElementById('deSaveBtn');
   var originalLabel = saveBtn.textContent;
+  attnClearPrompt(document.getElementById('mDeviceException'));
   var deMissing = deNextUnsetField();
   if(deMissing){
     deUpdateAttention();
-    var deCtl = deMissing.querySelector('select,input,textarea');
-    if(deCtl) deCtl.focus();
-    toast(deMissing.id === 'deOtherParticipantField' ? 'Select who this participant is sharing a device with.' : 'Choose an option for the highlighted field.', 'err');
+    attnPrompt(deMissing, deMissing.id === 'deOtherParticipantField' ? 'Required — select who they are sharing a device with.' : 'Required — choose an option to continue.');
     return;
   }
   var exceptionType = document.getElementById('deExceptionType').value;
