@@ -312,13 +312,12 @@
          Presets are the named cases a CS works from every session; the builder below covers
          everything else without needing each combination pre-blessed. -->
     <div class="advsearch" id="rosterAdvPanel" hidden>
-      <div class="advsearch-row">
-        <!-- The hint is the only thing that makes the third chip state findable. A tri-state
-             control reads as a plain toggle until someone clicks it twice by accident, and
-             "everyone except X" is too common a need to leave to accident. -->
-        <span class="advsearch-l">Popular<span class="advsearch-hint">click twice to exclude</span></span>
-        <div class="advsearch-presets" id="rosterAdvPresets"></div>
-      </div>
+      <!-- Preset chips, rendered as labelled groups by rosterRenderAdvanced() from
+           ROSTER_ADV_PRESETS — adding one is a one-line change there, never a markup edit.
+           The "click twice to exclude" hint rides on the first group: a tri-state control
+           reads as a plain toggle until someone double-clicks by accident, and "everyone
+           except X" is too common a need to leave to accident. -->
+      <div id="rosterAdvPresets"></div>
       <div class="advsearch-rule"></div>
       <div class="advsearch-build">
         <div class="advsearch-conds" id="rosterAdvConds"></div>

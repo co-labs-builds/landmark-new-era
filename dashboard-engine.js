@@ -421,6 +421,16 @@ function rosterRecordFlags(reg){
   if(rosterIsTrue(reg.f3206)) flags.push('minor');
   if(rosterIsTrue(reg.f2303)) flags.push('seminar');
   if(rosterIsTrue(reg.f2302)) flags.push('ac');
+  /* Follow-on potential states, added 2026-08-15 so POT and NP can be filtered and excluded
+     the same way everything else can. Seminar and AC are kept as SEPARATE flags rather than
+     one shared "potential" — the row draws two independent pills and a CS chasing Seminar
+     conversions is not chasing AC conversions, so a chip that matched either would return a
+     list they would then have to re-sort by eye.
+     Read from the same option ids the pills use: f2882 371/370, f2887 382/381. */
+  if(String(reg.f2882) === '371') flags.push('sempot');
+  if(String(reg.f2882) === '370') flags.push('semnp');
+  if(String(reg.f2887) === '382') flags.push('acpot');
+  if(String(reg.f2887) === '381') flags.push('acnp');
   if(rosterIsTrue(reg.f2801)) flags.push('d1');
   if(rosterIsTrue(reg.f2802)) flags.push('d2');
   if(rosterIsTrue(reg.f2803)) flags.push('d3');
@@ -3266,18 +3276,32 @@ function rosterToggleSearch(){
 /* Presets — the named cases a CS works from every session, straight off the flag model.
    These are exactly the ones the client named, plus the two device states, since a CS
    chasing "who is unaccounted for" almost always wants those in the same sweep. */
+/* Two groups as of 2026-08-15. Adding the six follow-on states to one undifferentiated run
+   of chips would have made seventeen, which stops being scannable — and the two sets answer
+   different questions. Status is "who needs me right now"; Follow-on is "who still has to be
+   converted", which is worked between sessions rather than during one.
+
+   Every chip is tri-state and they all compose, so the genuinely useful combination is one
+   click apart: Seminar potential included + Seminar registered EXCLUDED is exactly the
+   Seminar conversion worklist, and the same pair does AC. */
 var ROSTER_ADV_PRESETS = [
-  { key: 'queued',       label: 'Needs attention' },
-  { key: 'late',         label: 'Late' },
-  { key: 'absent',       label: 'Absent' },
-  { key: 'nsho',         label: 'Absent NCNS' },
-  { key: 'live',         label: 'Live' },
-  { key: 'ldp',          label: 'LDP' },
-  { key: 'wbo',          label: 'WBO' },
-  { key: 'withdrawn',    label: 'Withdrawn' },
-  { key: 'unmatched',    label: 'Zoom unmatched' },
-  { key: 'shareddevice', label: 'Shared device' },
-  { key: 'multidevice',  label: 'Multi-device' }
+  { key: 'queued',       label: 'Needs attention',  group: 'Status' },
+  { key: 'late',         label: 'Late',             group: 'Status' },
+  { key: 'absent',       label: 'Absent',           group: 'Status' },
+  { key: 'nsho',         label: 'Absent NCNS',      group: 'Status' },
+  { key: 'live',         label: 'Live',             group: 'Status' },
+  { key: 'ldp',          label: 'LDP',              group: 'Status' },
+  { key: 'wbo',          label: 'WBO',              group: 'Status' },
+  { key: 'withdrawn',    label: 'Withdrawn',        group: 'Status' },
+  { key: 'unmatched',    label: 'Zoom unmatched',   group: 'Status' },
+  { key: 'shareddevice', label: 'Shared device',    group: 'Status' },
+  { key: 'multidevice',  label: 'Multi-device',     group: 'Status' },
+  { key: 'seminar',      label: 'SEM reg',          group: 'Follow-on' },
+  { key: 'sempot',       label: 'SEM POT',          group: 'Follow-on' },
+  { key: 'semnp',        label: 'SEM NP',           group: 'Follow-on' },
+  { key: 'ac',           label: 'AC reg',           group: 'Follow-on' },
+  { key: 'acpot',        label: 'AC POT',           group: 'Follow-on' },
+  { key: 'acnp',         label: 'AC NP',            group: 'Follow-on' }
 ];
 
 /* Queryable fields for the builder. Each is a flag token plus a human label — deliberately
@@ -3301,7 +3325,11 @@ var ROSTER_ADV_FIELDS = [
   { key: 'se', label: 'Statistical exclusion' },
   { key: 'minor', label: 'Minor' },
   { key: 'seminar', label: 'Seminar registered' },
+  { key: 'sempot', label: 'Seminar potential' },
+  { key: 'semnp', label: 'Seminar non-potential' },
   { key: 'ac', label: 'AC registered' },
+  { key: 'acpot', label: 'AC potential' },
+  { key: 'acnp', label: 'AC non-potential' },
   { key: 'd1', label: 'Attended Day 1' },
   { key: 'd2', label: 'Attended Day 2' },
   { key: 'd3', label: 'Attended Day 3' }
@@ -3333,6 +3361,19 @@ function rosterCondChanged(i, what, value){
   if(!rosterAdvConditions[i]) return;
   rosterAdvConditions[i][what] = value;
 }
+/* One chip. The excluded state prefixes its own label with "not" rather than relying on
+   colour alone — a red chip reading "Late" is ambiguous about whether it shows late people
+   or hides them, and colour is the one channel some users cannot read. */
+function rosterPresetChipHtml(p){
+  var st = rosterPresetState[p.key];
+  var cls = st === 'in' ? ' on' : (st === 'ex' ? ' ex' : '');
+  var text = (st === 'ex' ? 'not ' : '') + p.label;
+  var title = st === 'in' ? 'Showing only ' + p.label + ' — click to exclude instead'
+            : st === 'ex' ? 'Hiding ' + p.label + ' — click to clear'
+            : 'Click to show only ' + p.label + ', twice to exclude';
+  return '<button class="advchip' + cls + '" aria-pressed="' + (st === 'in' ? 'true' : 'false') +
+    '" title="' + rosterEscAttr(title) + '" onclick="rosterCyclePreset(\'' + p.key + '\')">' + rosterEscHtml(text) + '</button>';
+}
 function rosterRenderAdvanced(){
   /* Seed the first condition here rather than only in rosterToggleAdvanced(). The builder
      is useless with zero rows — there is nothing to edit and "+ Add condition" is the only
@@ -3341,19 +3382,21 @@ function rosterRenderAdvanced(){
   if(!rosterAdvConditions.length) rosterAdvConditions = [{ field: ROSTER_ADV_FIELDS[0].key, op: 'is' }];
   var presetWrap = document.getElementById('rosterAdvPresets');
   if(presetWrap){
-    presetWrap.innerHTML = ROSTER_ADV_PRESETS.map(function(p){
-      var st = rosterPresetState[p.key];
-      var cls = st === 'in' ? ' on' : (st === 'ex' ? ' ex' : '');
-      /* The excluded state prefixes the label with "not" rather than relying on colour
-         alone — a red chip reading "Late" is ambiguous about whether it is showing late
-         people or hiding them, and colour is the one channel some users cannot read.
-         aria-pressed is three-valued here in effect, so the label carries the truth. */
-      var text = (st === 'ex' ? 'not ' : '') + p.label;
-      var title = st === 'in' ? 'Showing only ' + p.label + ' — click to exclude instead'
-                : st === 'ex' ? 'Hiding ' + p.label + ' — click to clear'
-                : 'Click to show only ' + p.label + ', twice to exclude';
-      return '<button class="advchip' + cls + '" aria-pressed="' + (st === 'in' ? 'true' : 'false') +
-        '" title="' + rosterEscAttr(title) + '" onclick="rosterCyclePreset(\'' + p.key + '\')">' + rosterEscHtml(text) + '</button>';
+    /* Rendered as labelled groups, in declaration order, so adding a preset is a one-line
+       change to ROSTER_ADV_PRESETS and never a markup edit. */
+    var groups = [];
+    ROSTER_ADV_PRESETS.forEach(function(p){
+      var g = groups.filter(function(x){ return x.name === (p.group || 'Popular'); })[0];
+      if(!g){ g = { name: p.group || 'Popular', items: [] }; groups.push(g); }
+      g.items.push(p);
+    });
+    presetWrap.innerHTML = groups.map(function(g, gi){
+      return '<div class="advsearch-row">' +
+        '<span class="advsearch-l">' + rosterEscHtml(g.name) +
+          (gi === 0 ? '<span class="advsearch-hint">click twice to exclude</span>' : '') +
+        '</span>' +
+        '<div class="advsearch-presets">' + g.items.map(rosterPresetChipHtml).join('') + '</div>' +
+      '</div>';
     }).join('');
   }
   var condWrap = document.getElementById('rosterAdvConds');
