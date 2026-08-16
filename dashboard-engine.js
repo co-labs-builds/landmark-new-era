@@ -2637,7 +2637,16 @@ function confirmCorrectAttendance(){
     if(!r.ok || !r.result || r.result.success !== true) throw new Error((r.result && r.result.error) || 'Request failed');
     saveBtn.disabled = false;
     saveBtn.textContent = originalLabel;
-    logAudit('staff', currentActorName() + ' corrected attendance — Day ' + day + ' Session ' + session + ' = ' + CORR_ATT_STATUS_LABELS[status]);
+    /* `sessions`, not `session`. This line referenced a bare `session` that no longer
+       existed after the single-session picker became a multi-session checkbox set — no
+       such variable is in scope and none is global, so it threw a ReferenceError. Because
+       it sits INSIDE the .then(), the throw landed in the .catch() below and the CS was
+       told "Could not save" on a save that had already succeeded: verified 2026-08-16,
+       executions 82843/82850/82861 all returned 200 {success:true} while the modal stayed
+       open reporting failure. The modal also never dismissed and the roster never
+       refetched, so the correction looked lost until a manual reload. */
+    var sessionLabel = sessions.length ? ' Session ' + sessions.join('/') : '';
+    logAudit('staff', currentActorName() + ' corrected attendance — Day ' + day + sessionLabel + ' = ' + (CORR_ATT_STATUS_LABELS[status] || 'not set'));
     pendingCorrectAttCard = null;
     dismissModal();
     toast('Correction recorded.');
