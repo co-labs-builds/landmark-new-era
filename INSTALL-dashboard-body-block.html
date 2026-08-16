@@ -260,7 +260,7 @@
          a bordered input across the top of the card; five outlined rectangles competing for
          attention above a list whose own rows were also boxed. Search and Export are now
          borderless icon affordances that expand/act on click, sort stays a quiet text
-         toggle, and Take Attendance keeps a real button because it is the one destructive-ish
+         toggle, and Check Attendance keeps a real button because it is the one destructive-ish
          action here (it fires a live Zoom poll and writes attendance for the whole roster).
          The "Showing N of M participants" tag line is gone — pagination states the same
          thing, at the point where the CS is acting on it. -->
@@ -288,20 +288,21 @@
              code's collision fixes). Label states the CURRENT order, matching
              the sorted list the CS is looking at. -->
         <!-- Sort is a menu as of 2026-08-15, not a two-state name toggle. Opens the same
-             floating menu component the row kebab and Take Attendance already use. -->
+             floating menu component the row kebab already uses. -->
         <button class="btn-quiet" id="rosterSortBtn" onclick="openRosterSortMenu(this)" aria-pressed="false" title="Sort the roster">Sort</button>
         <!-- Active/Inactive view switch. Inactive registrations are batched out of the
              default list so the CS works only records they can act on; this is the way
              back to them. Hidden entirely when there are none. -->
         <button class="btn-quiet inactive-btn" id="rosterInactiveBtn" onclick="rosterToggleInactive()" aria-pressed="false" title="Show registrations that are no longer active" style="display:none;"><span class="inactive-lbl">Inactive</span><span class="inactive-n">0</span></button>
-        <!-- Take Attendance — REAL BUILD 2026-08-12. Attendance Architecture
-             Layer 2. CS picks Session (S1-S4) from a floating menu; Day is never
-             client-supplied — the server resolves it from events.f3025. The browser never
-             sets an individual participant's attendance flag directly; a fresh Zoom Live
-             Dashboard poll runs server-side at click-time and the aggregate result is
-             toasted, then the roster is refetched from server truth. See
-             openTakeAttendanceMenu()/confirmTakeAttendance(). -->
-        <button class="btn btn-sm" id="takeAttendanceBtn" onclick="openTakeAttendanceMenu(this)">Take Attendance</button>
+        <!-- Check Attendance — REAL BUILD 2026-08-12, rebuilt 2026-08-16. Attendance
+             Architecture Layer 2. One click, no session picker: the button posts only
+             eventTeamId and the server resolves both the Event and the live Zoom meeting
+             from the Event record itself, so nothing about the target is client-supplied.
+             A fresh Zoom Live Dashboard poll runs server-side at click-time; anyone still
+             connected gets f2853 Currently Present, everyone else gets f3062 FS Late
+             Arrival, staff excluded by display name. The aggregate is toasted, then the
+             roster is refetched from server truth. See checkAttendance(). -->
+        <button class="btn btn-sm" id="checkAttendanceBtn" onclick="checkAttendance()">Check Attendance</button>
         <button class="icon-btn" onclick="toast('Export queued — audit entry recorded.')" aria-label="Export roster" title="Export">
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3v9m0 0 3.2-3.2M10 12 6.8 8.8"/><path d="M4 14v2a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2"/></svg>
         </button>
@@ -747,22 +748,14 @@
   <button class="kebab-item" onclick="eventCardMenuAction('assignments')">View Assignments</button>
 </div>
 
-<!-- Take Attendance session picker — REAL BUILD 2026-08-12. Floating menu,
-     JS-positioned off the roster header's Take Attendance button (same
-     positionFloating() mechanism as eventCardMenu/rowMenu). CS picks
-     Session (S1-S4) only — Day is always resolved server-side from
-     events.f3025, never client-supplied. See openTakeAttendanceMenu()/
-     confirmTakeAttendance() in the script. -->
+<!-- The Take Attendance S1-S4 session picker that used to live here was removed
+     2026-08-16. It existed only to address the per-session ATTENDED field
+     (f3193-f3203/f3055); Check Attendance now writes f2853 Currently Present /
+     f3062 FS Late Arrival, both session-independent, so the menu was collecting an
+     answer that no longer reached a field. Check Attendance is a single click. -->
 <!-- Roster sort menu — populated by openRosterSortMenu() so the active option can carry a
      check and its current direction. -->
 <div class="kebab-menu" id="rosterSortMenu"></div>
-
-<div class="kebab-menu" id="takeAttendanceMenu">
-  <button class="kebab-item" onclick="confirmTakeAttendance('1')">Session 1</button>
-  <button class="kebab-item" onclick="confirmTakeAttendance('2')">Session 2</button>
-  <button class="kebab-item" onclick="confirmTakeAttendance('3')">Session 3</button>
-  <button class="kebab-item" onclick="confirmTakeAttendance('4')">Session 4</button>
-</div>
 
 <!-- Shared per-row ••• kebab menu — one instance, JS-positioned per
      trigger, Registration-contextual via pendingRowMenuCard/data-reg-id.

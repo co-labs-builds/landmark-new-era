@@ -1679,8 +1679,6 @@ document.addEventListener('click', function(e){
   if(rmenu && rmenu.classList.contains('open') && !e.target.closest('#rowMenu') && !e.target.closest('.kebab-btn')) closeRowMenu();
   var ecmenu = document.getElementById('eventCardMenu');
   if(ecmenu && ecmenu.classList.contains('open') && !e.target.closest('#eventCardMenu') && !e.target.closest('.evt-card')) closeEventCardMenu();
-  var taMenu = document.getElementById('takeAttendanceMenu');
-  if(taMenu && taMenu.classList.contains('open') && !e.target.closest('#takeAttendanceMenu') && !e.target.closest('#takeAttendanceBtn')) closeTakeAttendanceMenu();
   var sortMenu = document.getElementById('rosterSortMenu');
   if(sortMenu && sortMenu.classList.contains('open') && !e.target.closest('#rosterSortMenu') && !e.target.closest('#rosterSortBtn')) closeRosterSortMenu();
 });
@@ -1696,7 +1694,7 @@ var DASHBOARD_UPDATE_COURSE_STATUS_WEBHOOK_URL = 'https://landmarkworldwide.awes
 var DASHBOARD_DEVICE_EXCEPTION_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-device-exception';
 var DASHBOARD_OVERRIDE_CLASSIFICATION_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-override-classification';
 var DASHBOARD_CORRECT_ATTENDANCE_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-correct-attendance';
-var DASHBOARD_TAKE_ATTENDANCE_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-take-attendance';
+var DASHBOARD_CHECK_ATTENDANCE_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-check-attendance';
 var DASHBOARD_ADD_NOTE_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-add-note';
 var DASHBOARD_GUEST_TOGGLE_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-guest-toggle';
 var DASHBOARD_GUEST_ADD_NOTE_WEBHOOK_URL = 'https://landmarkworldwide.awesomate.io/webhook/dashboard-guest-add-note';
@@ -2900,34 +2898,42 @@ function populateInformationForm(card){
   show('dwWantAccomplish', reg.f2583);
 }
 
-/* ---------- Take Attendance (§0m) — REAL BUILD 2026-08-12. Attendance
-   Architecture Layer 2. Replaces the old runCheckpointPoll() prototype
-   stub (which only toasted a fake aggregate — no real webhook existed).
+/* ---------- Check Attendance (§0m) — REAL BUILD 2026-08-12, rebuilt
+   2026-08-16 as an on-demand presence snapshot. Attendance Architecture
+   Layer 2. Replaces the old runCheckpointPoll() prototype stub (which only
+   toasted a fake aggregate — no real webhook existed).
+
    The browser never sets an individual participant's attendance flag
-   directly: CS picks Session (S1-S4) from the floating menu; the server
-   resolves Day from events.f3025, does a fresh independent Zoom Live
-   Dashboard poll at click-time, writes the per-session ATTENDED field for
-   present participants / f3062 FS Late Arrival for everyone else on the
-   full Event roster, and returns an aggregate result. Same disable-button/
-   error-revert/refresh-from-server-truth pattern as every other kebab
-   action this build (confirmCourseStatus() etc.) — dashboardFetchRoster()
-   on success so ticks reflect real server state. ---------- */
-function openTakeAttendanceMenu(btn){
+   directly: it posts only eventTeamId, and the server resolves the Event
+   from oEventTeam.f2789 and the Zoom meeting from the Event's own
+   f2720/f3034 (Forum) or f3258/f3038 (Graduation), does a fresh
+   independent Zoom Live Dashboard poll at click-time, and writes f2853
+   Currently Present for anyone still connected / f3062 FS Late Arrival for
+   everyone else on the full Event roster.
+
+   The S1-S4 session picker this action used to open is gone. It existed
+   because the previous behaviour wrote the per-session ATTENDED field
+   (f3193-f3203/f3055), which needs a session to address; f2853 and f3062
+   are both session-independent, so the menu was collecting an answer that
+   no longer reaches a field. Day still comes back in the response — the
+   server resolves it either way — and is recorded in the audit line.
+
+   Staff are excluded server-side by Zoom display name, so the counts in
+   the toast describe participants only.
+
+   Same disable-button/error-revert/refresh-from-server-truth pattern as
+   every other kebab action this build (confirmCourseStatus() etc.) —
+   dashboardFetchRoster() on success so ticks reflect real server state.
+   ---------- */
+function checkAttendance(){
   closeDetailPop();
-  var menu = document.getElementById('takeAttendanceMenu');
-  positionFloating(menu, btn);
-  menu.classList.add('open');
-}
-function closeTakeAttendanceMenu(){ document.getElementById('takeAttendanceMenu').classList.remove('open'); }
-function confirmTakeAttendance(session){
-  closeTakeAttendanceMenu();
-  var btn = document.getElementById('takeAttendanceBtn');
+  var btn = document.getElementById('checkAttendanceBtn');
   if(!btn) return;
   var originalLabel = btn.textContent;
-  var payload = { eventTeamId: DASHBOARD_DATA.eventTeamId, session: session };
+  var payload = { eventTeamId: DASHBOARD_DATA.eventTeamId };
   btn.disabled = true;
-  btn.textContent = 'Taking attendance…';
-  fetch(DASHBOARD_TAKE_ATTENDANCE_WEBHOOK_URL, {
+  btn.textContent = 'Checking attendance…';
+  fetch(DASHBOARD_CHECK_ATTENDANCE_WEBHOOK_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -2938,34 +2944,45 @@ function confirmTakeAttendance(session){
        has to read differently. n8n answers an inactive production webhook with 404 and a
        "not registered" message — retrying that never succeeds, so the generic "try again"
        copy below actively misleads a CS into hammering a dead button during a live session.
-       Verified live 2026-08-15: CS Dashboard : Take Attendance is inactive and its production
-       URL returns exactly this. Detected by status AND message because either alone could
-       plausibly come from something else. */
+       Detected by status AND message because either alone could plausibly come from
+       something else. */
     var msg = String((r.result && (r.result.message || r.result.error)) || '');
     if(r.status === 404 || /not registered/i.test(msg)){
-      var e = new Error('Take Attendance is not enabled for this account.');
+      var e = new Error('Check Attendance is not enabled for this account.');
       e.disabled = true;
       throw e;
+    }
+    /* 409 is the one expected non-success: the CS clicked outside a Forum day window or the
+       Graduation window, so there is no live meeting to poll. That is a fact about the
+       schedule, not a fault, and must not read as a breakage. */
+    if(r.status === 409 || /no_active_zoom_meeting/i.test(msg)){
+      var noMeeting = new Error('No Zoom meeting is live for this event right now.');
+      noMeeting.noMeeting = true;
+      throw noMeeting;
     }
     if(!r.ok || !r.result || r.result.success !== true) throw new Error((r.result && r.result.error) || 'Request failed');
     btn.disabled = false;
     btn.textContent = originalLabel;
-    logAudit('staff', currentActorName() + ' took attendance — Session ' + session + ' (Day ' + r.result.day + ') — ' + r.result.presentCount + ' present, ' + r.result.lateMarkedCount + ' not yet present');
-    toast('Attendance taken — Session ' + session + ': ' + r.result.presentCount + ' present · ' + r.result.lateMarkedCount + ' not present yet.');
+    logAudit('staff', currentActorName() + ' checked attendance — Day ' + r.result.day + ' — ' + r.result.presentCount + ' present, ' + r.result.lateMarkedCount + ' not present (' + r.result.updatedCount + ' records updated)');
+    toast('Attendance checked — Day ' + r.result.day + ': ' + r.result.presentCount + ' present · ' + r.result.lateMarkedCount + ' marked late.');
     dashboardFetchRoster();
   }).catch(function(err){
-    console.error('confirmTakeAttendance failed:', err);
+    console.error('checkAttendance failed:', err);
     btn.disabled = false;
     btn.textContent = originalLabel;
+    if(err && err.noMeeting){
+      toast('No Zoom meeting is live for this event right now — nothing was recorded.', 'err');
+      return;
+    }
     if(err && err.disabled){
       /* Names the alternative rather than just refusing. Presence is still being recorded by
          the Zoom poller regardless, so the CS needs to know nothing is being lost — and that
          a single record can still be fixed by hand through the row's Correct Attendance
          action, whose workflow IS active. */
-      toast('Take Attendance is switched off for this account. Live presence is still being recorded automatically; use a row\'s ••• → Correct Attendance to set one manually.', 'err');
+      toast('Check Attendance is switched off for this account. Live presence is still being recorded automatically; use a row\'s ••• → Correct Attendance to set one manually.', 'err');
       return;
     }
-    btn.textContent = 'Could not take attendance — try again';
+    btn.textContent = 'Could not check attendance — try again';
     setTimeout(function(){ btn.textContent = originalLabel; }, 2600);
   });
 }
@@ -3827,7 +3844,7 @@ function confirmToggleConfirm(){
        fields f3193-f3203/f3055, f3062, f2801-f2803, f3206, f3044,
        f3046, f2882, f2887, f2303, f2302, f2293, f3056, f3059, f2688,
        f3191). The first 14 ALSO publish automatically from inside CS
-       Dashboard : Take Attendance / Attendance Reconcile Sweep / LM |
+       Dashboard : Check Attendance / Attendance Reconcile Sweep / LM |
        Zoom | Live Attendance Poller right after each write, but that's
        NOT sufficient on its own — a direct manual edit in Ontraport
        (confirmed 2026-08-12: shows correctly on next refresh, does NOT
