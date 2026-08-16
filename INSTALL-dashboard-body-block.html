@@ -298,10 +298,12 @@
              Architecture Layer 2. One click, no session picker: the button posts only
              eventTeamId and the server resolves both the Event and the live Zoom meeting
              from the Event record itself, so nothing about the target is client-supplied.
-             A fresh Zoom Live Dashboard poll runs server-side at click-time; anyone still
-             connected gets f2853 Currently Present, everyone else gets f3062 FS Late
-             Arrival, staff excluded by display name. The aggregate is toasted, then the
-             roster is refetched from server truth. See checkAttendance(). -->
+             A fresh Zoom Live Dashboard poll runs server-side at click-time and ticks
+             f2853 Currently Present — the only field it writes — for anyone still
+             connected. Staff, Withdraw (f2424=491), LDP (f2293) and Absent (f3191=467/468)
+             records are never written to. FS Late is set by hand in Ontraport. The
+             aggregate is toasted, then the roster is refetched from server truth.
+             See checkAttendance(). -->
         <button class="btn btn-sm" id="checkAttendanceBtn" onclick="checkAttendance()">Check Attendance</button>
         <button class="icon-btn" onclick="toast('Export queued — audit entry recorded.')" aria-label="Export roster" title="Export">
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3v9m0 0 3.2-3.2M10 12 6.8 8.8"/><path d="M4 14v2a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2"/></svg>
@@ -750,9 +752,9 @@
 
 <!-- The Take Attendance S1-S4 session picker that used to live here was removed
      2026-08-16. It existed only to address the per-session ATTENDED field
-     (f3193-f3203/f3055); Check Attendance now writes f2853 Currently Present /
-     f3062 FS Late Arrival, both session-independent, so the menu was collecting an
-     answer that no longer reached a field. Check Attendance is a single click. -->
+     (f3193-f3203/f3055); Check Attendance now writes only f2853 Currently Present,
+     which is session-independent, so the menu was collecting an answer that no
+     longer reached a field. Check Attendance is a single click. -->
 <!-- Roster sort menu — populated by openRosterSortMenu() so the active option can carry a
      check and its current direction. -->
 <div class="kebab-menu" id="rosterSortMenu"></div>

@@ -2907,19 +2907,25 @@ function populateInformationForm(card){
    directly: it posts only eventTeamId, and the server resolves the Event
    from oEventTeam.f2789 and the Zoom meeting from the Event's own
    f2720/f3034 (Forum) or f3258/f3038 (Graduation), does a fresh
-   independent Zoom Live Dashboard poll at click-time, and writes f2853
-   Currently Present for anyone still connected / f3062 FS Late Arrival for
-   everyone else on the full Event roster.
+   independent Zoom Live Dashboard poll at click-time, and ticks f2853
+   Currently Present for anyone still connected.
+
+   f2853 is the ONLY field this writes. It does not touch f3062 FS Late
+   Arrival — late is set by hand in Ontraport (client's call, 2026-08-16) —
+   and it never clears f2853 either; the 5-minute poller owns that, since
+   it sees the leave_time rows this poll filters out.
+
+   Four kinds of record are skipped server-side and never written to, even
+   if that person is sitting in the meeting: staff (by Zoom display name),
+   f2424=491 Withdraw, f2293 LDP, and f3191=467/468 Absent. They also come
+   out of totalRegistrations, so the toast counts only rows in play.
 
    The S1-S4 session picker this action used to open is gone. It existed
    because the previous behaviour wrote the per-session ATTENDED field
-   (f3193-f3203/f3055), which needs a session to address; f2853 and f3062
-   are both session-independent, so the menu was collecting an answer that
-   no longer reaches a field. Day still comes back in the response — the
-   server resolves it either way — and is recorded in the audit line.
-
-   Staff are excluded server-side by Zoom display name, so the counts in
-   the toast describe participants only.
+   (f3193-f3203/f3055), which needs a session to address; f2853 is
+   session-independent, so the menu was collecting an answer that no longer
+   reaches a field. Day still comes back in the response — the server
+   resolves it either way — and is recorded in the audit line.
 
    Same disable-button/error-revert/refresh-from-server-truth pattern as
    every other kebab action this build (confirmCourseStatus() etc.) —
@@ -2963,8 +2969,8 @@ function checkAttendance(){
     if(!r.ok || !r.result || r.result.success !== true) throw new Error((r.result && r.result.error) || 'Request failed');
     btn.disabled = false;
     btn.textContent = originalLabel;
-    logAudit('staff', currentActorName() + ' checked attendance — Day ' + r.result.day + ' — ' + r.result.presentCount + ' present, ' + r.result.lateMarkedCount + ' not present (' + r.result.updatedCount + ' records updated)');
-    toast('Attendance checked — Day ' + r.result.day + ': ' + r.result.presentCount + ' present · ' + r.result.lateMarkedCount + ' marked late.');
+    logAudit('staff', currentActorName() + ' checked attendance — Day ' + r.result.day + ' — ' + r.result.presentCount + ' of ' + r.result.totalRegistrations + ' present (' + r.result.updatedCount + ' records updated)');
+    toast('Attendance checked — Day ' + r.result.day + ': ' + r.result.presentCount + ' of ' + r.result.totalRegistrations + ' present · ' + r.result.updatedCount + ' updated.');
     dashboardFetchRoster();
   }).catch(function(err){
     console.error('checkAttendance failed:', err);
