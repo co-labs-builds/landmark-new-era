@@ -872,20 +872,30 @@ function rosterBuildCardHtml(reg, currentDayRaw, localeAbbr, partnerIndex){
      attendance.changed live handler still uses it, and f3203/f3055 remain individually
      patchable fields. */
 
+  /* Three states, not two (2026-08-15). data-pot was a boolean, so an unset Potential field
+     was indistinguishable from Non-Potential and the pill rendered NP for both — which would
+     have made the new "clear" invisible on the row, defeating the point of being able to do
+     it. data-potstate carries pot / np / none, read from the same option ids the override
+     modal writes.
+     data-pot is still emitted for anything reading the old attribute; the ladder uses
+     data-potstate. CONF is gone entirely — the client uses REG, POT and NP only. */
   var semReg = rosterIsTrue(reg.f2303) ? 1 : 0;
-  var semPot = String(reg.f2882) === '371' ? 1 : 0;
-  var semConf = (!semReg && String(reg.f2884) === '378') ? 1 : 0;
+  var semState = String(reg.f2882) === '371' ? 'pot' : (String(reg.f2882) === '370' ? 'np' : 'none');
+  var semPot = semState === 'pot' ? 1 : 0;
   var semDesig = String(reg.f2885) === '380' ? 1 : 0;
   var semAlt = String(reg.f2885) === '379' ? 1 : 0;
-  var semKv = semReg ? [['Registered','Yes'],['Seminar', reg.f3185 || '—']] : (semConf ? [['Potential','Yes'],['Confirmed','Yes'],['Registered','Not yet']] : [['Potential', semPot ? 'Yes' : 'No'],['Registered','No']]);
-  var seminarPill = '<button class="pill p-neutral ev-clickable prog-seminar" onclick="openDetailPop(this)" data-pot="' + semPot + '" data-confirmed="' + semConf + '" data-reg="' + semReg + '" data-desig="' + semDesig + '" data-alt="' + semAlt + '" data-pop-title="Seminar Registration" data-pop-kv=\'' + rosterEscAttr(JSON.stringify(semKv)) + '\'>—</button>';
+  var semKv = semReg ? [['Registered','Yes'],['Seminar', reg.f3185 || '—']]
+                     : [['Potential', semState === 'pot' ? 'Yes' : (semState === 'np' ? 'No — non-potential' : 'Not set')],['Registered','No']];
+  var seminarPill = '<button class="pill p-neutral ev-clickable prog-seminar" onclick="openDetailPop(this)" data-pot="' + semPot + '" data-potstate="' + semState + '" data-reg="' + semReg + '" data-desig="' + semDesig + '" data-alt="' + semAlt + '" data-pop-title="Seminar Registration" data-pop-kv=\'' + rosterEscAttr(JSON.stringify(semKv)) + '\'>—</button>';
 
   var acReg = rosterIsTrue(reg.f2302) ? 1 : 0;
-  var acPot = String(reg.f2887) === '382' ? 1 : 0;
+  var acState = String(reg.f2887) === '382' ? 'pot' : (String(reg.f2887) === '381' ? 'np' : 'none');
+  var acPot = acState === 'pot' ? 1 : 0;
   var acDesig = String(reg.f2890) === '392' ? 1 : 0;
   var acAlt = String(reg.f2890) === '391' ? 1 : 0;
-  var acKv = acReg ? [['Registered','Yes'],['Course', reg.f3186 || '—']] : [['Potential', acPot ? 'Yes' : 'No'],['Registered','No']];
-  var acPill = '<button class="pill p-neutral ev-clickable prog-ac" onclick="openDetailPop(this)" data-pot="' + acPot + '" data-confirmed="0" data-reg="' + acReg + '" data-desig="' + acDesig + '" data-alt="' + acAlt + '" data-pop-title="Advanced Course Registration" data-pop-kv=\'' + rosterEscAttr(JSON.stringify(acKv)) + '\'>—</button>';
+  var acKv = acReg ? [['Registered','Yes'],['Course', reg.f3186 || '—']]
+                   : [['Potential', acState === 'pot' ? 'Yes' : (acState === 'np' ? 'No — non-potential' : 'Not set')],['Registered','No']];
+  var acPill = '<button class="pill p-neutral ev-clickable prog-ac" onclick="openDetailPop(this)" data-pot="' + acPot + '" data-potstate="' + acState + '" data-reg="' + acReg + '" data-desig="' + acDesig + '" data-alt="' + acAlt + '" data-pop-title="Advanced Course Registration" data-pop-kv=\'' + rosterEscAttr(JSON.stringify(acKv)) + '\'>—</button>';
 
   var notesCount = rosterNoteEntries(reg).length;
   var notesBtn = '<button class="ev-notesbtn' + (notesCount ? ' has-note' : '') + '" onclick="openNotes(this)" title="' +
@@ -1918,15 +1928,27 @@ function updateProgramPills(card){
     }
   });
 }
+/* Ladder: REG > POT / NP / not set.
+   CONF removed 2026-08-15 — the client does not use a Confirmed state; the vocabulary is
+   REG, POT and NP. It also actively misled: a record marked Non-Potential that happened to
+   carry Seminar Confirmation Status = Confirmed rendered as CONF, hiding the NP.
+
+   "Not set" renders an em dash rather than falling back to NP. Those are different facts —
+   nobody has judged this person yet, versus somebody judged them non-potential — and
+   collapsing them would make clearing a classification invisible on the row. */
 function applyFollowOnLadder(el){
-  var pot = el.dataset.pot === '1', conf = el.dataset.confirmed === '1', reg = el.dataset.reg === '1';
+  var reg = el.dataset.reg === '1';
+  /* Falls back to the old boolean attribute so a pill rendered before data-potstate existed
+     still resolves rather than showing an em dash for everyone. */
+  var state = el.dataset.potstate || (el.dataset.pot === '1' ? 'pot' : 'np');
   var desig = el.dataset.desig === '1', alt = el.dataset.alt === '1';
   var progClass = el.classList.contains('prog-seminar') ? 'prog-seminar' : 'prog-ac';
   var cls, text, editable;
   if(desig && alt){ cls = 'p-dataerr'; text = 'REG · ⚠'; editable = false; }
   else if(reg){ cls = 'p-pot'; text = 'REG'; editable = false; }
-  else if(conf){ cls = 'p-conf'; text = 'CONF'; editable = false; }
-  else { cls = 'p-neutral'; text = pot ? 'POT' : 'NP'; editable = true; }
+  else if(state === 'pot'){ cls = 'p-neutral'; text = 'POT'; editable = true; }
+  else if(state === 'np'){ cls = 'p-neutral'; text = 'NP'; editable = true; }
+  else { cls = 'p-slot-off'; text = '—'; editable = true; }
   el.className = 'pill ' + cls + ' ev-clickable ' + progClass;
   el.textContent = text;
   if(editable) el.dataset.popEdit = 'classification:' + (progClass === 'prog-seminar' ? 'seminarPotential' : 'acPotential');
@@ -3915,8 +3937,14 @@ function dashboardApplyDayAdvanced(msg){
    have rendered "1" as the note body. The queue pill happened to resolve correctly anyway
    (it only tests the field for emptiness, and "1" is non-empty), which is exactly why this
    went unnoticed: the visible symptom was right for the wrong reason. */
+/* f2882/f2887 added 2026-08-15 — the third instance of this same bug. Both are DROPDOWNS and
+   had been coerced since the beginning, so a live push setting Seminar Potential to 371
+   arrived as 1, failed the `=== '371'` test below and repainted the pill as NP: the exact
+   opposite of what was set. THE RULE, now stated once: anything that is not a checkbox
+   belongs in this list, and it must mirror RAW_VALUE_FIELDS in PORTAL : Ably Publish
+   exactly. */
 var DASHBOARD_ATTENDANCE_RAW_FIELDS = ['f3191', 'f3056', 'f3059', 'f3208', 'f2808', 'f2871', 'f2805', 'f2806', 'f2807', 'f3190', 'f2424',
-  'f3237', 'f3236', 'f2886', 'f3270', 'f3068', 'f2891', 'f3235'];
+  'f3237', 'f3236', 'f2886', 'f3270', 'f3068', 'f2891', 'f3235', 'f2882', 'f2887'];
 /* The note fields, mirroring ROSTER_NOTE_FIELDS. A change to any of them has to repaint the
    row's note button and count — the panel reads from dashboardLastRoster, which this handler
    keeps current, but the badge is baked into the card at build time. */
@@ -4054,6 +4082,9 @@ function dashboardApplyAttendanceChanged(msg){
     var semEl = card.querySelector('.prog-seminar');
     if(semEl){
       semEl.dataset.pot = String(reg.f2882) === '371' ? '1' : '0';
+      /* Must set data-potstate too, or a live clear repaints as NP — the ladder reads the
+         tri-state attribute and only falls back to the boolean when it is absent. */
+      semEl.dataset.potstate = String(reg.f2882) === '371' ? 'pot' : (String(reg.f2882) === '370' ? 'np' : 'none');
       semEl.dataset.reg = rosterIsTrue(reg.f2303) ? '1' : '0';
       updateProgramPills(card);
     }
@@ -4062,6 +4093,7 @@ function dashboardApplyAttendanceChanged(msg){
     var acEl = card.querySelector('.prog-ac');
     if(acEl){
       acEl.dataset.pot = String(reg.f2887) === '382' ? '1' : '0';
+      acEl.dataset.potstate = String(reg.f2887) === '382' ? 'pot' : (String(reg.f2887) === '381' ? 'np' : 'none');
       acEl.dataset.reg = rosterIsTrue(reg.f2302) ? '1' : '0';
       updateProgramPills(card);
     }
@@ -4116,6 +4148,16 @@ function dashboardApplyAttendanceChanged(msg){
       }
     }
   }
+
+  /* Recompute the flag string unconditionally (2026-08-15). It used to be rewritten only by
+     the status-badge and queue branches, so a live change to any OTHER flag-bearing field —
+     Seminar/AC potential, registration, the day-attended flags — repainted the pill but left
+     data-flags describing the previous state. The filter chips, the sort and the Advanced
+     query all read that string, so the row could visibly say REG while the SEM-NP filter
+     still matched it.
+     One derivation over one record; cheap enough to do every time, and doing it every time
+     is the only version that cannot drift. */
+  card.dataset.flags = rosterFlagsAttr(reg);
 
   /* Re-paginate when the flag set actually changed (2026-08-15). Everything above patches
      how a row LOOKS; nothing re-evaluated whether it still belongs in the visible list.
