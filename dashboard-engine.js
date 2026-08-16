@@ -2346,11 +2346,33 @@ function csNextUnsetField(){
   return null;
 }
 function csUpdateAttention(){ return attnApply('mCourseStatus', csNextUnsetField); }
+/* Session checkbox helpers. The picker holds its own state in the DOM rather than a JS
+   variable so it cannot drift from what the CS can see ticked. */
+function corrAttSessionBoxes(){
+  var wrap = document.getElementById('corrAttSessions');
+  return wrap ? Array.prototype.slice.call(wrap.querySelectorAll('input[type="checkbox"]')) : [];
+}
+function corrAttSelectedSessions(){
+  return corrAttSessionBoxes().filter(function(b){ return b.checked; }).map(function(b){ return b.value; });
+}
+function corrAttSetSessions(vals){
+  corrAttSessionBoxes().forEach(function(b){ b.checked = vals.indexOf(b.value) !== -1; });
+}
+/* One control for the common case — "they were here the whole day". Toggles rather than
+   always selecting all, so the same button undoes it. */
+function corrAttToggleAllSessions(){
+  var boxes = corrAttSessionBoxes();
+  var allOn = boxes.length > 0 && boxes.every(function(b){ return b.checked; });
+  boxes.forEach(function(b){ b.checked = !allOn; });
+  corrAttUpdateAttention();
+}
 function corrAttNextUnsetField(){
   if(!document.getElementById('corrAttDay').value) return attnFieldOf('corrAttDay');
-  if(!document.getElementById('corrAttSession').value) return attnFieldOf('corrAttSession');
   var status = document.getElementById('corrAttStatus').value;
   if(!status) return attnFieldOf('corrAttStatus');
+  /* Status is checked BEFORE sessions now: clearing resolves the day-level status only and
+     requires no session, so demanding one first would block the one action that needs none. */
+  if(status !== 'none' && !corrAttSelectedSessions().length) return document.getElementById('corrAttSessions').closest('.field');
   /* Reason is required only for Absent - Excused (467), matching the
      existing guard in confirmCorrectAttendance(). */
   if(status === '467' && !document.getElementById('corrAttNote').value.trim()) return attnFieldOf('corrAttNote');
@@ -2570,7 +2592,8 @@ function openCorrectAttendance(card){
      fabricated defaults, and Present being pre-selected meant a mis-click
      could record attendance nobody chose. Blank + placeholder now. */
   document.getElementById('corrAttDay').value = '';
-  document.getElementById('corrAttSession').value = '';
+  corrAttSetSessions([]);
+  document.getElementById('corrAttDayAttended').value = '';
   document.getElementById('corrAttStatus').value = '';
   document.getElementById('corrAttNote').value = '';
   document.getElementById('corrAttOverrideNote').value = '';
@@ -2586,8 +2609,9 @@ function confirmCorrectAttendance(){
   var card = pendingCorrectAttCard;
   if(!card){ dismissModal(); return; }
   var day = document.getElementById('corrAttDay').value;
-  var session = document.getElementById('corrAttSession').value;
+  var sessions = corrAttSelectedSessions();
   var status = document.getElementById('corrAttStatus').value;
+  var dayAttended = document.getElementById('corrAttDayAttended').value;
   var note = document.getElementById('corrAttNote').value.trim();
   attnClearPrompt(document.getElementById('mCorrectAttendance'));
   var attMissing = corrAttNextUnsetField();
@@ -2599,7 +2623,10 @@ function confirmCorrectAttendance(){
   var overrideNote = document.getElementById('corrAttOverrideNote').value.trim();
   var saveBtn = document.getElementById('corrAttSaveBtn');
   var originalLabel = saveBtn.textContent;
-  var payload = { eventTeamId: DASHBOARD_DATA.eventTeamId, registrationId: Number(card.dataset.regId), day: day, session: session, status: status, note: note, overrideNote: overrideNote };
+  var payload = { eventTeamId: DASHBOARD_DATA.eventTeamId, registrationId: Number(card.dataset.regId), day: day, sessions: sessions, status: status, note: note, overrideNote: overrideNote };
+  /* Only sent when the CS actually picked one — the server writes the Day field only if the
+     key is present, so omitting it leaves whatever the Zoom poller computed untouched. */
+  if(dayAttended !== '') payload.dayAttended = dayAttended === '1';
   saveBtn.disabled = true;
   saveBtn.textContent = 'Saving…';
   fetch(DASHBOARD_CORRECT_ATTENDANCE_WEBHOOK_URL, {

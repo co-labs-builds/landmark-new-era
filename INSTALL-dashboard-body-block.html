@@ -932,15 +932,29 @@
           <option value="3">Day 3</option>
         </select>
       </div>
-      <div class="field"><label>Session</label>
-        <select id="corrAttSession" onchange="corrAttUpdateAttention()">
-          <option value="">Choose an option…</option>
-          <option value="1">Session 1</option>
-          <option value="2">Session 2</option>
-          <option value="3">Session 3</option>
-          <option value="4">Session 4</option>
-        </select>
+      <!-- Sessions are checkboxes, not a single select (2026-08-15). Marking someone present
+           for a whole day previously meant four separate passes through this modal — four
+           saves, four pushes, four chances to mis-set one. The status below applies to every
+           session ticked. -->
+      <div class="field"><label>Sessions <span class="lbl-hint">tick all that apply</span></label>
+        <div class="sess-picker" id="corrAttSessions">
+          <label class="sess-box"><input type="checkbox" value="1" onchange="corrAttUpdateAttention()"><span>S1</span></label>
+          <label class="sess-box"><input type="checkbox" value="2" onchange="corrAttUpdateAttention()"><span>S2</span></label>
+          <label class="sess-box"><input type="checkbox" value="3" onchange="corrAttUpdateAttention()"><span>S3</span></label>
+          <label class="sess-box"><input type="checkbox" value="4" onchange="corrAttUpdateAttention()"><span>S4</span></label>
+          <button type="button" class="btn-quiet sess-all" onclick="corrAttToggleAllSessions()">All</button>
+        </div>
       </div>
+    </div>
+    <!-- Day-level attendance. Separate from the sessions because it is a different fact: the
+         Zoom poller normally computes it from cumulative minutes, and this writes it directly.
+         Opt-in, so an ordinary session correction leaves whatever the poller computed alone. -->
+    <div class="field"><label>Day attendance</label>
+      <select id="corrAttDayAttended">
+        <option value="">Leave as it is</option>
+        <option value="1">Mark this day ATTENDED</option>
+        <option value="0">Mark this day NOT attended</option>
+      </select>
     </div>
     <div class="field"><label>Status</label>
       <select id="corrAttStatus" onchange="onCorrAttStatusChange()">
@@ -948,6 +962,11 @@
         <option value="469">Present</option>
         <option value="467">Absent - Excused</option>
         <option value="468">Absent - NCNS</option>
+        <!-- Same set-but-never-unset gap as POT/NP: a record marked Absent in error could be
+             changed to Present but never returned to "no status recorded", and Present is a
+             different claim from undecided. Clearing resolves the day-level status only and
+             leaves the session ticks alone. -->
+        <option value="none">Clear — no status recorded</option>
       </select>
     </div>
     <div class="field"><label>Override note</label><textarea id="corrAttOverrideNote" rows="3" placeholder="Optional — why is this being manually corrected?"></textarea></div>
