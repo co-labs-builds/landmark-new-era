@@ -897,6 +897,16 @@ body.cs-dashboard .modal-ft .btn-primary{font-size:11px !important;text-transfor
 body.cs-dashboard .field input,body.cs-dashboard .field select,body.cs-dashboard .field textarea{display:block !important;visibility:visible !important;opacity:1 !important;width:100% !important;font-family:var(--sans) !important;font-size:13px !important;}
 body.cs-dashboard .field input,body.cs-dashboard .field select{min-height:38px !important;}
 body.cs-dashboard .field select{-webkit-appearance:menulist !important;appearance:menulist !important;background-color:#fff !important;color:var(--ink) !important;}
+/* Same hardening for the INLINE selects added 2026-08-15 — records-per-page, the Advanced
+   search match mode, and the query-builder rows. The rule above is scoped to .field, which
+   is the modal form wrapper, so these sat outside it and Ontraport's control-hiding rule
+   won again: the records-per-page control rendered as its label alone with no dropdown,
+   reported live. Deliberately NOT sharing the .field rule — that one forces width:100% and
+   a 38px min-height, which is right for a stacked modal field and wrong for a control
+   sitting inline in a toolbar. Same properties contested, different geometry. */
+body.cs-dashboard .pg-size select,
+body.cs-dashboard .advsearch-match select,
+body.cs-dashboard .advcond select{display:inline-block !important;visibility:visible !important;opacity:1 !important;-webkit-appearance:menulist !important;appearance:menulist !important;background-color:#fff !important;color:var(--ink) !important;font-family:var(--sans) !important;}
 /* Header rule replacing the old explanatory <p> in kebab-action modals. */
 .modal-hd .hd-rule{height:1px;background:var(--line);margin-top:14px;}
 /* Progressive-field attention cue 2026-08-13. As each stage of a kebab
