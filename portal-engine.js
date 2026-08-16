@@ -1623,11 +1623,23 @@ Portal.render.during = function(data){
   // last two, wired below. Nothing here is vestigial any more. ----
 
   // Advanced Course announcement destination, 2026-08-15 per direct
-  // instruction. One fixed marketing page for everyone, so it lives here as a
-  // literal rather than a PORTAL_DATA merge field — same treatment as the Gift
-  // card's transformationfoundation.org link below. Contrast the Seminar card,
-  // which IS per-registration (post.seminarUrl / registrations.page_119_url).
-  var AC_ANNOUNCEMENT_URL = 'https://forum.landmarkworldwide.com/advanced-course/';
+  // instruction. A literal rather than a PORTAL_DATA merge field, same as the
+  // Gift card's transformationfoundation.org link below; contrast the Seminar
+  // card, which IS per-registration (post.seminarUrl / page_119_url).
+  //
+  // ?e= is the sales page's own countdown deadline, in MILLISECONDS.
+  // 1787554800000 -> Mon 2026-08-24 07:00 UTC (midnight Pacific), i.e. the
+  // $300 offer expiry this cohort's card is promising.
+  //
+  // HARDCODED, AND IT EXPIRES. Ontraport already has the moving version:
+  // events.f3259 / registrations.f3254 "Advanced Course Sales Page URL",
+  // rewritten per discount phase by the n8n workflow "Cohort Sales Page URLs
+  // - AC + LF Guest" (bare URL -> ?e=<Friday> -> ?e=<Saturday>&offer=extended).
+  // Both are empty account-wide as of 2026-08-15, which is why this is a
+  // literal. Once that automation runs, switch to the merge field and keep
+  // this only as the fallback — otherwise every later cohort inherits this
+  // cohort's expired deadline.
+  var AC_ANNOUNCEMENT_URL = 'https://forum.landmarkworldwide.com/advanced-course/?e=1787554800000';
 
   var inviteCardHtml =
     '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-invite.jpg" alt=""></div><div class="abody"><div class="aeye">Graduation</div><h4>Invite Friends &amp; Family</h4><p>Tuesday evening is a celebration of what you’ve created. Invite the people who matter most to be there.</p><a href="#graduation" class="go">Invite guests &rarr;</a></div></div>';
