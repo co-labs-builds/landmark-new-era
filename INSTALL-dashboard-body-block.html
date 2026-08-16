@@ -1007,7 +1007,19 @@
       </select>
     </div>
     <div class="kv"><span class="k">Current value</span><span class="v" id="ocCurrent">—</span></div>
-    <div class="field" style="margin-top:10px;"><label>Change to</label><button class="tog" id="ocChangeTo" onclick="this.classList.toggle('on')"></button></div>
+    <!-- Two controls, one shown at a time (see onOcFieldChange). Reviewer and SE are
+         checkboxes, so a toggle is their complete state space. The two Potential fields are
+         dropdowns with THREE meaningful states — Potential, Non-Potential, and not yet
+         decided — and a toggle could only ever express two, which is why NP could be applied
+         but never removed. -->
+    <div class="field" id="ocToggleField" style="margin-top:10px;"><label>Change to</label><button class="tog" id="ocChangeTo" onclick="this.classList.toggle('on')"></button></div>
+    <div class="field" id="ocValueField" style="margin-top:10px;display:none;"><label>Change to</label>
+      <select id="ocValue">
+        <option value="pot">Potential</option>
+        <option value="np">Non-potential</option>
+        <option value="none">Not set — clear this classification</option>
+      </select>
+    </div>
     <div class="field"><label>Override reason</label><textarea id="ocReasonText" rows="4" placeholder="Required — why is this classification being overridden?"></textarea></div>
     <div class="field"><label>Note (optional)</label><textarea id="ocNoteText" rows="2" placeholder="Optional — visible to staff only"></textarea></div>
   </div>

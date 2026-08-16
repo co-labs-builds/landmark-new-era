@@ -2435,38 +2435,74 @@ function confirmCourseStatus(){
    success, same pattern as Update Course Status/Device Exception. ---------- */
 var pendingOcCard = null;
 var OC_LABELS = {reviewer:'Reviewer', se:'Statistical Exclusion', seminarPotential:'Seminar Potential', acPotential:'Advanced Course Potential'};
+/* The two Potential fields are tri-state, so "Yes/No" cannot describe them: it collapsed
+   Non-Potential and not-yet-decided into the same "No", which is precisely the distinction a
+   CS needs when deciding whether to clear one. Read from the registration record rather than
+   from rendered pill classes — the record is the truth, and the pill only renders POT. */
+var OC_POTENTIAL_FIELDS = { seminarPotential: { field: 'f2882', pot: '371', np: '370' },
+                            acPotential:      { field: 'f2887', pot: '382', np: '381' } };
+function ocIsPotentialField(field){ return !!OC_POTENTIAL_FIELDS[field]; }
 function ocCurrentValue(card, field){
-  if(field === 'reviewer') return card.querySelector('[data-classtype="reviewer"]').classList.contains('p-review') ? 'Yes' : 'No';
-  if(field === 'se') return card.querySelector('[data-classtype="se"]').classList.contains('p-excluded') ? 'Yes' : 'No';
-  if(field === 'seminarPotential') return (card.querySelector('.prog-seminar') || {}).dataset && card.querySelector('.prog-seminar').dataset.pot === '1' ? 'Yes' : 'No';
-  if(field === 'acPotential') return (card.querySelector('.prog-ac') || {}).dataset && card.querySelector('.prog-ac').dataset.pot === '1' ? 'Yes' : 'No';
+  var reg = rosterFindRegById(card.dataset.regId) || {};
+  if(field === 'reviewer') return rosterIsTrue(reg.f3044) ? 'Yes' : 'No';
+  if(field === 'se') return rosterIsTrue(reg.f3046) ? 'Yes' : 'No';
+  var map = OC_POTENTIAL_FIELDS[field];
+  if(map){
+    var v = String(reg[map.field] == null ? '' : reg[map.field]).trim();
+    if(v === map.pot) return 'Potential';
+    if(v === map.np) return 'Non-potential';
+    return 'Not set';
+  }
   return '—';
+}
+/* Swap which control is shown, and preselect it from current state so opening the modal and
+   saving without touching anything is a no-op rather than a silent change. */
+function onOcFieldChange(card){
+  var field = document.getElementById('ocField').value;
+  var isPot = ocIsPotentialField(field);
+  document.getElementById('ocToggleField').style.display = isPot ? 'none' : '';
+  document.getElementById('ocValueField').style.display = isPot ? '' : 'none';
+  document.getElementById('ocCurrent').textContent = OC_LABELS[field] + ': ' + ocCurrentValue(card, field);
+  var cur = ocCurrentValue(card, field);
+  if(isPot){
+    document.getElementById('ocValue').value = cur === 'Potential' ? 'pot' : (cur === 'Non-potential' ? 'np' : 'none');
+  } else {
+    document.getElementById('ocChangeTo').classList.toggle('on', cur === 'Yes');
+  }
 }
 function openOverrideClassification(card, presetField){
   pendingOcCard = card;
   document.getElementById('ocName').textContent = cardName(card);
   var field = presetField || 'reviewer';
   document.getElementById('ocField').value = field;
-  document.getElementById('ocCurrent').textContent = OC_LABELS[field] + ': ' + ocCurrentValue(card, field);
-  document.getElementById('ocChangeTo').classList.remove('on');
   document.getElementById('ocReasonText').value = '';
   document.getElementById('ocNoteText').value = '';
-  document.getElementById('ocField').onchange = function(){
-    document.getElementById('ocCurrent').textContent = OC_LABELS[this.value] + ': ' + ocCurrentValue(card, this.value);
-  };
+  document.getElementById('ocField').onchange = function(){ onOcFieldChange(card); };
+  onOcFieldChange(card);
   openModal('mOverrideClassification');
 }
 function confirmOverrideClassification(){
   var card = pendingOcCard;
   if(!card){ dismissModal(); return; }
+  attnClearPrompt(document.getElementById('mOverrideClassification'));
   var field = document.getElementById('ocField').value;
+  var isPot = ocIsPotentialField(field);
   var changeTo = document.getElementById('ocChangeTo').classList.contains('on');
+  var potValue = document.getElementById('ocValue').value;
   var reason = document.getElementById('ocReasonText').value.trim();
   var note = document.getElementById('ocNoteText').value.trim();
-  if(!reason){ toast('An override reason is required.', 'err'); return; }
+  if(!reason){
+    // Same inline treatment as the other modals rather than an edge-of-screen toast.
+    attnPrompt(attnFieldOf('ocReasonText'), 'Required — say why this classification is being overridden.');
+    return;
+  }
   var saveBtn = document.getElementById('ocSaveBtn');
   var originalLabel = saveBtn.textContent;
-  var payload = { eventTeamId: DASHBOARD_DATA.eventTeamId, registrationId: Number(card.dataset.regId), field: field, changeTo: changeTo, overrideNote: reason, operationalNote: note };
+  var payload = { eventTeamId: DASHBOARD_DATA.eventTeamId, registrationId: Number(card.dataset.regId), field: field, overrideNote: reason, operationalNote: note };
+  /* Potential fields send the tri-state `value`; the two checkbox fields keep `changeTo`.
+     Sending only the one the server expects for that field means an invalid combination
+     cannot be constructed from the UI at all. */
+  if(isPot) payload.value = potValue; else payload.changeTo = changeTo;
   saveBtn.disabled = true;
   saveBtn.textContent = 'Saving…';
   fetch(DASHBOARD_OVERRIDE_CLASSIFICATION_WEBHOOK_URL, {
@@ -2479,7 +2515,7 @@ function confirmOverrideClassification(){
     if(!r.ok || !r.result || r.result.success !== true) throw new Error((r.result && r.result.error) || 'Request failed');
     saveBtn.disabled = false;
     saveBtn.textContent = originalLabel;
-    logAudit('staff', currentActorName() + ' overrode ' + OC_LABELS[field] + ' = ' + changeTo + ' · reason: ' + reason);
+    logAudit('staff', currentActorName() + ' overrode ' + OC_LABELS[field] + ' = ' + (isPot ? potValue : changeTo) + ' · reason: ' + reason);
     pendingOcCard = null;
     dismissModal();
     toast('Override saved.');
