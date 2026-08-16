@@ -1194,11 +1194,11 @@ function dashboardRenderSnapshot(registrations, eventFields, staffCount){
   dashboardSetStat('drSharedCount', sharedDeviceCount);
   dashboardSetSub('drSharedCount', sharedDeviceCount === 0 ? 'none reported' : 'expected count adjusted by ' + sharedAdj);
   dashboardSetStat('drDupAdj', multiDeviceCount);
-  /* Drop-in viewers — events.f3262, written by LM | Zoom | Live Attendance Poller for live
-     participants matching neither a Registration nor an oEventTeam row. Read straight off
-     eventFields like the other Event-level numbers, so it does not matter whether the value
-     arrived on a full Roster Fetch or live via event.metric.changed. */
-  dashboardSetStat('drDropIns', Number(eventFields.f3262 || 0));
+  /* The Drop-ins tile is gone (2026-08-16). events.f3262 no longer counts unmatched
+     participants — the poller now writes the live STAFF count into it, identified by Zoom
+     display name — so the number reaches the Staff tile as staffCount instead, via Roster
+     Fetch. Nothing counts unmatched participants any more, which is the documented open
+     risk: live devices exceeding expected has lost its one explanation. */
   dashboardSetStat('drExpected', expected);
   dashboardSetStat('drObserved', observed);
   dashboardSetStat('drReconciled', reconciled ? '✓' : '✗');
@@ -4239,7 +4239,15 @@ function dashboardApplyAttendanceChanged(msg){
    and carries its absolute state, so recomputing the count from the map is idempotent. A
    duplicate delivery, or a redelivery after an Ably reconnect, can't drift the number the
    way a +/-1 counter would. Roster Fetch seeds the map; until it has, we no-op rather than
-   invent a count from a single row. */
+   invent a count from a single row.
+
+   As of 2026-08-16 this no longer drives the Staff TILE. That number is now the poller's
+   display-name count in events.f3262, delivered as staffCount, because oEventTeam f3218
+   depends on f3249 Zoom Registration ID being populated and it frequently is not. This
+   handler still maintains the per-row map — that is what a staff.changed message actually
+   carries, and other per-staff UI reads it — but it must NOT recompute
+   dashboardLastStaffCount from that map, or every staff.changed would overwrite the
+   accurate live figure with the unreliable roster-side one. */
 function dashboardApplyStaffChanged(msg){
   var data = (msg && msg.data) || {};
   if(data.eventTeamId == null || !dashboardLastStaffPresence || !dashboardLastRoster) return;
@@ -4247,25 +4255,26 @@ function dashboardApplyStaffChanged(msg){
   var present = !!data.present;
   if(dashboardLastStaffPresence[key] === present) return;
   dashboardLastStaffPresence[key] = present;
-  var count = 0;
-  for(var k in dashboardLastStaffPresence){
-    if(Object.prototype.hasOwnProperty.call(dashboardLastStaffPresence, k) && dashboardLastStaffPresence[k]) count++;
-  }
-  dashboardLastStaffCount = count;
   dashboardRenderSnapshot(dashboardLastRoster, dashboardLastEventFields, dashboardLastStaffCount);
 }
 
 /* Event-level numeric metrics — event.metric.changed, for the Events fields the snapshot
-   reads directly rather than deriving from the roster array (f3262 Current Drop-In Viewers;
-   f3257 once rule 9's generic-vs-drop-in semantics are settled). Merged into
+   reads directly rather than deriving from the roster array. Merged into
    dashboardLastEventFields so the tiles read them exactly as a full Roster Fetch delivers
-   them, and no tile needs to know whether its number arrived live or on load. */
+   them, and no tile needs to know whether its number arrived live or on load.
+
+   f3262 needs the extra assignment below. Roster Fetch hands the staff number over as its
+   own top-level staffCount, and dashboardRenderSnapshot takes it as a separate argument —
+   so merging f3262 into eventFields alone would update nothing visible. Since 2026-08-16
+   the two ARE the same number, and this is where a mid-session staff join or leave reaches
+   the Staff tile without a refetch. */
 function dashboardApplyEventMetricChanged(msg){
   var data = (msg && msg.data) || {};
   if(!data.field || !dashboardLastEventFields || !dashboardLastRoster) return;
   var next = Number(data.value || 0);
   if(Number(dashboardLastEventFields[data.field] || 0) === next) return;
   dashboardLastEventFields[data.field] = next;
+  if(data.field === 'f3262') dashboardLastStaffCount = next;
   dashboardRenderSnapshot(dashboardLastRoster, dashboardLastEventFields, dashboardLastStaffCount);
 }
 

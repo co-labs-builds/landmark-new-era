@@ -230,8 +230,13 @@
       <!-- Plain .sub, no data-stat-sub: nothing writes this key (it never did), and the
            attribute implied a live value that was actually a static caption. -->
       <div class="stat stat-filterable" role="button" tabindex="0" onclick="applyStatFilter('current', this)" title="Show only records still participating"><div class="l">Active participants</div><div class="n"><span class="mf-lg" data-stat="current">—</span></div><div class="sub">still participating</div></div>
-      <div class="stat"><div class="l">Staff</div><div class="n"><span class="mf-lg" data-stat="drStaff">—</span></div><div class="sub">Zoom-connected now</div></div>
-      <div class="stat"><div class="l">Drop-ins</div><div class="n"><span class="mf-lg" data-stat="drDropIns">—</span></div><div class="sub">no registration match</div></div>
+      <div class="stat"><div class="l">Staff</div><div class="n"><span class="mf-lg" data-stat="drStaff">—</span></div><div class="sub">by Zoom display name</div></div>
+      <!-- Drop-ins tile removed 2026-08-16. It read events.f3262, and f3262 now holds the
+           live staff count instead — the poller identifies staff by Zoom display name
+           rather than by matching oEventTeam f3249, so the same field feeds the Staff
+           tile above. Leaving this tile in place would have printed the staff number a
+           second time under a label that no longer described it. Nothing counts
+           unmatched participants now; see DASHBOARD-REDESIGN-SPEC.md's open risk note. -->
       <div class="stat stat-filterable" role="button" tabindex="0" onclick="applyStatFilter('sharedDevice', this)" title="Show only records paired on a shared device"><div class="l">Shared device</div><div class="n"><span class="mf-lg" data-stat="drSharedCount">—</span></div><div class="sub" data-stat-sub="drSharedCount">paired on one connection</div></div>
       <div class="stat stat-filterable" role="button" tabindex="0" onclick="applyStatFilter('multiDevice', this)" title="Show only records on more than one connection"><div class="l">Multi-device</div><div class="n"><span class="mf-lg" data-stat="drDupAdj">—</span></div><div class="sub">on two connections</div></div>
       <div class="stat"><div class="l">Expected</div><div class="n"><span class="mf-lg" data-stat="drExpected">—</span></div><div class="sub">active + staff, adjusted</div></div>
