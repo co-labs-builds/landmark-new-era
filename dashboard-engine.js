@@ -1041,6 +1041,10 @@ function dashboardRenderSnapshot(registrations, eventFields, staffCount){
   var ldpRows = active.filter(function(r){ return String(r.f2293) === '1'; });
   var current = active.filter(function(r){ return String(r.f3046) !== '1' && String(r.f2293) !== '1'; }).length;
   var ldp = ldpRows.length;
+  /* Starts, as the LDP/WBO rates mean it: registrations marked attended on Day 1. Derived
+     live from the roster rather than read from f3263 Event Starts - Locked — see the note
+     on the ldpPct/wboPct block below for why the locked field is deliberately not used. */
+  var startedDay1 = active.filter(function(r){ return rosterIsTrue(r.f2801); }).length;
   var wbo = active.filter(function(r){ return String(r.f2688) === '1'; }).length;
   var completions = active.filter(function(r){ return String(r.f2809) === '1'; }).length;
   var attendingNow = active.filter(function(r){ return String(r.f2853) === '1'; }).length;
@@ -1107,22 +1111,33 @@ function dashboardRenderSnapshot(registrations, eventFields, staffCount){
   dashboardSetStat('current', current);
   dashboardSetStat('ldp', ldp);
   dashboardSetStat('wbo', wbo);
-  dashboardSetSub('wbo', wbo + ' of ' + total + ' participants');
-  /* LDP and WBO are both rates over the SAME denominator: total participants.
-     Corrected 2026-08-15 on client instruction — "WBO is not a sub number of Left. It's off
-     the total of participants, same for LDP."
+  dashboardSetSub('wbo', wbo + ' of ' + startedDay1 + ' who started Day 1');
+  /* LDP and WBO are both rates over STARTS — registrations with f2801 Attended Day 1
+     checked (client, 2026-08-16). They share one denominator so the two tiles stay
+     directly comparable; WBO is a subset of LDP, so WBO% always reads at or below LDP%.
 
-     Two things changed. WBO was a share of LDP, which framed it as a subset of those who
-     left; it is now a share of all participants, so the two tiles are directly comparable
-     and WBO no longer swings wildly on a small LDP count (1 of 2 people reading "50%").
-     LDP's denominator also no longer switches to the locked Day 1 starts once that exists —
-     a denominator that silently changes partway through the event makes the same tile mean
-     two different things on Day 1 and Day 2, and the client has now specified which one it
-     should be. Both read off `total`, which is active registrations. */
-  dashboardSetStat('ldpPct', dashboardFmtPct(ldp, total));
-  dashboardSetSub('ldpPct', 'of ' + total + ' participants');
-  dashboardSetStat('wboPct', dashboardFmtPct(wbo, total));
-  dashboardSetSub('wboPct', 'of ' + total + ' participants');
+     History, because this has moved twice. Originally WBO was a share of LDP, which framed
+     it as a subset of those who left and swung wildly on a small LDP count (1 of 2 people
+     reading "50%"). On 2026-08-15 both moved to `total` active registrations — "WBO is not
+     a sub number of Left. It's off the total of participants, same for LDP." That also
+     removed a denominator which switched to locked Day 1 starts partway through the event,
+     making the same tile mean two different things on Day 1 and Day 2.
+
+     Now both read starts instead. Note what this is NOT: it is not f3263 Event Starts -
+     Locked, the number behind the "Total starts (Day 1)" tile. f3263 is written once by
+     Day Advance at Day 1 close and is absent before then, so using it would reinstate
+     exactly the mid-event denominator switch removed on 08-15. Counting f2801 live avoids
+     that — it exists from the moment the first person is marked attended, and it tracks
+     later attendance corrections that a locked number cannot. The two should agree once
+     f3263 locks; they can drift afterwards if Day 1 attendance is corrected, which is why
+     the sub-line says "who started Day 1" rather than borrowing the word "starts".
+
+     dashboardFmtPct returns "—" on a zero denominator, so before anyone is marked attended
+     these read "—" rather than dividing by zero. */
+  dashboardSetStat('ldpPct', dashboardFmtPct(ldp, startedDay1));
+  dashboardSetSub('ldpPct', 'of ' + startedDay1 + ' who started Day 1');
+  dashboardSetStat('wboPct', dashboardFmtPct(wbo, startedDay1));
+  dashboardSetSub('wboPct', 'of ' + startedDay1 + ' who started Day 1');
   dashboardSetStat('completions', completions);
   dashboardSetStat('attendanceNow', dashboardFmtPct(attendingNow, current));
   dashboardSetSub('attendanceNow', attendingNow + ' / ' + current);
