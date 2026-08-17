@@ -623,32 +623,91 @@
     <span>All cards read live object data — nothing here is manually entered. Untouched or not-yet-started values show <span class="v-na">—</span>, never a misleading zero. Metric drill-down into included/excluded record sets is deferred past the pilot.</span>
   </div>
 
-  <div class="kpi-band">
-    <div class="kpi-hd"><span class="eyebrow">Course stats</span><span class="kpi-src">Source · roster and Zoom attendance</span></div>
-    <div class="kpi-grid">
-      <div class="kpi"><div class="l">Participants in course</div><div class="n"><span class="mf-lg" data-stat="drParticipants">—</span></div><div class="sub">roster total</div></div>
-      <div class="kpi"><div class="l">Still participating</div><div class="n"><span class="mf-lg" data-stat="current">—</span></div><div class="sub">still participating</div></div>
-      <div class="kpi"><div class="l">Lost during Forum</div><div class="n"><span class="mf-lg" data-stat="ldp">—</span></div><div class="sub">left for any reason</div></div>
-      <div class="kpi"><div class="l">Completed the Forum</div><div class="n"><span class="mf-lg" data-stat="completions">—</span></div><div class="sub">Forum Completed</div></div>
-      <div class="kpi term"><div class="l">Attendance rate</div><div class="n"><span class="mf-lg" data-stat="attendanceNow">—</span></div><div class="sub" data-stat-sub="attendanceNow">—</div></div>
-    </div>
+  <!-- ============================================================
+       IN COURSE STATS SUMMARY — rebuilt 2026-08-16 to mirror the sheet the CS
+       actually works from, category for category and row for row, so this page is
+       familiar on day one. This is deliberately a holding shape: it buys time for a
+       deeper version rather than being the final design.
+
+       Rows still reading "—" have no confirmed field mapping yet. They are rendered
+       rather than omitted so the sheet's shape is complete and each is a one-line
+       change once its source is named. Deriving them from a plausible-looking field
+       would put a wrong number in front of a CS who has no way to tell.
+       ============================================================ -->
+  <div class="rep-rules">
+    <h4>What determines Non-Potential</h4>
+    <p><b>Seminars:</b> minors and Reviewers of the Forum are Non-Potential.</p>
+    <p><b>Advanced Course:</b> minors, anyone who has already taken it, and anyone already registered for the Advanced Course are Non-Potential.</p>
+    <p><b>Potential-If-Registered:</b> there are never any in the Landmark Forum ledger.</p>
   </div>
 
-  <div class="kpi-band">
-    <div class="kpi-hd"><span class="eyebrow">Seminar</span><span class="badge-optin">Enabled for this pilot</span><span class="kpi-src">Source · Seminar registration records</span></div>
-    <div class="kpi-grid">
-      <div class="kpi"><div class="l">Potential</div><div class="n"><span class="mf-lg" data-stat="seminarPotentialCount">—</span></div><div class="sub" data-stat-sub="seminarPotentialCount">—</div></div>
-      <div class="kpi"><div class="l">Confirmed</div><div class="n"><span class="mf-lg" data-stat="seminarRegCount">—</span></div><div class="sub">registered</div></div>
-      <div class="kpi term"><div class="l">Confirmation rate</div><div class="n"><span class="mf-lg" data-stat="seminarPct">—</span></div><div class="sub" data-stat-sub="seminarPct">—</div></div>
-    </div>
-  </div>
+  <div class="rep-cols">
+    <div>
+      <div class="kpi-band">
+        <div class="kpi-hd"><span class="eyebrow">Currently in course</span><span class="kpi-src">Source · roster</span></div>
+        <div class="rep-list">
+          <div class="rep-row"><span class="l">Reviewers</span><span class="v" data-stat="repReviewers">—</span></div>
+          <div class="rep-row"><span class="l">Scholarships</span><span class="v" data-stat="repScholarships">—</span></div>
+          <div class="rep-row"><span class="l">Standards</span><span class="v" data-stat="repStandards">—</span></div>
+          <div class="rep-row"><span class="l">Statistically excluded</span><span class="v" data-stat="repStatExcluded">—</span></div>
+          <div class="rep-row tot"><span class="l">Total participants</span><span class="v" data-stat="repTotalPart">—</span></div>
+        </div>
+      </div>
 
-  <div class="kpi-band">
-    <div class="kpi-hd"><span class="eyebrow">Advanced Course</span><span class="kpi-src">Source · Advanced Course registration records</span></div>
-    <div class="kpi-grid">
-      <div class="kpi"><div class="l">Potential</div><div class="n"><span class="mf-lg" data-stat="acPotentialCount">—</span></div><div class="sub" data-stat-sub="acPotentialCount">—</div></div>
-      <div class="kpi"><div class="l">Registered</div><div class="n"><span class="mf-lg" data-stat="acRegCount">—</span></div><div class="sub">registered</div></div>
-      <div class="kpi term"><div class="l">Registration rate</div><div class="n"><span class="mf-lg" data-stat="acPct">—</span></div><div class="sub" data-stat-sub="acPct">—</div></div>
+      <div class="kpi-band">
+        <div class="kpi-hd"><span class="eyebrow">Attendance</span><span class="kpi-src">Source · Event Starts rollup and roster</span></div>
+        <div class="rep-list">
+          <div class="rep-row"><span class="l"># who started on Day 1</span><span class="v" data-stat="repStartDay1">—</span></div>
+          <div class="rep-row"><span class="l">Total # that left during Day 1</span><span class="v" data-stat="repLeftDay1">—</span></div>
+          <div class="rep-row"><span class="l"># who started Day 2</span><span class="v" data-stat="repStartDay2">—</span></div>
+          <div class="rep-row"><span class="l">Total # that left during Day 2</span><span class="v" data-stat="repLeftDay2">—</span></div>
+          <div class="rep-row"><span class="l"># who started Day 3</span><span class="v" data-stat="repStartDay3">—</span></div>
+          <div class="rep-row"><span class="l">Total # that left during Day 3</span><span class="v" data-stat="repLeftDay3">—</span></div>
+          <div class="rep-row"><span class="l">Total non-Reviewer LDP</span><span class="v" data-stat="repNonRevLdp">—</span></div>
+          <div class="rep-row"><span class="l">Total non-Reviewer WBO</span><span class="v" data-stat="repNonRevWbo">—</span></div>
+          <div class="rep-row"><span class="l">Total Reviewer LDP</span><span class="v" data-stat="repRevLdp">—</span></div>
+          <div class="rep-row"><span class="l">Total Reviewer WBO</span><span class="v" data-stat="repRevWbo">—</span></div>
+          <div class="rep-row tot"><span class="l">% total LDP</span><span class="v" data-stat="repLdpPct">—</span></div>
+          <div class="rep-row tot"><span class="l">% total WBO</span><span class="v" data-stat="repWboPct">—</span></div>
+          <div class="rep-row tot"><span class="l">Total participants that completed</span><span class="v" data-stat="repCompleted">—</span></div>
+          <div class="rep-row tot"><span class="l">Non-Reviewers that completed</span><span class="v" data-stat="repNonRevCompleted">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="kpi-band">
+        <div class="kpi-hd"><span class="eyebrow">Seminar confirmation</span><span class="kpi-src">Source · Seminar registration records</span></div>
+        <div class="rep-list">
+          <div class="rep-row"><span class="l">Potential</span><span class="v" data-stat="repSemPotential">—</span></div>
+          <div class="rep-row"><span class="l">Confirmed</span><span class="v" data-stat="repSemConfirmed">—</span></div>
+          <div class="rep-row"><span class="l">% confirmed in designated</span><span class="v" data-stat="repSemDesPct">—</span></div>
+          <div class="rep-row"><span class="l">% confirmed in alternate</span><span class="v" data-stat="repSemAltPct">—</span></div>
+          <div class="rep-row tot"><span class="l">Confirmed %</span><span class="v" data-stat="repSemConfirmedPct">—</span></div>
+        </div>
+      </div>
+
+      <div class="kpi-band">
+        <div class="kpi-hd"><span class="eyebrow">AC registration</span><span class="kpi-src">Source · Advanced Course registration records</span></div>
+        <div class="rep-list">
+          <div class="rep-row"><span class="l">Potential</span><span class="v" data-stat="repAcPotential">—</span></div>
+          <div class="rep-row"><span class="l">Registered</span><span class="v" data-stat="repAcRegistered">—</span></div>
+          <div class="rep-row tot"><span class="l">Reg %</span><span class="v" data-stat="repAcPct">—</span></div>
+        </div>
+      </div>
+
+      <div class="kpi-band">
+        <div class="kpi-hd"><span class="eyebrow">Final session</span><span class="kpi-src">Source · guest records — mapping pending</span></div>
+        <div class="rep-list">
+          <div class="rep-row"><span class="l"># participants attending</span><span class="v" data-stat="repFsAttending">—</span></div>
+          <div class="rep-row"><span class="l">Attendance percentage</span><span class="v" data-stat="repFsPct">—</span></div>
+          <div class="rep-row"><span class="l">GPH baseline</span><span class="v" data-stat="repGphBaseline">—</span></div>
+          <div class="rep-row"><span class="l">Adjusted guest count</span><span class="v" data-stat="repAdjGuestCount">—</span></div>
+          <div class="rep-row"><span class="l"># LF guests</span><span class="v" data-stat="repLfGuests">—</span></div>
+          <div class="rep-row"><span class="l"># guests — unidentified</span><span class="v" data-stat="repGuestsUnidentified">—</span></div>
+          <div class="rep-row tot"><span class="l">Verified guest LF reg</span><span class="v" data-stat="repVerifiedGuestLfReg">—</span></div>
+        </div>
+      </div>
     </div>
   </div>
 

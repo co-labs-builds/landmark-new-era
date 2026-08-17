@@ -1134,6 +1134,12 @@ function dashboardRenderSnapshot(registrations, eventFields, staffCount){
   dashboardSetSub('ldpPct', 'of ' + eventStarts + ' starts');
   dashboardSetStat('wboPct', dashboardFmtPct(wbo, eventStarts));
   dashboardSetSub('wboPct', 'of ' + eventStarts + ' starts');
+
+  dashboardRenderReport(active, eventFields, {
+    reviewer: reviewer, se: se, ldpRows: ldpRows, ldp: ldp, wbo: wbo,
+    eventStarts: eventStarts, seminarPotential: seminarPotential, seminarReg: seminarReg,
+    acPotential: acPotential, acReg: acReg
+  });
   dashboardSetStat('completions', completions);
   dashboardSetStat('attendanceNow', dashboardFmtPct(attendingNow, current));
   dashboardSetSub('attendanceNow', attendingNow + ' / ' + current);
@@ -1223,6 +1229,70 @@ function dashboardRenderSnapshot(registrations, eventFields, staffCount){
   dashboardSetSub('drObserved', reconciled
     ? 'matches expected'
     : (gap > 0 ? '+' + gap + ' more than expected' : Math.abs(gap) + ' fewer than expected'));
+}
+
+/* ---------- In Course Stats Summary (Reporting Dashboard) — REAL BUILD 2026-08-16.
+   Mirrors the sheet the CS works from, category for category, as a holding shape while a
+   deeper version is designed. Every row is rendered even when its source is unmapped: the
+   shape of the sheet is the point, and a row reading "—" is honest where a number derived
+   from a plausible-looking field would not be — a CS has no way to tell a real 93 from an
+   invented one.
+
+   ROWS NOT YET MAPPED, and why, so nobody has to re-derive this:
+     Scholarships              no field found on oRegistrations
+     # who started Day 2 / 3   the sheet's 108 is not starts (113) minus Day 1 leavers (2),
+                               so this is its own measure, not arithmetic on the rows above
+     Attendance percentage     denominator unconfirmed
+     GPH baseline              reads 93 on the sheet, equal to Standards — likely related,
+                               unverified, so not wired on the resemblance
+     Adjusted guest count, # LF guests, # guests unidentified, verified guest LF reg
+                               guest-object metrics with no confirmed mapping
+
+   Standards is computed as participants who are neither Reviewers nor statistically
+   excluded. Once Scholarships is mapped it must also be subtracted — on the CS's own
+   sheet Total 108 = Reviewers 15 + Scholarships 0 + Standards 93 + SE 0, which only
+   agrees with this formula while Scholarships is zero. ---------- */
+function dashboardRenderReport(active, eventFields, m){
+  var isRev = function(r){ return rosterIsTrue(r.f3044); };
+  var leftDay = function(r){ return Number(ROSTER_LEFT_DAY_TO_NUM[String(r.f3059 || '')] || 0); };
+  var wboRows = active.filter(function(r){ return rosterIsTrue(r.f2688); });
+  /* Total participants = starts minus those who left. Matches the sheet, where
+     113 starts − 5 LDP = 108 Total Part. */
+  var totalPart = Math.max(0, m.eventStarts - m.ldp);
+  var standards = active.filter(function(r){ return !isRev(r) && !rosterIsTrue(r.f3046); }).length;
+
+  dashboardSetStat('repReviewers', m.reviewer);
+  dashboardSetStat('repStandards', standards);
+  dashboardSetStat('repStatExcluded', m.se);
+  dashboardSetStat('repTotalPart', totalPart);
+
+  dashboardSetStat('repStartDay1', m.eventStarts);
+  dashboardSetStat('repLeftDay1', m.ldpRows.filter(function(r){ return leftDay(r) === 1; }).length);
+  dashboardSetStat('repLeftDay2', m.ldpRows.filter(function(r){ return leftDay(r) === 2; }).length);
+  dashboardSetStat('repLeftDay3', m.ldpRows.filter(function(r){ return leftDay(r) === 3; }).length);
+  dashboardSetStat('repNonRevLdp', m.ldpRows.filter(function(r){ return !isRev(r); }).length);
+  dashboardSetStat('repRevLdp', m.ldpRows.filter(isRev).length);
+  dashboardSetStat('repNonRevWbo', wboRows.filter(function(r){ return !isRev(r); }).length);
+  dashboardSetStat('repRevWbo', wboRows.filter(isRev).length);
+  dashboardSetStat('repLdpPct', dashboardFmtPct(m.ldp, m.eventStarts));
+  dashboardSetStat('repWboPct', dashboardFmtPct(m.wbo, m.eventStarts));
+  /* Completions come from the f3301 COMPLETES rollup, the client's authoritative number,
+     not from counting f2809 on the roster. The non-Reviewer split has no rollup, so it is
+     counted — the two can disagree if f2809 and f3301 ever drift apart. */
+  dashboardSetStat('repCompleted', Number(eventFields.f3301 || 0));
+  dashboardSetStat('repNonRevCompleted', active.filter(function(r){ return rosterIsTrue(r.f2809) && !isRev(r); }).length);
+
+  dashboardSetStat('repSemPotential', m.seminarPotential);
+  dashboardSetStat('repSemConfirmed', m.seminarReg);
+  /* f3302 DES Seminars / f3303 Alternate SEM are counts; the sheet shows them as a share
+     OF THOSE CONFIRMED, which is the only reading under which the two can sum to 100%. */
+  dashboardSetStat('repSemDesPct', dashboardFmtPct(Number(eventFields.f3302 || 0), m.seminarReg));
+  dashboardSetStat('repSemAltPct', dashboardFmtPct(Number(eventFields.f3303 || 0), m.seminarReg));
+  dashboardSetStat('repSemConfirmedPct', dashboardFmtPct(m.seminarReg, m.seminarPotential));
+
+  dashboardSetStat('repAcPotential', m.acPotential);
+  dashboardSetStat('repAcRegistered', m.acReg);
+  dashboardSetStat('repAcPct', dashboardFmtPct(m.acReg, m.acPotential));
 }
 
 function dashboardFetchRoster(){
