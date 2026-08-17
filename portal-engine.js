@@ -1466,8 +1466,17 @@ Portal.session = (function(){
    disagreed with every other phone number in this file — the
    locked build rule is +1 (312) 440-3464 everywhere.
    ========================================================= */
-Portal.render.during = function(data){
+/* `phase` (added 2026-08-17) is 'during' | 'pregrad' | 'graduation'. All three
+   render THIS page — the assignments stack, materials, graduation section and
+   everything else below the hero are identical in each, per direct instruction
+   ("just the hero and the assignments all should be visible"). Only the hero
+   block and the join CTA vary. Defaults to 'during' so every existing caller,
+   including the three Ably handlers, keeps working unchanged. */
+Portal.render.during = function(data, phase){
   data = data || {};
+  phase = phase || 'during';
+  var isPreGrad = phase === 'pregrad';
+  var isGraduation = phase === 'graduation';
   // Name Likes (contacts.f2792 — what they told us they want to be
   // called) wins over First Name for anything greeting-facing, falling
   // back to First Name when Name Likes is unset. Per direct instruction
@@ -1532,8 +1541,30 @@ Portal.render.during = function(data){
   function dayLabel(n){ return 'Day ' + (ORDINALS[n] || n); }
   var sessionLabel = currentIdx === 'Final' ? 'Graduation' : currentIdx > 0 ? dayLabel(currentIdx) : '';
 
-  function joinHref(){ return data.zoomJoin ? escapeHtml(data.zoomJoin) : ''; }
-  function joinLabel(){ return 'Join Your ' + courseType; }
+  /* The CTA is one mechanism across all three phases rather than three parallel
+     ones — renderJoinCta() below already keeps the nav pill and the hero button
+     in lockstep off a single boolean, and that property is worth more than the
+     brevity of a separate graduation button.
+
+     pregrad     Invite your guests -> inviteHubUrl, the SAME destination the
+                 invite section further down this page uses. Always available:
+                 there is nothing to gate, and no room to be admitted to.
+     graduation  Join The Graduation -> registrations.f2799 "Grad Zoom Join URL",
+                 the per-registrant graduation link. NOT data.zoomJoin (f2795),
+                 which is the Forum room and was what this button pointed at on
+                 graduation day until 2026-08-17, and NOT events.f3038, which is
+                 a bare meeting ID the attendance poller uses server-side. */
+  var gradRoomOpenTs = !isNaN(gradTs) ? gradTs - 30 * 60000 : NaN;
+  function joinHref(){
+    if(isPreGrad) return inviteHubUrl ? escapeHtml(inviteHubUrl) : '';
+    if(isGraduation) return data.gradZoomJoin ? escapeHtml(data.gradZoomJoin) : '';
+    return data.zoomJoin ? escapeHtml(data.zoomJoin) : '';
+  }
+  function joinLabel(){
+    if(isPreGrad) return 'Invite your guests';
+    if(isGraduation) return 'Join The Graduation';
+    return 'Join Your ' + courseType;
+  }
 
   // Real join link becomes available 30 minutes before session start
   // (roomOpenTs, below) rather than purely on data.zoomJoin being set —
@@ -1556,18 +1587,35 @@ Portal.render.during = function(data){
   // alone. The withheld state is never unexplained — blockedLabel() names
   // which of the two conditions is holding it, and infoGateHtml (below)
   // carries the full message and the link to fix it.
-  function linkAvailable(){ return !!(infoFormDone && data.zoomJoin && hasStart && Date.now() >= roomOpenTs); }
-  function blockedLabel(){ return infoFormDone ? 'Link available soon' : 'Information form required'; }
+  //
+  // 2026-08-17: the same boolean now answers for all three phases. Pre-grad is
+  // deliberately ungated — inviting guests has no Information Form prerequisite
+  // and no room-open time — while Graduation keeps BOTH gates, measured off
+  // graduation start rather than Forum start.
+  function linkAvailable(){
+    if(isPreGrad) return !!inviteHubUrl;
+    if(isGraduation) return !!(infoFormDone && data.gradZoomJoin && !isNaN(gradTs) && Date.now() >= gradRoomOpenTs);
+    return !!(infoFormDone && data.zoomJoin && hasStart && Date.now() >= roomOpenTs);
+  }
+  function blockedLabel(){
+    if(isPreGrad) return 'Invitations open soon';
+    return infoFormDone ? 'Link available soon' : 'Information form required';
+  }
   var LOCK_SVG = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><rect x="4.2" y="10.4" width="15.6" height="9.9" rx="2.2"/><path d="M8.1 10.4V7.6a3.9 3.9 0 0 1 7.8 0v2.8"/></svg>';
+  /* The lock glyph means specifically "the Information Form is what's holding
+     this", so it is suppressed in pre-grad: that CTA has no info-form gate at
+     all, and showing a padlock next to "Invitations open soon" would name the
+     wrong reason. */
+  function lockGlyph(){ return (!isPreGrad && !infoFormDone) ? LOCK_SVG : ''; }
   function navJoinHtml(avail){
     return avail ?
       '<a class="nav-join" href="' + joinHref() + '" target="_blank" rel="noopener"><span class="dot"></span><span class="jt">' + joinLabel() + '</span></a>' :
-      '<span class="nav-join" aria-disabled="true">' + (infoFormDone ? '' : LOCK_SVG) + '<span class="jt">' + blockedLabel() + '</span></span>';
+      '<span class="nav-join" aria-disabled="true">' + lockGlyph() + '<span class="jt">' + blockedLabel() + '</span></span>';
   }
   function heroJoinHtml(avail){
     return avail ?
       '<a class="btn-join" href="' + joinHref() + '" target="_blank" rel="noopener">' + joinLabel() + ' <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></a>' :
-      '<span class="btn-join" aria-disabled="true">' + (infoFormDone ? '' : LOCK_SVG) + blockedLabel() + '</span>';
+      '<span class="btn-join" aria-disabled="true">' + lockGlyph() + blockedLabel() + '</span>';
   }
   function renderJoinCta(){
     var avail = linkAvailable();
@@ -1591,7 +1639,59 @@ Portal.render.during = function(data){
   // "Cameron, welcome to Day One." and "Welcome to your Forum."
   var heroName = firstName ? escapeHtml(firstName) + ', welcome to' : 'Welcome to';
   var heroTarget = sessionLabel ? sessionLabel + '.' : 'your ' + courseType + '.';
-  var heroHtml =
+  var nameSuffix = firstName ? ', ' + escapeHtml(firstName) : '';
+
+  /* Countdown markup is the pre-event element verbatim (render.pre, above) —
+     same .countdown/.cd-cell/.cd-num/.cd-lab classes and the same cd-d/h/m/s
+     ids, so it inherits the existing CSS with no new rules beyond spacing
+     inside .progcard. Those ids are document-unique, which is safe here only
+     because During has never rendered a countdown and only ONE of the two new
+     phases can be live at a time. */
+  var GRAD_COUNTDOWN_HTML =
+    '<div class="countdown">' +
+      '<div class="cd-cell"><div class="cd-num" id="cd-d">–</div><div class="cd-lab">Days</div></div>' +
+      '<div class="cd-cell"><div class="cd-num" id="cd-h">–</div><div class="cd-lab">Hours</div></div>' +
+      '<div class="cd-cell"><div class="cd-num" id="cd-m">–</div><div class="cd-lab">Min</div></div>' +
+      '<div class="cd-cell"><div class="cd-num" id="cd-s">–</div><div class="cd-lab">Sec</div></div>' +
+    '</div>';
+
+  var heroEyebrow, heroH1, heroLede, pcEyebrow, pcNote;
+  if(isPreGrad){
+    heroEyebrow = 'The Landmark ' + courseType + ' &middot; Completed';
+    heroH1 = 'You completed <span class="serif-it">your</span> ' + courseType + nameSuffix + '.';
+    heroLede = 'You stayed on the court all three days, and what you created this weekend is yours. Tomorrow evening we come back together to complete your ' + courseType + ' — and that night is meant to be shared. Invite the people who matter most to you.';
+    pcEyebrow = 'Your Graduation';
+    pcNote = 'Guest invitations close 90 minutes before we begin, so we can prepare the room for everyone’s guests.';
+  } else if(isGraduation){
+    heroEyebrow = 'The Landmark ' + courseType + ' &middot; Graduation';
+    heroH1 = (firstName ? escapeHtml(firstName) + ', tonight ' : 'Tonight ') + '<span class="serif-it">we celebrate.</span>';
+    heroLede = 'This is the completion of your ' + courseType + ' — an evening of inspiration, possibility and acknowledgment, with the people you invited beside you. Log in 20 minutes early so you are settled and there to welcome your guests when they arrive.';
+    pcEyebrow = 'Your Graduation';
+    pcNote = 'Ask your guests to arrive 15 minutes early, and make sure they know how to switch to speaker view, raise a hand and open the chat — so nobody is wrestling with Zoom during the evening.';
+  }
+
+  var heroHtml = (isPreGrad || isGraduation) ?
+    '<header class="hero" id="today"><div class="wrap hero-inner">' +
+      '<div class="hero-copy">' +
+        '<div class="eyebrow">' + heroEyebrow + '</div>' +
+        '<h1>' + heroH1 + '</h1>' +
+        '<p class="lede">' + heroLede + '</p>' +
+      '</div>' +
+      '<aside class="progcard">' +
+        '<div class="pc-eyebrow">' + pcEyebrow + '</div>' +
+        (!isNaN(gradTs) ?
+          '<div class="pc-dates">' + Portal.format.weekdayMonthDay(gradTs, ianaId) + '</div>' +
+          '<div class="pc-grad"><span>Begins</span> &middot; ' + Portal.format.time(gradTs, ianaId) + ' ' + Portal.format.zoneLabel(ianaId) + '</div>' +
+          GRAD_COUNTDOWN_HTML
+          : '<div class="pc-fine">Your Graduation time will appear here as soon as it’s confirmed.</div>') +
+        '<div class="pc-cta">' +
+          '<img class="pc-logo" src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-lmf-logo.png" alt="The Landmark ' + courseType + '">' +
+          '<span id="heroJoinCta">' + heroJoinHtml(linkAvailable()) + '</span>' +
+        '</div>' +
+        '<div class="pc-note">' + pcNote + '</div>' +
+      '</aside>' +
+    '</div></header>'
+    :
     '<header class="hero" id="today"><div class="wrap hero-inner">' +
       '<div class="hero-copy">' +
         '<div class="eyebrow">The Landmark ' + courseType + '</div>' +
@@ -1927,6 +2027,33 @@ Portal.render.during = function(data){
   renderJoinCta();
   if(Portal.render._joinCtaTimer) clearInterval(Portal.render._joinCtaTimer);
   Portal.render._joinCtaTimer = setInterval(renderJoinCta, 30000);
+
+  /* Graduation countdown ticker — same 1-second cadence and the same clamped
+     arithmetic as the pre-event one, because a countdown with no visible
+     second-to-second movement reads as stuck.
+     Unlike pre-event's, this one MUST be guarded: render.during is re-invoked
+     by all three Ably handlers, so an unguarded setInterval would stack another
+     ticker onto the same ids on every material/day/announcement push and the
+     digits would visibly stutter. Same defensive pattern as _joinCtaTimer above.
+     Always cleared first, including on plain 'during' renders, so switching
+     phases mid-session never leaves an orphan ticker writing to ids that the
+     new hero no longer contains. */
+  if(Portal.render._gradCdTimer){ clearInterval(Portal.render._gradCdTimer); Portal.render._gradCdTimer = null; }
+  if((isPreGrad || isGraduation) && !isNaN(gradTs)){
+    var cdD = document.getElementById('cd-d'), cdH = document.getElementById('cd-h'),
+        cdM = document.getElementById('cd-m'), cdS = document.getElementById('cd-s');
+    if(cdD && cdH && cdM && cdS){
+      var gradTick = function(){
+        var d = gradTs - Date.now(); if(d < 0) d = 0;
+        cdD.textContent = Math.floor(d / 86400000);
+        cdH.textContent = Math.floor((d % 86400000) / 3600000);
+        cdM.textContent = Math.floor((d % 3600000) / 60000);
+        cdS.textContent = Math.floor((d % 60000) / 1000);
+      };
+      gradTick();
+      Portal.render._gradCdTimer = setInterval(gradTick, 1000);
+    }
+  }
 
   // ---- Current Program / All Programs tabs + the shared grid ----
   var progTabs = document.getElementById('progTabs');
@@ -2348,6 +2475,7 @@ Portal.phase = (function(){
     data = data || {};
     now = now == null ? Date.now() : now;
     var tz = data.tz;
+    var ianaId = Portal.dateUtil.ianaOf(tz) || 'America/Los_Angeles';
 
     var startTs = Portal.dateUtil.resolveStart({
       reference: data.eventStartUTC, date: data.eventStartDate, time: data.sessionStartTime, timeZone: tz
@@ -2359,7 +2487,7 @@ Portal.phase = (function(){
     // per direct instruction 2026-08-09, so a participant checking the
     // page in the early hours of event day already sees During-event
     // content instead of stale Pre-event framing.
-    var duringBoundary = Portal.dateUtil.startOfDay(startTs, Portal.dateUtil.ianaOf(tz) || 'America/Los_Angeles');
+    var duringBoundary = Portal.dateUtil.startOfDay(startTs, ianaId);
     if(now < duringBoundary) return 'pre';
 
     var endTs = Portal.dateUtil.resolveStart({ reference: data.eventEnd && data.eventEnd.reference, date: data.eventEnd && data.eventEnd.date, time: data.eventEnd && data.eventEnd.time, timeZone: tz });
@@ -2367,9 +2495,36 @@ Portal.phase = (function(){
     var gradTs = data.graduation ? Portal.dateUtil.resolveStart({
       reference: data.graduation.reference, date: data.graduation.date, time: data.graduation.time, timeZone: tz
     }) : NaN;
-    var postBoundary = !isNaN(gradTs) ? Math.max(endTs, gradTs) : endTs;
+
+    /* Post now begins at the START OF THE DAY AFTER Graduation, not at the
+       graduation instant itself. The old boundary was Math.max(endTs, gradTs),
+       which flipped the page to Post at 6:00 PM on graduation day — the exact
+       moment Graduation begins — directly contradicting this function's own
+       contract above ("A participant mid-Graduation-evening should still see
+       During, not a premature Post-event 'you're done' page"). Corrected
+       2026-08-17 alongside the two new phases below. */
+    var postBoundary = !isNaN(gradTs)
+      ? Math.max(endTs, Portal.dateUtil.startOfDay(gradTs + 86400000, ianaId))
+      : endTs;
 
     if(now >= postBoundary) return 'post';
+
+    /* Two phases carved out of the old single 'during' window (2026-08-17).
+       Both are DATE-DERIVED rather than driven by an events.f3025 option: a new
+       option id would be silently mis-read by four dashboard consumers —
+       ROSTER_DAY_OPTION_ORDER (indexOf -> -1 -> 0, so every day tick renders
+       pending instead of absent), DAY_MAP/SHORT_DAY_MAP, DASHBOARD_DAY_NUM_TO_RAW,
+       and the portal's own /^Day (\d+)$/ label parser. None of those fail loudly.
+
+       Guarded on a resolvable gradTs throughout, so an event with no graduation
+       data behaves exactly as it did before: 'during' straight through to
+       postBoundary, no new branch reachable. */
+    if(!isNaN(gradTs)){
+      // pregrad — Day 3 is over, Graduation day has not started.
+      if(now >= endTs && now < Portal.dateUtil.startOfDay(gradTs, ianaId)) return 'pregrad';
+      // graduation — the whole of Graduation day, including the evening itself.
+      if(now >= Portal.dateUtil.startOfDay(gradTs, ianaId)) return 'graduation';
+    }
     return 'during';
   }
   return { compute: compute };
@@ -2473,9 +2628,25 @@ Portal.realtime = (function(){
         authParams: { contactId: String(contactId), eventId: String(data.eventId) }
       });
       var channel = client.channels.get('event:' + data.eventId);
-      channel.subscribe('material.changed', function(msg){ applyMaterialChanged(data, msg.data); Portal.render.during(data); });
-      channel.subscribe('day.advanced', function(msg){ applyDayAdvanced(data, msg.data); Portal.render.during(data); });
-      channel.subscribe('announcement.changed', function(msg){ applyAnnouncementChanged(data, msg.data); Portal.render.during(data); });
+      /* Re-derive the phase on every push rather than hard-calling During.
+         These three used to pass no phase at all, which defaulted to 'during'
+         — so once pregrad/graduation existed (2026-08-17) any material, day or
+         announcement push would have silently yanked a participant on the
+         Graduation hero back to the Forum hero, mid-evening. Recomputing also
+         means the page crosses a phase boundary correctly if a push happens to
+         arrive after it. */
+      var rerender = function(){
+        var p = Portal.phase.compute(data, Date.now());
+        // Clamped to the During family. If the clock has since crossed into
+        // 'pre' or 'post', a live push is not the right moment to swap the
+        // whole page out from under someone — keep the During-page behaviour
+        // these handlers have always had and let the next load re-phase.
+        if(p !== 'pregrad' && p !== 'graduation') p = 'during';
+        Portal.render.during(data, p);
+      };
+      channel.subscribe('material.changed', function(msg){ applyMaterialChanged(data, msg.data); rerender(); });
+      channel.subscribe('day.advanced', function(msg){ applyDayAdvanced(data, msg.data); rerender(); });
+      channel.subscribe('announcement.changed', function(msg){ applyAnnouncementChanged(data, msg.data); rerender(); });
     });
   }
 
@@ -2500,6 +2671,13 @@ Portal.init = function(){
   Portal.account.wireSave();
   var phase = Portal.phase.compute(data, Date.now());
   if(phase === 'pre') Portal.render.pre(data);
-  else if(phase === 'during') { Portal.render.during(data); Portal.realtime.init(data); }
+  /* pregrad and graduation are variants of the During page, not separate
+     renderers — assignments and materials stay visible and stay live, so they
+     keep realtime too. The phase is passed through so render.during knows which
+     hero and which CTA to build. */
+  else if(phase === 'during' || phase === 'pregrad' || phase === 'graduation'){
+    Portal.render.during(data, phase);
+    Portal.realtime.init(data);
+  }
   else Portal.render.post(data);
 };

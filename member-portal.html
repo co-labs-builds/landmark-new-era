@@ -617,6 +617,14 @@
   .pc-logo{height:60px;margin:11px 0 11px 10px;position:relative;top:-5px;width:auto;display:block;flex:none;}
   .pc-note{font-size:12.5px;color:var(--gray);line-height:1.5;margin-top:16px;}
   .pc-note b{color:var(--ink);font-weight:600;}
+  /* Graduation countdown inside the During right rail (pre-grad and graduation
+     phases, 2026-08-17). The .countdown/.cd-* rules above are reused verbatim;
+     only the vertical rhythm differs, because .countdown was authored for the
+     pre-event .anchor card which has a different stack around it. Nothing else
+     is added — .cd-cap, .anchor .dates/.grad/.fine are emitted by render.post
+     but have never had CSS in this file, so those classes are avoided here
+     rather than half-inherited. */
+  .progcard .countdown{margin:16px 0 4px;}
   .btn-join{background:var(--green-bright);color:#fff;border:none;border-radius:5px;padding:15px 18px 11px;font-family:var(--sans);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap;flex:none;}
   .btn-join:hover{background:var(--green);}
   .btn-join[aria-disabled="true"]{background:var(--muted);cursor:default;pointer-events:none;}
@@ -1279,13 +1287,24 @@
     var rawCourseType = '[Page//Course Type]';
     var courseType = COURSE_TYPE_MAP[rawCourseType] || 'Forum';
 
-    // Todays Session (Day) (events.f3025) is still a Day-1/2/3-only
-    // dropdown as of 2026-08-07 (punchlist Gap 1 — the "Final" option
-    // for Graduation hasn't been added to the field's option set yet).
-    // Renders as its label ("Day 1"), not a bare number.
+    // Todays Session (Day) (events.f3025). Renders as its LABEL ("Day 1"),
+    // not the option id — merge tags on Pages resolve dropdowns to labels
+    // while the API returns ids.
+    //
+    // Option 456 "Graduation" exists and is in use; the 2026-08-07 comment
+    // here claiming it did not was stale. It was also silently dropped:
+    // /^Day (\d+)$/ does not match "Graduation", so currentReleasedSession
+    // came through null, Portal.session.resolveCurrent treated that as unset,
+    // fell back to date math over an empty sessionDates, and returned 0 —
+    // which renders sessionLabel as '' and degrades the During hero to
+    // "Welcome to your Forum." on Graduation day. The engine has supported
+    // the string 'Final' since Stage 4 (portal-engine.js resolveCurrent /
+    // sessionLabel); nothing had ever been able to produce it. Fixed
+    // 2026-08-17.
     var rawSessionDay = '[Page//Event//Todays Session (Day)]';
     var sessionDayMatch = /^Day (\d+)$/.exec(rawSessionDay);
-    var currentReleasedSession = sessionDayMatch ? +sessionDayMatch[1] : null;
+    var currentReleasedSession = rawSessionDay === 'Graduation' ? 'Final'
+      : (sessionDayMatch ? +sessionDayMatch[1] : null);
 
     window.PORTAL_DATA = {
       // ---- contacts (cross-object) ----
@@ -1369,6 +1388,14 @@
       // link. That shared field is real too but isn't what the
       // "Join Your Forum" CTA should point at.
       zoomJoin: '[Page//Zoom Join URL]',
+      // Grad Zoom Join URL (registrations.f2799) — the per-registrant
+      // GRADUATION link, the exact twin of f2795 above and written by the
+      // same n8n/Zoom automation. Wired 2026-08-17: until then the
+      // graduation-evening CTA pointed at f2795, i.e. the Forum room, which
+      // is a different Zoom meeting (events.f3034 vs f3038). Note f3038 is a
+      // bare meeting ID the attendance poller uses server-side — it is not a
+      // URL and must never be handed to a participant.
+      gradZoomJoin: '[Page//Grad Zoom Join URL]',
       infoFormCompleted: '[Page//Information Form Completed##checkediftrue]' === 'true',
       // Course Supervisor contact, for the Information Form gate banner
       // shown when the field above is false (2026-08-14, per direct
