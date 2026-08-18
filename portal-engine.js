@@ -2635,23 +2635,50 @@ Portal.invitations = (function(){
   }
 
   function load(data){
+    /* registrationId identifies WHOSE list this is; contactId only says who is
+       looking. They diverge whenever staff preview a participant's portal — seen
+       2026-08-17 with dcParam.contact_id 877 (event crew) on registration 942
+       (Cameron Cushing). Scoping by the contact returned the wrong list or none, and
+       the card silently never rendered. Same identity trap already documented for
+       Ably token auth: the logged-in contact is not the page's subject.
+
+       Prefer PORTAL_DATA.registrationId ([Page//ID], server-rendered by Ontraport),
+       falling back to dcParam.object_id, which carries the same value. */
     if(!data || !data.eventId) return;
     var contactId = (window.dcParam && window.dcParam.contact_id) || '';
-    if(!contactId) return;
+    var registrationId = data.registrationId || (window.dcParam && window.dcParam.object_id) || '';
+    if(!contactId || !registrationId){
+      /* Not silent, unlike Portal.realtime. That module degrades quietly because
+         live push is an invisible enhancement; this card is something a participant
+         is looking for, so a missing prerequisite must leave a trace rather than an
+         unexplained empty page. */
+      if(window.console && console.warn) console.warn('Portal.invitations: skipped — contactId=' + contactId + ' registrationId=' + registrationId);
+      return;
+    }
     var url = INVITATIONS_URL + '?contactId=' + encodeURIComponent(String(contactId)) +
-      '&eventId=' + encodeURIComponent(String(data.eventId));
+      '&eventId=' + encodeURIComponent(String(data.eventId)) +
+      '&registrationId=' + encodeURIComponent(String(registrationId));
     fetch(url, { method: 'GET' }).then(function(res){
-      if(!res.ok) return null;
+      if(!res.ok){
+        if(window.console && console.warn) console.warn('Portal.invitations: HTTP ' + res.status);
+        return null;
+      }
       return res.json();
     }).then(function(result){
-      if(!result || result.success !== true || !result.guests || !result.guests.length) return;
-      /* Only re-render when there is something to show. An empty list is the
-         normal case for a participant who invited nobody, and the card is
-         deliberately omitted rather than shown empty — the "Invite your
-         guests" CTA above it already carries that prompt. */
+      if(!result || result.success !== true) return;
+      if(!result.guests || !result.guests.length){
+        /* An empty list is the normal case for a participant who invited nobody, and
+           the card is deliberately omitted rather than shown empty — the "Invite your
+           guests" CTA already carries that prompt. Logged so an empty card is
+           distinguishable from a broken one. */
+        if(window.console && console.info) console.info('Portal.invitations: 0 guests for registration ' + registrationId);
+        return;
+      }
       data.graduationGuests = result.guests;
       rerender(data);
-    }).catch(function(){ /* silent — see module header */ });
+    }).catch(function(err){
+      if(window.console && console.warn) console.warn('Portal.invitations: fetch failed', err);
+    });
   }
 
   return { load: load };
