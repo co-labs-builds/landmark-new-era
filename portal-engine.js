@@ -1914,17 +1914,47 @@ Portal.render.during = function(data, phase){
       inviteesInnerHtml +
     '</div></div>' : '';
 
+  /* The Graduation section copy is phase-aware as of 2026-08-17. It was written for the
+     weekend, when Graduation was still days out ("Tuesday evening — an experience like no
+     other", future tense throughout, and a date line naming a weekday). Left as-is it
+     reads as an event still coming up while a participant is looking at the page on the
+     night itself.
+
+     during   unchanged — Graduation genuinely is days away
+     pregrad  "Tomorrow evening", still forward-looking but immediate
+     graduation "Tonight", present tense, and the date line leads with Tonight rather
+              than the weekday, since naming the weekday to someone standing in it is
+              exactly what made the old copy feel stale.
+
+     The invite question also changes on the night: "Who would you love to have there?"
+     is a planning prompt, and by graduation evening the useful prompt is that there is
+     still time. Guest invitations close 90 minutes before the start. */
+  var gradWhen = isGraduation ? 'Tonight' : (isPreGrad ? 'Tomorrow evening' : 'Tuesday evening');
+  var gradHeadline = isGraduation
+    ? 'Tonight &ndash; <span class="serif-it">an experience like no other.</span>'
+    : gradWhen + ' &ndash; <span class="serif-it">an experience like no other.</span>';
+  var gradLede = isGraduation
+    ? 'For many participants, Graduation is the most memorable part of the ' + courseType + '. Tonight you come back together with the people you shared this time alongside — and with the family, friends and colleagues you invited — for an evening of celebration, acknowledgment and possibility.'
+    : 'For many participants, Graduation is the most memorable part of the ' + courseType + '. You’ll come back together with the people you’ve shared this time alongside — and with the family, friends, and colleagues you choose to invite — for an evening of celebration, acknowledgment, and possibility.';
+  var gradLede2 = isGraduation
+    ? 'It’s your chance to celebrate what you created — and to share that moment with the people who matter most to you.'
+    : 'It’s a chance to celebrate what you’ve created — and to share that moment with the people who matter most to you.';
+  var gradInviteQ = isGraduation ? 'There’s still time to invite someone.' : 'Who would you love to have there?';
+  var gradMetaHtml = !isNaN(gradTs)
+    ? '<div class="gmeta">' + (isGraduation ? 'Tonight' : Portal.format.weekdayMonthDay(gradTs, ianaId)) + ' &middot; Starts ' + Portal.format.time(gradTs, ianaId) + ' ' + Portal.format.zoneLabel(ianaId) + ' &middot; All guests are welcome</div>'
+    : '';
+
   var graduationHtml =
     '<section class="block paper" id="graduation"><div class="wrap">' +
       '<div class="gradfeat">' +
         '<div class="gph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-grad-photo.jpg" alt=""></div>' +
         '<div>' +
           '<div class="geye">The Graduation Evening</div>' +
-          '<h3>Tuesday evening &ndash; <span class="serif-it">an experience like no other.</span></h3>' +
-          (!isNaN(gradTs) ? '<div class="gmeta">' + Portal.format.weekdayMonthDay(gradTs, ianaId) + ' &middot; Starts ' + Portal.format.time(gradTs, ianaId) + ' ' + Portal.format.zoneLabel(ianaId) + ' &middot; All guests are welcome</div>' : '') +
-          '<p>For many participants, Graduation is the most memorable part of the ' + courseType + '. You’ll come back together with the people you’ve shared this time alongside — and with the family, friends, and colleagues you choose to invite — for an evening of celebration, acknowledgment, and possibility.</p>' +
-          '<p>It’s a chance to celebrate what you’ve created — and to share that moment with the people who matter most to you.</p>' +
-          '<div class="ginvite"><div class="gq">Who would you love to have there?</div><a class="gbtn" href="' + escapeHtml(inviteHubUrl) + '" target="_blank" rel="noopener">Invite your guests <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>' +
+          '<h3>' + gradHeadline + '</h3>' +
+          gradMetaHtml +
+          '<p>' + gradLede + '</p>' +
+          '<p>' + gradLede2 + '</p>' +
+          '<div class="ginvite"><div class="gq">' + gradInviteQ + '</div><a class="gbtn" href="' + escapeHtml(inviteHubUrl) + '" target="_blank" rel="noopener">Invite your guests <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>' +
         '</div>' +
       '</div>' +
       inviteesHtml +
