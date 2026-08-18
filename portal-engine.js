@@ -2531,6 +2531,64 @@ Portal.phase = (function(){
 })();
 
 /* =========================================================
+   Portal.invitations — Stage 6b (2026-08-17). Supplies the
+   Graduation invitees card in Portal.render.during.
+
+   That card has existed since Stage 4 and rendered correctly
+   against demo data, but was switched off when PORTAL_DATA
+   moved to real merge fields (commit 72c0e2f): a participant's
+   invitations are CHILD records, and an Ontraport merge tag
+   cannot loop a child collection. It is the only thing on the
+   portal that genuinely cannot be served by the page's own
+   server-side render, which is why this is the portal's first
+   read fetch — everything else is still merge tags.
+
+   Auth is PORTAL : Ably Token Auth's model, not a new one: the
+   browser sends contactId + eventId, and the workflow treats
+   the existence of a registration joining them as the
+   authorization, resolving the registration id itself rather
+   than trusting one from the client.
+
+   Enhancement, not a requirement, exactly like Portal.realtime:
+   any failure leaves the page as it loaded (card simply absent)
+   and is never surfaced to the participant.
+   ========================================================= */
+Portal.invitations = (function(){
+  var INVITATIONS_URL = 'https://landmarkworldwide.awesomate.io/webhook/portal-invitations';
+
+  /* Re-renders through the phase so a fetch resolving during pre-grad or
+     graduation does not drop the page back to the During hero — the same
+     clamp the Ably handlers use. */
+  function rerender(data){
+    var p = Portal.phase.compute(data, Date.now());
+    if(p !== 'pregrad' && p !== 'graduation') p = 'during';
+    Portal.render.during(data, p);
+  }
+
+  function load(data){
+    if(!data || !data.eventId) return;
+    var contactId = (window.dcParam && window.dcParam.contact_id) || '';
+    if(!contactId) return;
+    var url = INVITATIONS_URL + '?contactId=' + encodeURIComponent(String(contactId)) +
+      '&eventId=' + encodeURIComponent(String(data.eventId));
+    fetch(url, { method: 'GET' }).then(function(res){
+      if(!res.ok) return null;
+      return res.json();
+    }).then(function(result){
+      if(!result || result.success !== true || !result.guests || !result.guests.length) return;
+      /* Only re-render when there is something to show. An empty list is the
+         normal case for a participant who invited nobody, and the card is
+         deliberately omitted rather than shown empty — the "Invite your
+         guests" CTA above it already carries that prompt. */
+      data.graduationGuests = result.guests;
+      rerender(data);
+    }).catch(function(){ /* silent — see module header */ });
+  }
+
+  return { load: load };
+})();
+
+/* =========================================================
    Portal.realtime — During-event live updates via Ably (added
    2026-08-10, per the "Real-time design (Ably)" section of
    ok-great-so-the-parallel-pizza.md). One Ably channel per Event
@@ -2678,6 +2736,7 @@ Portal.init = function(){
   else if(phase === 'during' || phase === 'pregrad' || phase === 'graduation'){
     Portal.render.during(data, phase);
     Portal.realtime.init(data);
+    Portal.invitations.load(data);
   }
   else Portal.render.post(data);
 };
