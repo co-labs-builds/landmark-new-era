@@ -1,0 +1,91 @@
+<!-- =========================================================
+     LANDMARK — 404 / PAGE NOT FOUND  ·  BODY BLOCK
+     Paste inside the page body. Styling lives entirely in
+     INSTALL-404-header-code.html.
+
+     NOTE: no class is set on <body> — Ontraport strips pasted
+     body tags, so the whole page is scoped to this .lm404 div.
+
+     TODO before publish: swap the href="#" placeholders for the
+     real Landmark URLs.
+     ========================================================= -->
+
+<div class="lm404">
+
+  <!-- ---------- Nav ---------- -->
+  <header class="lm404__nav">
+    <div class="lm404__nav-row">
+      <a href="https://www.landmarkworldwide.com/" aria-label="Landmark Worldwide — home">
+        <img class="lm404__logo"
+             src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-nav-logo.png"
+             alt="Landmark Worldwide">
+      </a>
+      <nav class="lm404__nav-links">
+        <a href="#">Programs</a>
+        <a href="#">Locations</a>
+        <a href="#">About</a>
+        <a href="#">My Account</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ---------- Content ---------- -->
+  <main class="lm404__main">
+    <div class="lm404__inner">
+
+      <p class="lm404__eyebrow">Error 404 &mdash; page not found</p>
+
+      <!-- The big one. aria-label so screen readers announce it cleanly. -->
+      <span class="lm404__code" role="img" aria-label="404">4<span class="zero">0</span>4</span>
+
+      <h1 class="lm404__title">This page isn&rsquo;t here.</h1>
+
+      <p class="lm404__copy">
+        The link may be broken, or the page may have moved. Nothing you did
+        caused this &mdash; head back to the homepage, or pick up from one of
+        the links below.
+      </p>
+
+      <div class="lm404__actions">
+        <a class="lm404__btn lm404__btn--primary" href="https://www.landmarkworldwide.com/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 11l9-8 9 8"></path>
+            <path d="M5 10v10h14V10"></path>
+          </svg>
+          Back to Home
+        </a>
+        <a class="lm404__btn lm404__btn--ghost" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="M20 20l-3.6-3.6"></path>
+          </svg>
+          Find a Program
+        </a>
+      </div>
+
+      <div class="lm404__links">
+        <span class="label">Try</span>
+        <a href="#">Programs</a>
+        <a href="#">Locations &amp; Centers</a>
+        <a href="#">My Account</a>
+        <a href="#">Contact Us</a>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ---------- Footer ---------- -->
+  <footer class="lm404__foot">
+    <div class="lm404__foot-row">
+      <span>&copy; Landmark Worldwide. All rights reserved.</span>
+      <div class="lm404__foot-links">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+</div>

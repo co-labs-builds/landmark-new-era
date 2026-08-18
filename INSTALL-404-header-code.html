@@ -1,0 +1,332 @@
+<!-- =========================================================
+     LANDMARK — 404 / PAGE NOT FOUND  ·  HEADER CODE
+     Paste this whole block into the page's Header/Head code.
+     Everything is namespaced .lm404* so it cannot leak into
+     any other page's styles.
+     ========================================================= -->
+
+<link rel="preload" href="https://res.cloudinary.com/mynd/raw/upload/v1785641322/AvenirNext_Variable_wmaeay.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="https://file.ontraport.com/media/3fdc22625d3b4f91a262f71fd5245252.phpbg4i9h?Expires=4938729250&amp;Signature=Wvo5HyxM78OtwV1Aw20xmzg-5wImCXP2O53Xc145Vi6pnfp9s-kQ0AWfhrTTzaclT8zRkOMX4s40oW5WzqOP8Dhl1BZch6CSIM0BVXN97093tElhZwKi2wMHLeMMZf4RTPsY~AVlQX91LjkCDbXsBrkCI4MyOgFlaqoLz1qfzW5jfjiSqO-snsWVEpsagiAZD2JGwajiulMP76uSuTXrrI8FWxZBQrAD9-7Mcy-MXF2EHjSSFR3R4xFaWYVZ6PCrvJ3pngv5WuZvI-ry6TZqh0ICgeKn6B0dqYdYx3MZ53YrSwWKqeFy3Tdc30-tz~idjr5bJU13K23F46pyCuODtw__&amp;Key-Pair-Id=APKAJVAAMVW6XQYWSTNA" as="font" type="font/woff2" crossorigin>
+
+<style>
+
+  /* ---------- Brand fonts (same files as the portal) ---------- */
+  @font-face{
+    font-family:"Avenir Next Variable";
+    src:url("https://res.cloudinary.com/mynd/raw/upload/v1785641322/AvenirNext_Variable_wmaeay.woff2") format("woff2-variations"),
+        url("https://res.cloudinary.com/mynd/raw/upload/v1785641322/AvenirNext_Variable_wmaeay.woff2") format("woff2");
+    font-weight:100 900;
+    font-style:normal;
+    font-display:block;
+  }
+  @font-face{
+    font-family:"Tiempos Headline";
+    src:url("https://file.ontraport.com/media/3fdc22625d3b4f91a262f71fd5245252.phpbg4i9h?Expires=4938729250&Signature=Wvo5HyxM78OtwV1Aw20xmzg-5wImCXP2O53Xc145Vi6pnfp9s-kQ0AWfhrTTzaclT8zRkOMX4s40oW5WzqOP8Dhl1BZch6CSIM0BVXN97093tElhZwKi2wMHLeMMZf4RTPsY~AVlQX91LjkCDbXsBrkCI4MyOgFlaqoLz1qfzW5jfjiSqO-snsWVEpsagiAZD2JGwajiulMP76uSuTXrrI8FWxZBQrAD9-7Mcy-MXF2EHjSSFR3R4xFaWYVZ6PCrvJ3pngv5WuZvI-ry6TZqh0ICgeKn6B0dqYdYx3MZ53YrSwWKqeFy3Tdc30-tz~idjr5bJU13K23F46pyCuODtw__&Key-Pair-Id=APKAJVAAMVW6XQYWSTNA") format("woff2");
+    font-weight:300;
+    font-style:italic;
+    font-display:block;
+  }
+
+  /* ---------- Tokens (mirrors the portal palette) ---------- */
+  :root{
+    --teal:#0d2d31;
+    --teal-deep:#0a2226;
+    --green:#217a00;
+    --green-bright:#2ea203;
+    --paper:#f7f5ef;
+    --coral:#f06449;
+    --coral-ink:#c8452a;
+    --gray:#6f6b66;
+    --ink:#0e1a19;
+    --line:#e6e2d8;
+    --serif:"Tiempos Headline",Georgia,serif;
+    --sans:"Avenir Next Variable","Helvetica Neue",Arial,sans-serif;
+  }
+
+  /* ---------- One viewport, no scroll ----------
+     The page is locked to exactly the viewport height and the
+     document is never allowed to overflow. dvh keeps mobile
+     browsers honest when their URL bar slides away.            */
+  html,body{
+    height:100%;
+    margin:0;
+    padding:0;
+    overflow:hidden;
+    overscroll-behavior:none;
+  }
+
+  .lm404{
+    box-sizing:border-box;
+    height:100vh;
+    height:100dvh;
+    display:grid;
+    grid-template-rows:auto minmax(0,1fr) auto;  /* nav · content · footer */
+    overflow:hidden;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-weight:400;
+    font-synthesis:none;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .lm404 *,
+  .lm404 *::before,
+  .lm404 *::after{box-sizing:border-box;}
+
+  /* ---------- Nav ---------- */
+  .lm404__nav{
+    background:#fff;
+    border-bottom:1px solid var(--line);
+  }
+  .lm404__nav-row{
+    width:100%;
+    max-width:1200px;
+    margin:0 auto;
+    padding:0 52px;
+    height:78px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:24px;
+  }
+  .lm404__logo{
+    height:40px;
+    width:auto;
+    display:block;
+  }
+  .lm404__nav-links{
+    display:flex;
+    align-items:center;
+    gap:30px;
+  }
+  .lm404__nav-links a{
+    color:var(--green-bright);
+    font-size:14.5px;
+    text-decoration:none;
+  }
+  .lm404__nav-links a:hover{color:var(--ink);}
+
+  /* ---------- Content ---------- */
+  .lm404__main{
+    position:relative;
+    min-height:0;                 /* lets the 1fr row actually shrink */
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:clamp(14px,3vh,44px) 24px;
+    overflow:hidden;
+  }
+  /* soft brand wash behind the numeral */
+  .lm404__main::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:radial-gradient(58% 58% at 50% 42%,rgba(46,162,3,.08),transparent 70%);
+    pointer-events:none;
+  }
+  .lm404__inner{
+    position:relative;
+    max-width:660px;
+    animation:lm404-rise .5s ease both;
+  }
+
+  .lm404__eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:9px;
+    font-size:11.5px;
+    font-weight:600;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--coral-ink);
+    margin:0 0 clamp(8px,1.8vh,18px);
+  }
+  .lm404__eyebrow::before{
+    content:"";
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:var(--coral);
+  }
+
+  /* THE BIG 404 — scales with viewport height so it stays
+     enormous on desktop and still fits a short laptop screen. */
+  .lm404__code{
+    display:block;
+    font-family:var(--serif);
+    font-style:italic;
+    font-weight:300;
+    font-size:clamp(96px,25vh,272px);
+    line-height:.84;
+    letter-spacing:-.03em;
+    color:var(--teal);
+    margin:0 0 clamp(10px,2.4vh,26px);
+    user-select:none;
+  }
+  .lm404__code .zero{
+    color:var(--coral);
+    position:relative;
+  }
+  /* the "break" — a hairline struck through the middle 0 */
+  .lm404__code .zero::after{
+    content:"";
+    position:absolute;
+    left:-8%;
+    right:-8%;
+    top:52%;
+    height:.045em;
+    background:var(--coral);
+    opacity:.55;
+    transform:rotate(-14deg);
+  }
+
+  .lm404__title{
+    font-family:var(--serif);
+    font-style:italic;
+    font-weight:300;
+    font-size:clamp(23px,3.6vh,38px);
+    line-height:1.2;
+    color:var(--teal);
+    margin:0 0 10px;
+  }
+  .lm404__copy{
+    max-width:50ch;
+    margin:0 auto;
+    font-size:clamp(14px,1.9vh,16.5px);
+    color:var(--gray);
+  }
+
+  /* ---------- Actions ---------- */
+  .lm404__actions{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:12px;
+    margin-top:clamp(16px,3.2vh,30px);
+  }
+  .lm404__btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:9px;
+    border:none;
+    border-radius:5px;
+    padding:15px 26px;
+    font-family:var(--sans);
+    font-weight:600;
+    font-size:12.5px;
+    text-transform:uppercase;
+    letter-spacing:.09em;
+    text-decoration:none;
+    cursor:pointer;
+    transition:background .15s,color .15s,transform .05s;
+  }
+  .lm404__btn svg{width:16px;height:16px;flex:none;}
+  .lm404__btn:active{transform:translateY(1px);}
+  .lm404__btn--primary{
+    background:var(--green);
+    color:#fff;
+    box-shadow:0 8px 22px rgba(33,122,0,.20);
+  }
+  .lm404__btn--primary:hover{background:var(--green-bright);}
+  .lm404__btn--ghost{
+    background:transparent;
+    color:var(--teal);
+    border:1.5px solid rgba(13,45,49,.35);
+  }
+  .lm404__btn--ghost:hover{background:var(--teal);color:#fff;}
+
+  /* ---------- Secondary links ---------- */
+  .lm404__links{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:center;
+    gap:8px 24px;
+    margin-top:clamp(14px,2.8vh,28px);
+    font-size:13.5px;
+  }
+  .lm404__links .label{
+    color:var(--gray);
+    font-size:11.5px;
+    font-weight:600;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+  }
+  .lm404__links a{
+    color:var(--green-bright);
+    text-decoration:none;
+    border-bottom:1px solid transparent;
+  }
+  .lm404__links a:hover{
+    color:var(--ink);
+    border-bottom-color:rgba(14,26,25,.25);
+  }
+
+  /* ---------- Footer ---------- */
+  .lm404__foot{
+    background:var(--teal-deep);
+    color:rgba(255,255,255,.5);
+  }
+  .lm404__foot-row{
+    width:100%;
+    max-width:1200px;
+    margin:0 auto;
+    padding:18px 52px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:14px;
+    font-size:12.5px;
+  }
+  .lm404__foot a{
+    color:rgba(255,255,255,.6);
+    text-decoration:none;
+  }
+  .lm404__foot a:hover{color:#fff;}
+  .lm404__foot-links{display:flex;gap:22px;flex-wrap:wrap;}
+
+  /* ---------- Responsive: narrow ---------- */
+  @media (max-width:760px){
+    .lm404__nav-row{padding:0 20px;height:64px;}
+    .lm404__logo{height:32px;}
+    .lm404__nav-links{display:none;}
+    .lm404__actions{
+      flex-direction:column;
+      width:100%;
+      max-width:320px;
+      margin-left:auto;
+      margin-right:auto;
+    }
+    .lm404__btn{width:100%;}
+    .lm404__foot-row{padding:14px 20px;justify-content:center;text-align:center;}
+  }
+
+  /* ---------- Responsive: short (landscape phones, small laptops) ----------
+     Progressively drop the optional rows so the fixed viewport
+     never has to scroll. */
+  @media (max-height:620px){
+    .lm404__links{display:none;}
+    .lm404__copy{font-size:13.5px;}
+  }
+  @media (max-height:480px){
+    .lm404__eyebrow{display:none;}
+    .lm404__foot{display:none;}
+    .lm404__nav-row{height:56px;}
+  }
+
+  /* ---------- Motion ---------- */
+  @keyframes lm404-rise{
+    from{opacity:0;transform:translateY(12px);}
+    to{opacity:1;transform:none;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .lm404__inner{animation:none;}
+    .lm404__btn{transition:none;}
+  }
+
+</style>

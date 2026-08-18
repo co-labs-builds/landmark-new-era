@@ -1,0 +1,1058 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ontraport API Rate Monitor</title>
+<!-- =========================================================
+     LANDMARK — ONTRAPORT API RATE MONITOR  ·  HEADER CODE
+     Paste this whole block into the page's Header/Head code.
+
+     Everything is namespaced .lmapi* so it cannot leak into any
+     other page's styles. No class is set on <body> — Ontraport
+     strips pasted body tags, so the page is scoped to one div.
+
+     Data source: GET
+       https://landmarkworldwide.awesomate.io/webhook/ontraport-rate-probe
+     n8n workflow "LM | Admin | Ontraport API Rate Probe" (8m3Qe4fOJcGK82Zo)
+     ========================================================= -->
+
+<link rel="preload"
+      href="https://res.cloudinary.com/mynd/raw/upload/v1785641322/AvenirNext_Variable_wmaeay.woff2"
+      as="font" type="font/woff2" crossorigin>
+
+<style>
+
+  @font-face{
+    font-family:"Avenir Next Variable";
+    src:url("https://res.cloudinary.com/mynd/raw/upload/v1785641322/AvenirNext_Variable_wmaeay.woff2") format("woff2-variations"),
+        url("https://res.cloudinary.com/mynd/raw/upload/v1785641322/AvenirNext_Variable_wmaeay.woff2") format("woff2");
+    font-weight:100 900;
+    font-style:normal;
+    font-display:swap;
+  }
+
+  /* ---------- Tokens ----------
+     Landmark palette, same values as the portal / 404 / dashboard.
+
+     The STATUS trio is reserved: ok / watch / throttled and nothing
+     else. It is never used for a data series. The chart's single
+     series wears --series (teal) so the two vocabularies never
+     collide.
+
+     The categorical-palette validator was NOT run for this page:
+     there is no node runtime on the build machine. It is not needed
+     here — the chart carries ONE series, so no adjacent-pair CVD
+     check applies, and every status colour ships with an icon and a
+     word, never colour alone.                                        */
+  .lmapi{
+    --paper:#f7f5ef;
+    --surface:#ffffff;
+    --ink:#0e1a19;
+    --ink-2:#43504e;
+    --ink-3:#6f6b66;
+    --line:#e6e2d8;
+    --grid:#eceadf;
+
+    --series:#1a6b73;
+    --series-wash:rgba(26,107,115,.10);
+
+    --ok:#217a00;
+    --watch:#a86a00;
+    --throttled:#c8452a;
+
+    --sans:"Avenir Next Variable","Helvetica Neue",Arial,sans-serif;
+    --radius:10px;
+  }
+
+  /* ---------- Shell ---------- */
+  .lmapi{
+    box-sizing:border-box;
+    font-family:var(--sans);
+    color:var(--ink);
+    background:var(--paper);
+    min-height:100vh;
+    min-height:100dvh;
+    padding:22px 20px 40px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .lmapi *,.lmapi *::before,.lmapi *::after{box-sizing:inherit;}
+  .lmapi__wrap{max-width:1180px;margin:0 auto;}
+
+  /* ---------- Brand band ----------
+     Its own row above the masthead, separated by a hairline. The wordmark
+     is Landmark green and the "Healthy" chip is status green; keeping them
+     in different bands stops the two greens reading as one vocabulary.     */
+  .lmapi__brand{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:16px;padding:0 0 14px;margin-bottom:16px;
+    border-bottom:1px solid var(--line);
+  }
+  .lmapi__brand-logo{height:28px;width:auto;display:block;}
+  .lmapi__brand-tag{
+    font-size:11px;font-weight:600;letter-spacing:.10em;
+    text-transform:uppercase;color:var(--ink-3);white-space:nowrap;
+  }
+  @media (max-width:560px){
+    .lmapi__brand-logo{height:22px;}
+    .lmapi__brand-tag{display:none;}
+  }
+
+  /* ---------- Masthead ---------- */
+  .lmapi__head{
+    display:flex;align-items:flex-end;justify-content:space-between;
+    gap:20px;flex-wrap:wrap;margin-bottom:18px;
+  }
+  .lmapi__eyebrow{
+    margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:.10em;
+    text-transform:uppercase;color:var(--ink-3);
+  }
+  .lmapi__h1{margin:0;font-size:24px;font-weight:600;letter-spacing:-.01em;}
+  .lmapi__sub{margin:6px 0 0;font-size:13px;line-height:1.5;color:var(--ink-2);max-width:64ch;}
+
+  /* ---------- Status chip — icon + word + colour, never colour alone ---------- */
+  .lmapi__chip{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:7px 13px 7px 11px;border-radius:999px;
+    font-size:13px;font-weight:600;white-space:nowrap;
+    border:1px solid var(--line);background:var(--surface);color:var(--ink-3);
+  }
+  .lmapi__chip svg{width:15px;height:15px;flex:none;}
+  .lmapi__chip[data-state="ok"]{border-color:rgba(33,122,0,.35);color:var(--ok);}
+  .lmapi__chip[data-state="watch"]{border-color:rgba(168,106,0,.40);color:var(--watch);}
+  .lmapi__chip[data-state="throttled"]{border-color:rgba(200,69,42,.45);color:var(--throttled);background:rgba(200,69,42,.06);}
+
+  /* ---------- Controls — one row, above everything it scopes ---------- */
+  .lmapi__controls{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:11px 14px;margin-bottom:16px;
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  }
+  .lmapi__ctl{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-2);}
+  .lmapi__ctl label{font-weight:500;}
+  .lmapi select,.lmapi button{font-family:inherit;font-size:12px;color:var(--ink);}
+  .lmapi select{
+    padding:6px 8px;border:1px solid var(--line);border-radius:7px;
+    background:var(--surface);min-height:32px;
+  }
+  .lmapi button{
+    padding:7px 13px;min-height:32px;border-radius:7px;cursor:pointer;
+    border:1px solid var(--line);background:var(--surface);font-weight:600;
+  }
+  .lmapi button:hover{border-color:#cfcabb;}
+  .lmapi button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff;}
+  .lmapi__spacer{flex:1 1 auto;}
+  .lmapi__stamp{font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums;}
+
+  /* ---------- Throttle banner ---------- */
+  .lmapi__banner{
+    display:none;align-items:flex-start;gap:10px;
+    padding:12px 14px;margin-bottom:16px;border-radius:var(--radius);
+    border:1px solid rgba(200,69,42,.45);background:rgba(200,69,42,.07);
+    color:var(--throttled);font-size:13px;line-height:1.5;
+  }
+  .lmapi__banner[data-show="1"]{display:flex;}
+  .lmapi__banner svg{width:17px;height:17px;flex:none;margin-top:1px;}
+  .lmapi__banner strong{font-weight:600;}
+
+  /* ---------- Layout ---------- */
+  .lmapi__grid{display:grid;gap:16px;grid-template-columns:minmax(0,300px) minmax(0,1fr);}
+  @media (max-width:880px){.lmapi__grid{grid-template-columns:minmax(0,1fr);}}
+
+  .lmapi__card{
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius);padding:16px 18px;
+  }
+  .lmapi__card-title{margin:0 0 2px;font-size:13px;font-weight:600;color:var(--ink);}
+  .lmapi__card-note{margin:0 0 14px;font-size:11.5px;line-height:1.45;color:var(--ink-3);}
+
+  /* ---------- Hero figure — exactly one on the page ---------- */
+  .lmapi__hero-label{
+    margin:0;font-size:12px;font-weight:600;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--ink-3);
+  }
+  .lmapi__hero{
+    display:block;margin:2px 0 0;font-size:64px;line-height:1.02;font-weight:600;
+    letter-spacing:-.03em;color:var(--ink);
+  }
+  .lmapi__hero-sub{margin:4px 0 0;font-size:13px;color:var(--ink-2);}
+
+  /* Meter — fill carries severity, track is a lighter step of the series ramp */
+  .lmapi__meter{
+    margin:16px 0 0;height:10px;border-radius:999px;overflow:hidden;
+    background:rgba(26,107,115,.12);
+  }
+  .lmapi__meter-fill{
+    height:100%;width:0%;border-radius:999px;background:var(--ok);
+    transition:width .28s ease,background-color .28s ease;
+  }
+  .lmapi__meter-fill[data-state="watch"]{background:var(--watch);}
+  .lmapi__meter-fill[data-state="throttled"]{background:var(--throttled);}
+  .lmapi__meter-legend{
+    display:flex;justify-content:space-between;margin:7px 0 0;
+    font-size:11.5px;color:var(--ink-3);font-variant-numeric:tabular-nums;
+  }
+
+  /* ---------- Stat tiles ---------- */
+  .lmapi__tiles{
+    display:grid;gap:1px;margin:18px -18px -16px;
+    grid-template-columns:1fr 1fr;background:var(--line);
+    border-top:1px solid var(--line);
+    border-radius:0 0 var(--radius) var(--radius);overflow:hidden;
+  }
+  .lmapi__tile{background:var(--surface);padding:12px 18px 13px;}
+  .lmapi__tile-label{
+    margin:0;font-size:11px;font-weight:500;color:var(--ink-3);
+    line-height:1.3;min-height:2.6em;
+  }
+  .lmapi__tile-value{
+    display:block;margin:3px 0 0;font-size:22px;font-weight:600;
+    letter-spacing:-.01em;color:var(--ink);
+  }
+  .lmapi__tile-value[data-state="throttled"]{color:var(--throttled);}
+
+  /* ---------- Chart ---------- */
+  .lmapi__chart-head{
+    display:flex;align-items:flex-start;justify-content:space-between;
+    gap:14px;flex-wrap:wrap;margin-bottom:10px;
+  }
+  .lmapi__plot{position:relative;width:100%;transition:opacity .2s ease;}
+  .lmapi__plot[data-stale="1"]{opacity:.45;}
+  .lmapi__plot svg{display:block;width:100%;height:auto;overflow:visible;}
+
+  .lmapi__grid-line{stroke:var(--grid);stroke-width:1;shape-rendering:crispEdges;}
+  .lmapi__axis-line{stroke:var(--line);stroke-width:1;shape-rendering:crispEdges;}
+  .lmapi__tick{fill:var(--ink-3);font-size:10.5px;font-variant-numeric:tabular-nums;}
+  .lmapi__rule{stroke-width:1;shape-rendering:crispEdges;}
+  .lmapi__rule--watch{stroke:var(--watch);}
+  .lmapi__rule--limit{stroke:var(--throttled);}
+  .lmapi__rule-label{font-size:10px;font-weight:600;}
+  .lmapi__rule-label--watch{fill:var(--watch);}
+  .lmapi__rule-label--limit{fill:var(--throttled);}
+  .lmapi__area{fill:var(--series-wash);}
+  .lmapi__line{fill:none;stroke:var(--series);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;}
+  .lmapi__end-dot{fill:var(--series);stroke:var(--surface);stroke-width:2;}
+  .lmapi__end-label{fill:var(--ink);font-size:12px;font-weight:600;}
+  .lmapi__crosshair{stroke:var(--ink-3);stroke-width:1;shape-rendering:crispEdges;opacity:.45;}
+  .lmapi__hover-dot{fill:var(--series);stroke:var(--surface);stroke-width:2;}
+  .lmapi__throttle-mark{fill:var(--throttled);stroke:var(--surface);stroke-width:2;}
+  .lmapi__empty{fill:var(--ink-3);font-size:12px;}
+
+  .lmapi__tip{
+    position:absolute;pointer-events:none;z-index:5;
+    padding:8px 10px;border-radius:8px;
+    background:var(--ink);color:#fff;font-size:11.5px;line-height:1.5;
+    white-space:nowrap;opacity:0;transition:opacity .12s ease;
+    font-variant-numeric:tabular-nums;
+  }
+  .lmapi__tip[data-show="1"]{opacity:1;}
+  .lmapi__tip b{font-weight:600;}
+
+  /* ---------- Table view ---------- */
+  .lmapi__table-wrap{display:none;margin-top:14px;max-height:280px;overflow:auto;}
+  .lmapi__table-wrap[data-show="1"]{display:block;}
+  .lmapi table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums;}
+  .lmapi th,.lmapi td{padding:6px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap;}
+  .lmapi th:first-child,.lmapi td:first-child{text-align:left;}
+  .lmapi thead th{
+    position:sticky;top:0;background:var(--surface);
+    font-weight:600;color:var(--ink-3);font-size:11px;
+    text-transform:uppercase;letter-spacing:.05em;
+  }
+  .lmapi tbody tr[data-throttled="1"] td{color:var(--throttled);}
+
+  /* ---------- Event log ---------- */
+  .lmapi__log{
+    margin:0;padding:0;list-style:none;max-height:230px;overflow:auto;
+    font-size:12px;line-height:1.55;
+  }
+  .lmapi__log li{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);}
+  .lmapi__log li:last-child{border-bottom:0;}
+  .lmapi__log time{color:var(--ink-3);font-variant-numeric:tabular-nums;flex:none;}
+  .lmapi__log span{color:var(--ink-2);}
+  .lmapi__log li[data-kind="throttled"] span{color:var(--throttled);font-weight:600;}
+  .lmapi__log li[data-kind="watch"] span{color:var(--watch);}
+  .lmapi__log li[data-kind="ok"] span{color:var(--ok);}
+
+  .lmapi__foot{margin:22px 0 0;font-size:11.5px;line-height:1.6;color:var(--ink-3);max-width:80ch;}
+  .lmapi__foot code{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:11px;background:#efece2;padding:1px 5px;border-radius:4px;
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .lmapi *{transition:none !important;}
+  }
+
+</style>
+
+</head>
+<body style="margin:0">
+<!-- =========================================================
+     LANDMARK — ONTRAPORT API RATE MONITOR  ·  BODY BLOCK
+     Paste inside the page body. All styling lives in
+     INSTALL-rate-monitor-header-code.html.
+
+     No class is set on <body> — Ontraport strips pasted body
+     tags, so the whole page is scoped to this .lmapi div.
+     ========================================================= -->
+
+<div class="lmapi">
+<div class="lmapi__wrap">
+
+  <!-- ---------- Brand band ---------- -->
+  <div class="lmapi__brand">
+    <a href="https://www.landmarkworldwide.com/" aria-label="Landmark Worldwide — home">
+      <img class="lmapi__brand-logo"
+           src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-nav-logo.png"
+           alt="Landmark Worldwide">
+    </a>
+    <span class="lmapi__brand-tag">Systems &middot; internal tool</span>
+  </div>
+
+  <!-- ---------- Masthead ---------- -->
+  <header class="lmapi__head">
+    <div>
+      <p class="lmapi__eyebrow">Ontraport account 270197</p>
+      <h1 class="lmapi__h1">API rate monitor</h1>
+      <p class="lmapi__sub">
+        Live read of the account-wide rolling rate limit. Every integration
+        &mdash; the CS dashboard, the member portal, the Zoom pollers, every n8n
+        workflow and this page &mdash; draws from the same per-minute budget.
+      </p>
+    </div>
+    <div class="lmapi__chip" id="lmapiChip" data-state="idle" role="status" aria-live="polite">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" id="lmapiChipIcon">
+        <circle cx="12" cy="12" r="9"></circle>
+      </svg>
+      <span id="lmapiChipText">Starting&hellip;</span>
+    </div>
+  </header>
+
+  <!-- ---------- Controls: one row, scoping everything below ---------- -->
+  <div class="lmapi__controls">
+    <span class="lmapi__ctl">
+      <label for="lmapiInterval">Poll every</label>
+      <select id="lmapiInterval">
+        <option value="2">2 seconds</option>
+        <option value="5" selected>5 seconds</option>
+        <option value="10">10 seconds</option>
+        <option value="30">30 seconds</option>
+        <option value="60">60 seconds</option>
+      </select>
+    </span>
+    <span class="lmapi__ctl">
+      <label for="lmapiWindow">Window</label>
+      <select id="lmapiWindow">
+        <option value="120">2 minutes</option>
+        <option value="300" selected>5 minutes</option>
+        <option value="900">15 minutes</option>
+        <option value="1800">30 minutes</option>
+      </select>
+    </span>
+    <button type="button" id="lmapiPause" aria-pressed="false">Pause</button>
+    <button type="button" id="lmapiTable" aria-pressed="false">Table view</button>
+    <button type="button" id="lmapiSound" aria-pressed="false">Sound alert</button>
+    <button type="button" id="lmapiReset">Reset session</button>
+    <span class="lmapi__spacer"></span>
+    <span class="lmapi__stamp" id="lmapiStamp">no reading yet</span>
+  </div>
+
+  <!-- ---------- Throttle banner ---------- -->
+  <div class="lmapi__banner" id="lmapiBanner" data-show="0" role="alert">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 9v4"></path><path d="M12 17h.01"></path>
+      <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path>
+    </svg>
+    <span id="lmapiBannerText"></span>
+  </div>
+
+  <!-- ---------- Main ---------- -->
+  <div class="lmapi__grid">
+
+    <!-- Hero + meter + tiles -->
+    <section class="lmapi__card" aria-labelledby="lmapiHeroLabel">
+      <p class="lmapi__hero-label" id="lmapiHeroLabel">Requests remaining</p>
+      <strong class="lmapi__hero" id="lmapiHero">&mdash;</strong>
+      <p class="lmapi__hero-sub" id="lmapiHeroSub">in the current rolling minute</p>
+
+      <div class="lmapi__meter" role="img" aria-labelledby="lmapiMeterDesc">
+        <div class="lmapi__meter-fill" id="lmapiMeterFill" data-state="ok"></div>
+      </div>
+      <div class="lmapi__meter-legend">
+        <span id="lmapiMeterDesc">&mdash; used</span>
+        <span id="lmapiMeterLimit">limit &mdash;</span>
+      </div>
+
+      <div class="lmapi__tiles">
+        <div class="lmapi__tile">
+          <p class="lmapi__tile-label">Rate limit<br>(requests / minute)</p>
+          <strong class="lmapi__tile-value" id="lmapiTileLimit">&mdash;</strong>
+        </div>
+        <div class="lmapi__tile">
+          <p class="lmapi__tile-label">Window resets in<br>(seconds)</p>
+          <strong class="lmapi__tile-value" id="lmapiTileReset">&mdash;</strong>
+        </div>
+        <div class="lmapi__tile">
+          <p class="lmapi__tile-label">Peak used<br>this session</p>
+          <strong class="lmapi__tile-value" id="lmapiTilePeak">&mdash;</strong>
+        </div>
+        <div class="lmapi__tile">
+          <p class="lmapi__tile-label">Lowest remaining<br>this session</p>
+          <strong class="lmapi__tile-value" id="lmapiTileFloor">&mdash;</strong>
+        </div>
+        <div class="lmapi__tile">
+          <p class="lmapi__tile-label">HTTP 429s<br>seen by this page</p>
+          <strong class="lmapi__tile-value" id="lmapiTile429">0</strong>
+        </div>
+        <div class="lmapi__tile">
+          <p class="lmapi__tile-label">This page&rsquo;s own draw<br>(requests / minute)</p>
+          <strong class="lmapi__tile-value" id="lmapiTileSelf">&mdash;</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chart + table -->
+    <section class="lmapi__card">
+      <div class="lmapi__chart-head">
+        <div>
+          <h2 class="lmapi__card-title">Requests used per rolling minute</h2>
+          <p class="lmapi__card-note" style="margin-bottom:0">
+            One line: total account consumption reported by
+            <code style="font-family:ui-monospace,Menlo,monospace">X-Rate-Limit-Remaining</code>.
+            Hover for the reading at any point.
+          </p>
+        </div>
+      </div>
+
+      <div class="lmapi__plot" id="lmapiPlot" data-stale="0">
+        <div class="lmapi__tip" id="lmapiTip" data-show="0"></div>
+      </div>
+
+      <div class="lmapi__table-wrap" id="lmapiTableWrap" data-show="0">
+        <table>
+          <caption class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">
+            Every rate-limit reading taken this session
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Time</th>
+              <th scope="col">Used</th>
+              <th scope="col">Remaining</th>
+              <th scope="col">Limit</th>
+              <th scope="col">Used %</th>
+              <th scope="col">Reset in</th>
+              <th scope="col">HTTP</th>
+            </tr>
+          </thead>
+          <tbody id="lmapiTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- ---------- Event log ---------- -->
+  <section class="lmapi__card" style="margin-top:16px">
+    <h2 class="lmapi__card-title">Event log</h2>
+    <p class="lmapi__card-note">
+      Only state changes are recorded &mdash; crossing into watch or at-limit,
+      returning to healthy, HTTP 429s, and probe failures.
+    </p>
+    <ul class="lmapi__log" id="lmapiLog"></ul>
+  </section>
+
+  <p class="lmapi__foot">
+    <strong>How to read this.</strong> Ontraport applies one rolling
+    per-minute limit to the whole account, and reports it on every response via
+    <code>X-Rate-Limit-Limit</code>, <code>X-Rate-Limit-Remaining</code> and
+    <code>X-Rate-Limit-Reset</code>. This page calls
+    <code>/webhook/ontraport-rate-probe</code>, which makes exactly one
+    lightweight Ontraport request and returns those three headers.
+    <strong>Each poll therefore costs 1 request against the same budget</strong>,
+    and the &ldquo;used&rdquo; figure includes this page&rsquo;s own probes &mdash;
+    the tile above states how much of the limit this tab is consuming. A 429 means
+    a request was rejected outright; whichever integration made it will have failed,
+    not queued.
+  </p>
+
+</div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------------------------------------------------------
+     Ontraport API Rate Monitor
+     Source of truth: n8n "LM | Admin | Ontraport API Rate Probe"
+     Returns { success, ts, status, throttled, limit, remaining,
+               used, resetSeconds, probeCost, error }
+     --------------------------------------------------------- */
+
+  var PROBE_URL = 'https://landmarkworldwide.awesomate.io/webhook/ontraport-rate-probe';
+
+  var WATCH_PCT = 70;   /* used% at which the state becomes "watch"    */
+  var LIMIT_PCT = 90;   /* used% at which the state becomes "at limit" */
+  var RETAIN_MS = 30 * 60 * 1000;
+  var FETCH_TIMEOUT_MS = 12000;
+
+  var el = function (id) { return document.getElementById(id); };
+
+  var dom = {
+    chip: el('lmapiChip'), chipIcon: el('lmapiChipIcon'), chipText: el('lmapiChipText'),
+    interval: el('lmapiInterval'), window: el('lmapiWindow'),
+    pause: el('lmapiPause'), tableBtn: el('lmapiTable'),
+    sound: el('lmapiSound'), reset: el('lmapiReset'),
+    stamp: el('lmapiStamp'),
+    banner: el('lmapiBanner'), bannerText: el('lmapiBannerText'),
+    hero: el('lmapiHero'), heroSub: el('lmapiHeroSub'),
+    meterFill: el('lmapiMeterFill'), meterDesc: el('lmapiMeterDesc'), meterLimit: el('lmapiMeterLimit'),
+    tileLimit: el('lmapiTileLimit'), tileReset: el('lmapiTileReset'),
+    tilePeak: el('lmapiTilePeak'), tileFloor: el('lmapiTileFloor'),
+    tile429: el('lmapiTile429'), tileSelf: el('lmapiTileSelf'),
+    plot: el('lmapiPlot'), tip: el('lmapiTip'),
+    tableWrap: el('lmapiTableWrap'), tableBody: el('lmapiTableBody'),
+    log: el('lmapiLog')
+  };
+
+  var state = {
+    samples: [],          /* { ts, used, remaining, limit, resetSeconds, status, throttled } */
+    lastGood: null,
+    peakUsed: null,
+    floorRemaining: null,
+    count429: 0,
+    lastState: null,      /* 'ok' | 'watch' | 'throttled' | 'offline' */
+    paused: false,
+    soundOn: false,
+    timer: null,
+    hovering: false,
+    audio: null,
+    baseTitle: document.title
+  };
+
+  /* ---------------- helpers ---------------- */
+
+  function pad(n) { return n < 10 ? '0' + n : String(n); }
+
+  function clockTime(ts) {
+    var d = new Date(ts);
+    return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+  }
+
+  function num(v) {
+    return (v === null || v === undefined || !isFinite(v)) ? '—' : String(v);
+  }
+
+  /* innerHTML is unreliable on SVG nodes in some engines — clear by removal */
+  function empty(node) {
+    while (node.firstChild) { node.removeChild(node.firstChild); }
+  }
+
+  function usedPct(s) {
+    if (!s || !s.limit) { return 0; }
+    return (s.used / s.limit) * 100;
+  }
+
+  function stateFor(s) {
+    if (!s) { return 'offline'; }
+    if (s.throttled || s.remaining <= 0) { return 'throttled'; }
+    var p = usedPct(s);
+    if (p >= LIMIT_PCT) { return 'throttled'; }
+    if (p >= WATCH_PCT) { return 'watch'; }
+    return 'ok';
+  }
+
+  var STATE_COPY = {
+    ok:        { word: 'Healthy',   icon: 'M20 6 9 17l-5-5' },
+    watch:     { word: 'Watch',     icon: 'M12 8v5 M12 17h.01 M12 3 2 20h20L12 3z' },
+    throttled: { word: 'At limit',  icon: 'M12 8v5 M12 17h.01 M12 3 2 20h20L12 3z' },
+    offline:   { word: 'No reading', icon: 'M12 8v5 M12 17h.01' }
+  };
+
+  function logEvent(kind, text) {
+    var li = document.createElement('li');
+    li.setAttribute('data-kind', kind);
+    var t = document.createElement('time');
+    t.textContent = clockTime(Date.now());
+    var s = document.createElement('span');
+    s.textContent = text;
+    li.appendChild(t);
+    li.appendChild(s);
+    dom.log.insertBefore(li, dom.log.firstChild);
+    while (dom.log.children.length > 200) {
+      dom.log.removeChild(dom.log.lastChild);
+    }
+  }
+
+  function beep() {
+    if (!state.soundOn) { return; }
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) { return; }
+      if (!state.audio) { state.audio = new Ctx(); }
+      var ctx = state.audio;
+      if (ctx.state === 'suspended') { ctx.resume(); }
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 660;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.16, ctx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.42);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.45);
+    } catch (e) { /* audio is a nicety, never a dependency */ }
+  }
+
+  /* ---------------- polling ---------------- */
+
+  function intervalMs() { return Number(dom.interval.value) * 1000; }
+  function windowSec() { return Number(dom.window.value); }
+
+  function schedule() {
+    if (state.timer) { clearTimeout(state.timer); }
+    if (state.paused) { return; }
+    state.timer = setTimeout(poll, intervalMs());
+  }
+
+  function poll() {
+    if (state.paused) { return; }
+
+    var ctrl = null;
+    var killer = null;
+    if (window.AbortController) {
+      ctrl = new AbortController();
+      killer = setTimeout(function () { ctrl.abort(); }, FETCH_TIMEOUT_MS);
+    }
+
+    fetch(PROBE_URL + '?t=' + Date.now(), {
+      method: 'GET',
+      cache: 'no-store',
+      signal: ctrl ? ctrl.signal : undefined
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (killer) { clearTimeout(killer); }
+        onReading(data);
+      })
+      .catch(function (err) {
+        if (killer) { clearTimeout(killer); }
+        onFailure(err);
+      })
+      .then(function () { schedule(); });
+  }
+
+  function onReading(data) {
+    if (!data || data.success !== true) {
+      onFailure(new Error((data && data.error) || 'probe returned no rate headers'));
+      return;
+    }
+
+    /* Plot on the BROWSER clock, not the n8n server clock. The two can drift by
+       seconds, which would push the newest point past the right edge of the
+       window. data.ts is kept only so a reading can be traced back to a run. */
+    var s = {
+      ts: Date.now(),
+      serverTs: Number(data.ts) || null,
+      used: Number(data.used),
+      remaining: Number(data.remaining),
+      limit: Number(data.limit),
+      resetSeconds: (data.resetSeconds === null || data.resetSeconds === undefined)
+        ? null : Number(data.resetSeconds),
+      status: Number(data.status) || 0,
+      throttled: data.throttled === true
+    };
+
+    state.samples.push(s);
+    state.lastGood = s;
+
+    var cutoff = Date.now() - RETAIN_MS;
+    while (state.samples.length && state.samples[0].ts < cutoff) {
+      state.samples.shift();
+    }
+
+    if (state.peakUsed === null || s.used > state.peakUsed) { state.peakUsed = s.used; }
+    if (state.floorRemaining === null || s.remaining < state.floorRemaining) {
+      state.floorRemaining = s.remaining;
+    }
+    if (s.throttled) {
+      state.count429 += 1;
+      logEvent('throttled', 'HTTP 429 from Ontraport — the probe request itself was rejected.');
+      beep();
+    }
+
+    dom.plot.setAttribute('data-stale', '0');
+    applyState(stateFor(s), s);
+    render();
+  }
+
+  function onFailure(err) {
+    dom.plot.setAttribute('data-stale', '1');
+    if (state.lastState !== 'offline') {
+      logEvent('offline', 'Probe unreachable: ' + (err && err.message ? err.message : 'network error') +
+        '. Last good reading held on screen.');
+    }
+    applyState('offline', state.lastGood);
+    dom.stamp.textContent = 'probe failed — retrying';
+  }
+
+  function applyState(next, s) {
+    var copy = STATE_COPY[next] || STATE_COPY.offline;
+
+    dom.chip.setAttribute('data-state', next);
+    dom.chipText.textContent = copy.word;
+    empty(dom.chipIcon);
+    copy.icon.split(' M').forEach(function (seg, i) {
+      var p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      p.setAttribute('d', (i === 0 ? seg : 'M' + seg));
+      dom.chipIcon.appendChild(p);
+    });
+
+    /* The banner asserts a live fact, so it never rides a stale reading:
+       when the probe is unreachable we know nothing about the current window. */
+    var hardThrottle = next !== 'offline' && !!(s && (s.throttled || s.remaining <= 0));
+    dom.banner.setAttribute('data-show', hardThrottle ? '1' : '0');
+    if (hardThrottle) {
+      dom.bannerText.innerHTML = '<strong>Rate limit reached.</strong> Ontraport is rejecting ' +
+        'requests with HTTP 429. Anything calling the API right now — dashboard loads, ' +
+        'portal reads, the Zoom pollers, Ontraport automations — is failing, not queueing. ' +
+        'The window clears in ' + (s.resetSeconds === null ? 'under a minute' : s.resetSeconds + ' seconds') + '.';
+    }
+
+    if (next !== state.lastState) {
+      if (next === 'throttled' && state.lastState) {
+        logEvent('throttled', 'Crossed into at-limit: ' + Math.round(usedPct(s)) + '% of ' + s.limit + ' used.');
+        beep();
+      } else if (next === 'watch') {
+        logEvent('watch', 'Crossed into watch: ' + Math.round(usedPct(s)) + '% of ' + s.limit + ' used.');
+      } else if (next === 'ok' && state.lastState && state.lastState !== 'ok') {
+        logEvent('ok', 'Back to healthy: ' + Math.round(usedPct(s)) + '% of ' + s.limit + ' used.');
+      } else if (next === 'ok' && !state.lastState) {
+        logEvent('ok', 'Monitoring started. Limit ' + s.limit + ' requests/minute.');
+      }
+      state.lastState = next;
+    }
+
+    document.title = (next === 'throttled' ? '⚠ AT LIMIT — ' : '') + state.baseTitle;
+  }
+
+  /* ---------------- render ---------------- */
+
+  function render() {
+    var s = state.lastGood;
+
+    if (s) {
+      var st = stateFor(s);
+      dom.hero.textContent = s.remaining.toLocaleString();
+      dom.heroSub.textContent = 'of ' + s.limit.toLocaleString() +
+        ' · ' + Math.round(usedPct(s)) + '% of the minute consumed';
+      dom.meterFill.style.width = Math.max(0, Math.min(100, usedPct(s))).toFixed(1) + '%';
+      dom.meterFill.setAttribute('data-state', st);
+      dom.meterDesc.textContent = s.used.toLocaleString() + ' used';
+      dom.meterLimit.textContent = 'limit ' + s.limit.toLocaleString();
+
+      dom.tileLimit.textContent = s.limit.toLocaleString();
+      dom.tileReset.textContent = s.resetSeconds === null ? '—' : s.resetSeconds + 's';
+      dom.tilePeak.textContent = num(state.peakUsed);
+      dom.tileFloor.textContent = num(state.floorRemaining);
+      dom.tile429.textContent = String(state.count429);
+      dom.tile429.setAttribute('data-state', state.count429 > 0 ? 'throttled' : 'ok');
+
+      var selfPerMin = 60 / Number(dom.interval.value);
+      dom.tileSelf.textContent = selfPerMin.toFixed(selfPerMin < 10 ? 1 : 0) +
+        ' (' + ((selfPerMin / s.limit) * 100).toFixed(1) + '%)';
+
+      dom.stamp.textContent = 'last reading ' + clockTime(s.ts) +
+        ' · HTTP ' + s.status +
+        (state.paused ? ' · paused' : '');
+    }
+
+    drawChart();
+    drawTable();
+  }
+
+  /* ---------------- chart ---------------- */
+
+  var M = { top: 16, right: 58, bottom: 30, left: 46 };
+
+  function visibleSamples() {
+    var from = Date.now() - windowSec() * 1000;
+    return state.samples.filter(function (s) { return s.ts >= from; });
+  }
+
+  function svgEl(name, attrs) {
+    var n = document.createElementNS('http://www.w3.org/2000/svg', name);
+    for (var k in attrs) {
+      if (Object.prototype.hasOwnProperty.call(attrs, k)) { n.setAttribute(k, attrs[k]); }
+    }
+    return n;
+  }
+
+  var chartGeom = null;
+
+  function drawChart() {
+    var W = Math.max(320, dom.plot.clientWidth || 640);
+    var H = 268;                       /* plot band + x-axis band, so nothing clips */
+    var iw = W - M.left - M.right;
+    var ih = H - M.top - M.bottom;
+
+    var old = dom.plot.querySelector('svg');
+    if (old) { dom.plot.removeChild(old); }
+
+    var svg = svgEl('svg', {
+      viewBox: '0 0 ' + W + ' ' + H,
+      role: 'img',
+      'aria-label': 'Ontraport API requests used per rolling minute over the selected window'
+    });
+
+    var pts = visibleSamples();
+    var limit = (state.lastGood && state.lastGood.limit) || 360;
+
+    var now = Date.now();
+    var t0 = now - windowSec() * 1000;
+    var x = function (ts) { return M.left + ((ts - t0) / (now - t0)) * iw; };
+    var y = function (v) { return M.top + ih - (Math.max(0, Math.min(limit, v)) / limit) * ih; };
+
+    /* gridlines + y ticks — solid hairlines, one step off surface */
+    for (var q = 0; q <= 4; q++) {
+      var v = (limit / 4) * q;
+      var gy = y(v);
+      svg.appendChild(svgEl('line', {
+        x1: M.left, x2: M.left + iw, y1: gy, y2: gy, 'class': 'lmapi__grid-line'
+      }));
+      var t = svgEl('text', { x: M.left - 8, y: gy + 3.5, 'text-anchor': 'end', 'class': 'lmapi__tick' });
+      t.textContent = Math.round(v).toLocaleString();
+      svg.appendChild(t);
+    }
+
+    /* baseline */
+    svg.appendChild(svgEl('line', {
+      x1: M.left, x2: M.left + iw, y1: M.top + ih, y2: M.top + ih, 'class': 'lmapi__axis-line'
+    }));
+
+    /* x ticks */
+    for (var k = 0; k <= 4; k++) {
+      var ts = t0 + ((now - t0) / 4) * k;
+      var tx = x(ts);
+      var xt = svgEl('text', {
+        x: tx, y: M.top + ih + 18,
+        'text-anchor': k === 0 ? 'start' : (k === 4 ? 'end' : 'middle'),
+        'class': 'lmapi__tick'
+      });
+      xt.textContent = clockTime(ts);
+      svg.appendChild(xt);
+    }
+
+    /* threshold rules — solid, labelled, left-anchored away from the live end */
+    var watchV = limit * (WATCH_PCT / 100);
+    svg.appendChild(svgEl('line', {
+      x1: M.left, x2: M.left + iw, y1: y(watchV), y2: y(watchV),
+      'class': 'lmapi__rule lmapi__rule--watch'
+    }));
+    var wl = svgEl('text', {
+      x: M.left + 5, y: y(watchV) - 5, 'class': 'lmapi__rule-label lmapi__rule-label--watch'
+    });
+    wl.textContent = 'Watch · ' + Math.round(watchV);
+    svg.appendChild(wl);
+
+    svg.appendChild(svgEl('line', {
+      x1: M.left, x2: M.left + iw, y1: y(limit), y2: y(limit),
+      'class': 'lmapi__rule lmapi__rule--limit'
+    }));
+    var ll = svgEl('text', {
+      x: M.left + 5, y: y(limit) + 12, 'class': 'lmapi__rule-label lmapi__rule-label--limit'
+    });
+    ll.textContent = 'Limit · ' + limit;
+    svg.appendChild(ll);
+
+    if (pts.length < 2) {
+      var e = svgEl('text', { x: M.left + iw / 2, y: M.top + ih / 2, 'text-anchor': 'middle', 'class': 'lmapi__empty' });
+      e.textContent = state.paused ? 'Paused' : 'Collecting readings…';
+      svg.appendChild(e);
+      dom.plot.insertBefore(svg, dom.tip);
+      chartGeom = null;
+      return;
+    }
+
+    /* area wash + 2px line */
+    var d = '', a = '';
+    pts.forEach(function (p, i) {
+      var px = x(p.ts), py = y(p.used);
+      d += (i === 0 ? 'M' : 'L') + px.toFixed(2) + ' ' + py.toFixed(2);
+      a += (i === 0 ? 'M' : 'L') + px.toFixed(2) + ' ' + py.toFixed(2);
+    });
+    a += 'L' + x(pts[pts.length - 1].ts).toFixed(2) + ' ' + (M.top + ih) +
+         'L' + x(pts[0].ts).toFixed(2) + ' ' + (M.top + ih) + 'Z';
+
+    svg.appendChild(svgEl('path', { d: a, 'class': 'lmapi__area' }));
+    svg.appendChild(svgEl('path', { d: d, 'class': 'lmapi__line' }));
+
+    /* 429 markers sit on the data, ringed in the surface colour */
+    pts.forEach(function (p) {
+      if (!p.throttled) { return; }
+      svg.appendChild(svgEl('circle', {
+        cx: x(p.ts), cy: y(p.used), r: 5, 'class': 'lmapi__throttle-mark'
+      }));
+    });
+
+    /* endpoint: dot with a 2px surface ring, plus the one direct label */
+    var last = pts[pts.length - 1];
+    var lx = x(last.ts), ly = y(last.used);
+    svg.appendChild(svgEl('circle', { cx: lx, cy: ly, r: 4.5, 'class': 'lmapi__end-dot' }));
+    var lab = svgEl('text', { x: lx + 9, y: ly + 4, 'class': 'lmapi__end-label' });
+    lab.textContent = last.used.toLocaleString();
+    svg.appendChild(lab);
+
+    /* hover layer */
+    var hover = svgEl('g', { id: 'lmapiHoverLayer' });
+    svg.appendChild(hover);
+
+    var hit = svgEl('rect', {
+      x: M.left, y: M.top, width: iw, height: ih, fill: 'transparent', style: 'cursor:crosshair'
+    });
+    svg.appendChild(hit);
+
+    dom.plot.insertBefore(svg, dom.tip);
+
+    chartGeom = { W: W, H: H, iw: iw, ih: ih, x: x, y: y, pts: pts, hover: hover, limit: limit };
+
+    hit.addEventListener('pointerenter', function () { state.hovering = true; });
+    hit.addEventListener('pointermove', onHover);
+    hit.addEventListener('pointerleave', function () {
+      state.hovering = false;
+      clearHover();
+    });
+  }
+
+  function onHover(ev) {
+    if (!chartGeom) { return; }
+    var rect = dom.plot.getBoundingClientRect();
+    var scale = chartGeom.W / rect.width;
+    var px = (ev.clientX - rect.left) * scale;
+
+    var best = null, bestD = Infinity;
+    chartGeom.pts.forEach(function (p) {
+      var dx = Math.abs(chartGeom.x(p.ts) - px);
+      if (dx < bestD) { bestD = dx; best = p; }
+    });
+    if (!best) { return; }
+
+    var hx = chartGeom.x(best.ts), hy = chartGeom.y(best.used);
+    empty(chartGeom.hover);
+    chartGeom.hover.appendChild(svgEl('line', {
+      x1: hx, x2: hx, y1: M.top, y2: M.top + chartGeom.ih, 'class': 'lmapi__crosshair'
+    }));
+    chartGeom.hover.appendChild(svgEl('circle', {
+      cx: hx, cy: hy, r: 5, 'class': 'lmapi__hover-dot'
+    }));
+
+    dom.tip.innerHTML =
+      '<b>' + clockTime(best.ts) + '</b><br>' +
+      best.used.toLocaleString() + ' used · ' + best.remaining.toLocaleString() + ' left<br>' +
+      Math.round(usedPct(best)) + '% of ' + best.limit.toLocaleString() +
+      ' · HTTP ' + best.status;
+    dom.tip.setAttribute('data-show', '1');
+
+    var tipLeft = (hx / scale) + 14;
+    if (tipLeft + dom.tip.offsetWidth > rect.width) {
+      tipLeft = (hx / scale) - dom.tip.offsetWidth - 14;
+    }
+    dom.tip.style.left = Math.max(0, tipLeft) + 'px';
+    dom.tip.style.top = Math.max(0, (hy / scale) - dom.tip.offsetHeight - 12) + 'px';
+  }
+
+  function clearHover() {
+    dom.tip.setAttribute('data-show', '0');
+    if (chartGeom) { empty(chartGeom.hover); }
+  }
+
+  /* ---------------- table view ---------------- */
+
+  function drawTable() {
+    if (dom.tableWrap.getAttribute('data-show') !== '1') { return; }
+    var rows = state.samples.slice(-120).reverse();
+    var html = '';
+    rows.forEach(function (s) {
+      html += '<tr data-throttled="' + (s.throttled ? '1' : '0') + '">' +
+        '<td>' + clockTime(s.ts) + '</td>' +
+        '<td>' + s.used.toLocaleString() + '</td>' +
+        '<td>' + s.remaining.toLocaleString() + '</td>' +
+        '<td>' + s.limit.toLocaleString() + '</td>' +
+        '<td>' + Math.round(usedPct(s)) + '%</td>' +
+        '<td>' + (s.resetSeconds === null ? '—' : s.resetSeconds + 's') + '</td>' +
+        '<td>' + s.status + '</td>' +
+        '</tr>';
+    });
+    dom.tableBody.innerHTML = html || '<tr><td colspan="7">No readings yet.</td></tr>';
+  }
+
+  /* ---------------- wiring ---------------- */
+
+  dom.interval.addEventListener('change', function () {
+    logEvent('ok', 'Poll interval set to ' + dom.interval.value + 's (' +
+      (60 / Number(dom.interval.value)).toFixed(1) + ' requests/minute from this page).');
+    render();
+    schedule();
+  });
+
+  dom.window.addEventListener('change', drawChart);
+
+  dom.pause.addEventListener('click', function () {
+    state.paused = !state.paused;
+    dom.pause.setAttribute('aria-pressed', state.paused ? 'true' : 'false');
+    dom.pause.textContent = state.paused ? 'Resume' : 'Pause';
+    logEvent('ok', state.paused ? 'Polling paused — this page is drawing 0 requests/minute.' : 'Polling resumed.');
+    if (state.paused) {
+      if (state.timer) { clearTimeout(state.timer); }
+      dom.stamp.textContent = 'paused';
+    } else {
+      poll();
+    }
+  });
+
+  dom.tableBtn.addEventListener('click', function () {
+    var on = dom.tableWrap.getAttribute('data-show') === '1';
+    dom.tableWrap.setAttribute('data-show', on ? '0' : '1');
+    dom.tableBtn.setAttribute('aria-pressed', on ? 'false' : 'true');
+    drawTable();
+  });
+
+  dom.sound.addEventListener('click', function () {
+    state.soundOn = !state.soundOn;
+    dom.sound.setAttribute('aria-pressed', state.soundOn ? 'true' : 'false');
+    if (state.soundOn) { beep(); }
+  });
+
+  dom.reset.addEventListener('click', function () {
+    state.samples = [];
+    state.peakUsed = null;
+    state.floorRemaining = null;
+    state.count429 = 0;
+    dom.log.innerHTML = '';
+    logEvent('ok', 'Session counters cleared.');
+    render();
+  });
+
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    if (resizeTimer) { clearTimeout(resizeTimer); }
+    resizeTimer = setTimeout(drawChart, 120);
+  });
+
+  /* Keep the x-axis honest between polls on long intervals. Skipped while the
+     pointer is on the plot — a rebuild would drop the crosshair mid-read. */
+  setInterval(function () {
+    if (!state.paused && !state.hovering) { drawChart(); }
+  }, 1000);
+
+  drawChart();
+  poll();
+})();
+</script>
+
+</body>
+</html>
