@@ -1840,7 +1840,12 @@ Portal.render.during = function(data, phase){
   // the "?" plus a few characters); the copy button and any href always
   // use the full, untruncated URL. Paginated 5/page (2026-08-07 review
   // round) since a registration can have more invitations than that.
-  var GUESTS_PER_PAGE = 5;
+  /* 10 per page as of 2026-08-17, up from the 5 chosen in the 2026-08-07 round when
+     this card sat far down the page. On the Graduation state it is the first thing
+     under the hero, so most participants should see their whole list without paging.
+     guestPage is re-declared on every render.during call, so it naturally starts at 0
+     each time the page is rebuilt by a fetch or an Ably push. */
+  var GUESTS_PER_PAGE = 10;
   var guestPage = 0;
   function guestPageCount(){ return Math.max(1, Math.ceil(guests.length / GUESTS_PER_PAGE)); }
   function truncateLinkDisplay(url){
@@ -1857,12 +1862,17 @@ Portal.render.during = function(data, phase){
       return '<div class="inv-row"><div class="inv-name">' + escapeHtml(g.name) + '</div><div class="inv-link">' + escapeHtml(truncateLinkDisplay(g.link)) + '</div>' + copyBtnHtml(g.link) + '</div>';
     }).join('');
   }
+  /* Minimal pagination (2026-08-17, direct instruction): two chevrons and "n / m",
+     nothing else. The previous "Prev / Page 1 of 3 / Next" bar was wider than the rows
+     it paged. Still omitted entirely below one page, so a participant with ten or
+     fewer guests never sees pagination at all. The button ids are unchanged, so the
+     existing click handlers keep working untouched. */
   function guestPagerHtml(){
     if(guests.length <= GUESTS_PER_PAGE) return '';
     return '<div class="inv-pager">' +
-      '<button class="inv-pager-btn" id="guestPrev" type="button"' + (guestPage === 0 ? ' disabled' : '') + '>&larr; Prev</button>' +
-      '<span class="inv-pager-count">Page ' + (guestPage + 1) + ' of ' + guestPageCount() + '</span>' +
-      '<button class="inv-pager-btn" id="guestNext" type="button"' + (guestPage >= guestPageCount() - 1 ? ' disabled' : '') + '>Next &rarr;</button>' +
+      '<button class="inv-pager-btn" id="guestPrev" type="button" aria-label="Previous page"' + (guestPage === 0 ? ' disabled' : '') + '>&lsaquo;</button>' +
+      '<span class="inv-pager-count">' + (guestPage + 1) + ' / ' + guestPageCount() + '</span>' +
+      '<button class="inv-pager-btn" id="guestNext" type="button" aria-label="Next page"' + (guestPage >= guestPageCount() - 1 ? ' disabled' : '') + '>&rsaquo;</button>' +
     '</div>';
   }
   // "Invite another guest" and the pager share one row (right-aligned
@@ -1871,7 +1881,7 @@ Portal.render.during = function(data, phase){
   // the pager even though its own content is static; harmless.
   function guestFooterHtml(){
     return '<div class="inv-footer">' +
-      '<a class="inv-more" href="' + escapeHtml(inviteHubUrl) + '" target="_blank" rel="noopener">Invite another guest <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>' +
+      '<a class="inv-more" href="' + escapeHtml(inviteHubUrl) + '" target="_blank" rel="noopener">Invite more guests <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>' +
       guestPagerHtml() +
     '</div>';
   }
@@ -1879,16 +1889,29 @@ Portal.render.during = function(data, phase){
     return '<div class="inv-list">' + guestRowsHtml() + '</div>' + guestFooterHtml();
   }
 
+  var inviteesInnerHtml =
+    '<div class="inv-eye">Graduation Guests</div>' +
+    '<h3>Your <span class="serif-it">Guest List.</span></h3>' +
+    '<p class="inv-sub">Each guest has their own Zoom link for the evening &mdash; copy it and send it their way.</p>' +
+    '<div id="guestListWrap">' + guestListWrapHtml() + '</div>';
+
+  /* On the Graduation state the guest list is promoted out of the Graduation section
+     and rendered as its own band directly under the hero (2026-08-17, direct
+     instruction) — on the night itself, getting links to guests is the job, so it
+     leads. It is rendered in ONE place or the other, never both: guestListSectionHtml
+     below and inviteesHtml here are mutually exclusive on isGraduation. */
+  var guestListSectionHtml = (isGraduation && guests.length) ?
+    '<section class="block" id="guestlist"><div class="wrap"><div class="invitees">' +
+      inviteesInnerHtml +
+    '</div></div></section>' : '';
+
   // The whole invitees card is omitted (not an empty-state message) when
   // there are no guests — the .ginvite "Invite your guests" CTA in the
   // card above already covers that prompt, so a second message here
   // would be redundant (2026-08-07 review round).
-  var inviteesHtml = guests.length ?
+  var inviteesHtml = (!isGraduation && guests.length) ?
     '<div class="gradrow"><div class="invitees">' +
-      '<div class="inv-eye">Graduation Guests</div>' +
-      '<h3>' + (firstName ? escapeHtml(firstName) + '’s' : 'Your') + ' <span class="serif-it">Invitees.</span></h3>' +
-      '<p class="inv-sub">Each guest has their own Zoom link for the evening &mdash; copy it and send it their way.</p>' +
-      '<div id="guestListWrap">' + guestListWrapHtml() + '</div>' +
+      inviteesInnerHtml +
     '</div></div>' : '';
 
   var graduationHtml =
@@ -2016,7 +2039,23 @@ Portal.render.during = function(data, phase){
     '</div></div>';
 
   var root = document.getElementById('portal-root');
-  if(root) root.innerHTML = infoGateHtml + heroHtml + actionsHtml + assignmentsHtml + graduationHtml + rulesHtml + faqHtml + lmfBandHtml + contactHtml;
+  /* Graduation day is a different page from the Forum weekend, not the same page with a
+     different hero (2026-08-17, direct instruction). Three sections come out and one
+     moves up:
+
+       Assignments   the weekend's work is done; a to-do stack under a celebration hero
+                     reads as homework nobody has to do any more
+       Agreements    the room agreements governed the three days that already happened
+       FAQ           written for the weekend — arrival times, breaks, what to bring
+
+     and the guest list is promoted out of the Graduation section to sit directly under
+     the hero, because on the night itself getting links to guests is the job.
+
+     pregrad deliberately keeps all three: the Forum is over but Graduation has not
+     started, and per direct instruction the assignments stay visible in that window. */
+  if(root) root.innerHTML = isGraduation
+    ? infoGateHtml + heroHtml + guestListSectionHtml + actionsHtml + graduationHtml + lmfBandHtml + contactHtml
+    : infoGateHtml + heroHtml + actionsHtml + assignmentsHtml + graduationHtml + rulesHtml + faqHtml + lmfBandHtml + contactHtml;
 
   // Sets #navCtaSlot's initial content (heroJoinCta's own initial state
   // was already baked into heroHtml above) and starts the live 30-
