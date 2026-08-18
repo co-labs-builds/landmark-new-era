@@ -2070,21 +2070,24 @@ Portal.render.during = function(data, phase){
 
   var root = document.getElementById('portal-root');
   /* Graduation day is a different page from the Forum weekend, not the same page with a
-     different hero (2026-08-17, direct instruction). Three sections come out and one
+     different hero (2026-08-17, direct instruction). Two sections come out and one
      moves up:
 
-       Assignments   the weekend's work is done; a to-do stack under a celebration hero
-                     reads as homework nobody has to do any more
        Agreements    the room agreements governed the three days that already happened
        FAQ           written for the weekend — arrival times, breaks, what to bring
 
      and the guest list is promoted out of the Graduation section to sit directly under
      the hero, because on the night itself getting links to guests is the job.
 
-     pregrad deliberately keeps all three: the Forum is over but Graduation has not
-     started, and per direct instruction the assignments stay visible in that window. */
+     ASSIGNMENTS STAY. They were cut in the first pass on the reasoning that the
+     weekend's work was done, and put back the same day (2026-08-18) because
+     participants were asking for them — they are still working through the material
+     on graduation day, and the day-3 follow-through in particular is live right now.
+     A judgement call that the people using the page settled.
+
+     pregrad keeps all four; the Forum is over but Graduation has not started. */
   if(root) root.innerHTML = isGraduation
-    ? infoGateHtml + heroHtml + guestListSectionHtml + actionsHtml + graduationHtml + lmfBandHtml + contactHtml
+    ? infoGateHtml + heroHtml + guestListSectionHtml + actionsHtml + assignmentsHtml + graduationHtml + lmfBandHtml + contactHtml
     : infoGateHtml + heroHtml + actionsHtml + assignmentsHtml + graduationHtml + rulesHtml + faqHtml + lmfBandHtml + contactHtml;
 
   // Sets #navCtaSlot's initial content (heroJoinCta's own initial state
@@ -2831,8 +2834,17 @@ Portal.init = function(){
      hero and which CTA to build. */
   else if(phase === 'during' || phase === 'pregrad' || phase === 'graduation'){
     Portal.render.during(data, phase);
-    Portal.realtime.init(data);
-    Portal.invitations.load(data);
+    /* Isolated on purpose (2026-08-18). These ran as three bare statements, so anything
+       thrown by realtime.init — an Ably constructor change, a blocked SDK, a bad token
+       response — silently took the invitations fetch down with it, and the guest list
+       would just never appear with nothing on screen or in the console to say why.
+       Neither is load-bearing for the page itself: realtime is an enhancement, and the
+       guest list is one card. Failing independently and loudly is strictly better than
+       failing together and silently. */
+    try { Portal.realtime.init(data); }
+    catch(e){ if(window.console && console.warn) console.warn('Portal.realtime.init failed', e); }
+    try { Portal.invitations.load(data); }
+    catch(e){ if(window.console && console.warn) console.warn('Portal.invitations.load failed', e); }
   }
   else Portal.render.post(data);
 };
