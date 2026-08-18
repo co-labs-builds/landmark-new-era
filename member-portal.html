@@ -604,8 +604,15 @@
   .nav-join{background:var(--green-bright);color:#fff;border:none;padding:11px 20px;border-radius:5px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;line-height:1;display:inline-flex;align-items:center;gap:8px;cursor:pointer;transition:background .15s;text-decoration:none;}
   .nav-join:hover{background:var(--green);}
   .nav-join .dot{width:8px;height:8px;border-radius:50%;background:#fff;animation:pulse 1.6s infinite;}
-  .nav-join[aria-disabled="true"]{background:var(--muted);cursor:default;}
-  .nav-join[aria-disabled="true"]:hover{background:var(--muted);}
+  /* Locked join CTA is deep teal, not grey (2026-08-17). --muted read as a dead
+     disabled control; the link isn't broken, it just hasn't opened yet, and on
+     Graduation evening this button is the thing a participant is waiting on. Teal
+     keeps it present and on-brand until it flips to --green-bright the moment the
+     room opens, so the change to green reads as the event starting.
+     Nav pill and hero button move together on purpose — they render off one shared
+     boolean in renderJoinCta() and must never look like they disagree. */
+  .nav-join[aria-disabled="true"]{background:var(--teal);color:#fff;cursor:default;}
+  .nav-join[aria-disabled="true"]:hover{background:var(--teal);}
 
   .progcard{background:#fff;border:1px solid var(--line);border-radius:20px;padding:30px 34px;box-shadow:var(--shadow);}
   .pc-eyebrow{font-size:12px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--green-bright);}
@@ -627,7 +634,7 @@
   .progcard .countdown{margin:16px 0 4px;}
   .btn-join{background:var(--green-bright);color:#fff;border:none;border-radius:5px;padding:15px 18px 11px;font-family:var(--sans);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap;flex:none;}
   .btn-join:hover{background:var(--green);}
-  .btn-join[aria-disabled="true"]{background:var(--muted);cursor:default;pointer-events:none;}
+  .btn-join[aria-disabled="true"]{background:var(--teal);color:#fff;cursor:default;pointer-events:none;}
 
   /* Information Form gate (During-event). Rendered by Portal.render.during()
      at the top of #portal-root when registrations.f2579 "Information Form
