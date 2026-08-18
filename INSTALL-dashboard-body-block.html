@@ -564,7 +564,7 @@
   <div class="card msec" id="ms-guests">
     <div class="card-hd">
       <h3>Guests</h3>
-      <span class="sub"><span class="mf">141</span> expected for the Final Session · showing <span class="mf" id="guestShowingCount">11</span></span>
+      <span class="sub"><span class="mf" id="guestTotalCount">—</span> guests across <span class="mf" id="guestPartyCount">—</span> participants · showing <span class="mf" id="guestShowingCount">—</span> parties</span>
       <div class="r">
         <div class="search" style="position:relative;">
           <input type="text" id="guestSearch" oninput="filterList('guest')" placeholder="Search guest name or inviting participant…" style="border:1px solid var(--line);border-radius:7px;padding:8px 12px;font-size:12.5px;width:260px;">
@@ -574,17 +574,36 @@
     </div>
     <div class="card-bd flush">
       <div class="ev-list" id="guestList">
-      <!-- LOOP: repeat: guest.rows (from oInvitations, via dashboard-guests webhook).
-           Real spec (2026-08-12): Name = the linked Guest Contact's name (f2259//
-           firstname/lastname — invitations.f2959/f2960 are blank in practice, confirmed
-           via real event 218 data). Invited by = f2257 Participant, read-only display
-           for this pass (no write-back yet). Format = same event-level value as the main
-           roster (not per-guest). FS # column cut entirely. LF Grad? = f2292. REG (Forum)
-           and ADV. CRS both use the roster's NP/POT/REG pill styling: REG (green) once
-           registered (f2299/f2298), POT (grey) if flagged Potential (f3211/f3212) but not
-           yet registered, NP (grey, hover reason f3050/f3213) otherwise. SE Exception/
-           Under-18/TOS/ENG chips dropped — no confirmed in-scope field mapping for this
-           pass (see CS Dashboard memory). -->
+      <!-- LOOP: repeat: guest parties (from oInvitations, via dashboard-guests webhook).
+           GROUPED 2026-08-17 (client): one card per INVITING PARTICIPANT with their guests
+           nested inside, replacing one flat card per guest. The driving use is breakout
+           rooms — whoever assigns rooms has to keep a participant and everyone they invited
+           together, and a list sorted by guest name scatters a party of three across three
+           pages. The card header therefore states party size (participant + guests), which
+           is the number of seats a room has to hold.
+
+           Grouping key is f2257//id, NOT the f2257 display string — see
+           guestGroupByInviter(). Invitations with no inviting participant collect into one
+           card at the end, flagged coral: there is nobody to seat them with, so a CS has to
+           resolve them by hand before rooms are set.
+
+           Per guest: Name = the linked Guest Contact (f2259//firstname/lastname —
+           invitations.f2959/f2960 are blank in practice, confirmed on real event 218 data).
+           Email = f2259//email, rendered only if the webhook returns that extern; the f2961
+           text copy is empty on all 154 rows of 218 and must not be used. Chips (After
+           7:30pm f2966 / Attend f3210 / LF Grad f2292) are self-labelling rather than under
+           a caption row. REG (Forum) and ADV. CRS keep the roster's NP/POT/REG pill styling:
+           REG (green) once registered (f2299/f2298), POT (grey) if flagged Potential
+           (f3211/f3212) but not yet registered, NP (grey, hover reason f3050/f3213)
+           otherwise — read-only this pass. Format is the event-level value, shown once on
+           the party header rather than repeated per guest. FS # column cut entirely.
+           SE Exception/Under-18/TOS/ENG chips dropped — no confirmed in-scope field
+           mapping (see CS Dashboard memory).
+
+           WEBHOOK DEPENDENCY: grouping wants f2257//id and the guest email wants
+           f2259//email in the dashboard-guests payload. Both degrade rather than break if
+           absent — grouping falls back to the f2257 display string, and the email line is
+           simply not rendered. -->
       </div>
       <div class="pager" id="guestPager">
         <button class="btn btn-sm" onclick="pagerGo('guest',-1)">Prev</button>
@@ -613,9 +632,11 @@
      ============================================================ -->
 <section class="view" id="v-kpi">
 
-  <div class="sechd">
+  <div class="sechd has-help">
     <h2>KPI Dashboard</h2>
     <div class="lede">Read current course performance in card form. Read-only by construction.</div>
+    <!-- The sheet's support line, kept as a control rather than a banner (see .rep-help). -->
+    <button class="rep-help" onclick="openReportHelp()" title="Get help with these figures" aria-label="Get help with these figures">?</button>
   </div>
 
   <div class="kpi-note">
@@ -624,27 +645,39 @@
   </div>
 
   <!-- ============================================================
-       IN COURSE STATS SUMMARY — rebuilt 2026-08-16 to mirror the sheet the CS
-       actually works from, category for category and row for row, so this page is
-       familiar on day one. This is deliberately a holding shape: it buys time for a
-       deeper version rather than being the final design.
+       IN COURSE STATS SUMMARY — mirrors the CS's "In Course Stats Summary" sheet
+       (Google Sheets gid 2123819044), category for category and row for row, so the page
+       is familiar on day one.
 
-       Rows still reading "—" have no confirmed field mapping yet. They are rendered
-       rather than omitted so the sheet's shape is complete and each is a one-line
-       change once its source is named. Deriving them from a plausible-looking field
-       would put a wrong number in front of a CS who has no way to tell.
+       REVISED 2026-08-17 against the live sheet, trimmed 2026-08-18 on client review.
+
+       1. The Non-Potential rules banner is dropped (client, 2026-08-17). The support link
+          it carried survives as the ? on the section header, now pointing at the CS
+          support WhatsApp group.
+       2. Deliberately NOT built, both "not needed on their end" (client, 2026-08-18): the
+          sheet's third 4-square column (ASSISTING INTEREST / COURSE INTEREST) and the
+          Seminar Confirmation rows "% conf in designate" / "% conf in alternate". This
+          page is therefore a narrower view than the sheet BY REQUEST, not by oversight —
+          do not "restore" them as a missing-column bug. Field mappings for all of them are
+          recorded in dashboardRenderReport()'s header comment so nothing has to be
+          rediscovered if that decision reverses.
+       3. Every row still reading "—" names the Ontraport field that would fill it, in its
+          band's Source line. They are not unmappable — oEventTeam (10007) carries a
+          62-field statistics block, f2892-f2953, whose field names match this sheet almost
+          label for label. The Forum 218 reconciliation (D13) found that block reading 0
+          across all six event-team records for the event, i.e. the fields exist and are
+          never written. So these rows are blocked on a write path, not on a mapping, and
+          each becomes a one-line change once that rollup runs.
+
+       Rows are rendered even when unfilled, deliberately: the shape of the sheet is the
+       point, and a row reading "—" is honest where a number derived from a
+       plausible-looking field would not be — a CS has no way to tell a real 93 from an
+       invented one.
        ============================================================ -->
-  <div class="rep-rules">
-    <h4>What determines Non-Potential</h4>
-    <p><b>Seminars:</b> minors and Reviewers of the Forum are Non-Potential.</p>
-    <p><b>Advanced Course:</b> minors, anyone who has already taken it, and anyone already registered for the Advanced Course are Non-Potential.</p>
-    <p><b>Potential-If-Registered:</b> there are never any in the Landmark Forum ledger.</p>
-  </div>
-
   <div class="rep-cols">
     <div>
       <div class="kpi-band">
-        <div class="kpi-hd"><span class="eyebrow">Currently in course</span><span class="kpi-src">Source · roster</span></div>
+        <div class="kpi-hd"><span class="eyebrow">Currently in course</span><span class="kpi-src">Source · roster · Scholarships &rarr; f2900</span></div>
         <div class="rep-list">
           <div class="rep-row"><span class="l">Reviewers</span><span class="v" data-stat="repReviewers">—</span></div>
           <div class="rep-row"><span class="l">Scholarships</span><span class="v" data-stat="repScholarships">—</span></div>
@@ -655,7 +688,7 @@
       </div>
 
       <div class="kpi-band">
-        <div class="kpi-hd"><span class="eyebrow">Attendance</span><span class="kpi-src">Source · Event Starts rollup and roster</span></div>
+        <div class="kpi-hd"><span class="eyebrow">Attendance</span><span class="kpi-src">Source · Event Starts rollup and roster · Day 2/3 starts &rarr; f2906 / f2908</span></div>
         <div class="rep-list">
           <div class="rep-row"><span class="l"># who started on Day 1</span><span class="v" data-stat="repStartDay1">—</span></div>
           <div class="rep-row"><span class="l">Total # that left during Day 1</span><span class="v" data-stat="repLeftDay1">—</span></div>
@@ -681,8 +714,6 @@
         <div class="rep-list">
           <div class="rep-row"><span class="l">Potential</span><span class="v" data-stat="repSemPotential">—</span></div>
           <div class="rep-row"><span class="l">Confirmed</span><span class="v" data-stat="repSemConfirmed">—</span></div>
-          <div class="rep-row"><span class="l">% confirmed in designated</span><span class="v" data-stat="repSemDesPct">—</span></div>
-          <div class="rep-row"><span class="l">% confirmed in alternate</span><span class="v" data-stat="repSemAltPct">—</span></div>
           <div class="rep-row tot"><span class="l">Confirmed %</span><span class="v" data-stat="repSemConfirmedPct">—</span></div>
         </div>
       </div>
@@ -696,8 +727,12 @@
         </div>
       </div>
 
+      <!-- Final session: every row here maps to a named oEventTeam field (f2926-f2939) that
+           currently reads 0 on every event-team record — see D13/D19 in the Forum 218
+           reconciliation. The section is explicitly *preliminary* on the CS's own sheet:
+           it is filled at graduation, which is after the point this dashboard is used. -->
       <div class="kpi-band">
-        <div class="kpi-hd"><span class="eyebrow">Final session</span><span class="kpi-src">Source · guest records — mapping pending</span></div>
+        <div class="kpi-hd"><span class="eyebrow">Final session</span><span class="kpi-src">Source · oEventTeam f2926-f2939 — never written yet</span></div>
         <div class="rep-list">
           <div class="rep-row"><span class="l"># participants attending</span><span class="v" data-stat="repFsAttending">—</span></div>
           <div class="rep-row"><span class="l">Attendance percentage</span><span class="v" data-stat="repFsPct">—</span></div>
@@ -708,6 +743,60 @@
           <div class="rep-row tot"><span class="l">Verified guest LF reg</span><span class="v" data-stat="repVerifiedGuestLfReg">—</span></div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PRELIMINARY STATISTICS REPORT — NEW 2026-08-17. The two summary strips the CS's
+       sheet carries below the 4-square, on the same tab: a short cut for the Forum Leader
+       and the full one for the Course Supervisor. They are the sheet's actual output — the
+       thing that gets read out — so mirroring the 4-square without them mirrors the working
+       area and not the deliverable.
+
+       Every cell restates a figure already computed above; nothing new is derived here,
+       which is why they carry no separate Source line. Two exceptions worth knowing:
+       "# Non-Rev start" is its own base (starts minus reviewers), and "Coach" is a
+       free-text cell on the sheet with no field behind it — rendered empty rather than
+       dropped, so the column count still matches the CS's copy.
+       ============================================================ -->
+  <div class="kpi-band">
+    <div class="kpi-hd"><span class="eyebrow">Preliminary statistics report · Forum Leader</span><span class="kpi-src">Restates the figures above</span></div>
+    <div class="rep-strip">
+      <table>
+        <thead><tr>
+          <th># Non-Rev start</th><th># Rev</th><th># Non-Rev comp</th><th># WBO</th><th>% LDP</th>
+          <th>% Reg sems</th><th>% Reg AC</th><th>% Reg des ADV</th><th>% Reg 2nd ADV</th><th>% Int assist</th><th>Coach</th>
+        </tr></thead>
+        <tbody><tr>
+          <td data-stat="repNonRevStart">—</td><td data-stat="repReviewers">—</td><td data-stat="repNonRevCompleted">—</td>
+          <td data-stat="repWbo">—</td><td data-stat="repLdpPct">—</td><td data-stat="repSemConfirmedPct">—</td>
+          <td data-stat="repAcPct">—</td><td data-stat="repAcDesPct">—</td><td data-stat="repAcAltPct">—</td>
+          <td data-stat="repAssistPct">—</td><td data-stat="repCoach">—</td>
+        </tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="kpi-band">
+    <div class="kpi-hd"><span class="eyebrow">Preliminary statistics report · Course Supervisor</span><span class="kpi-src">Restates the figures above</span></div>
+    <div class="rep-strip">
+      <table>
+        <thead><tr>
+          <th># Non-Rev start</th><th># Rev</th><th># Non-Rev comp</th><th># WBO</th><th>% WBO</th>
+          <th># LDP</th><th>% LDP</th><th># Pot sems</th><th># Reg sems</th><th>% Reg sems</th>
+          <th># Pot AC</th><th># Reg AC</th><th>% Reg AC</th><th>% Reg des ADV</th><th>% Reg 2nd ADV</th>
+          <th># Pot assist</th><th># Int assist</th><th>% Int assist</th><th>Coach</th>
+        </tr></thead>
+        <tbody><tr>
+          <td data-stat="repNonRevStart">—</td><td data-stat="repReviewers">—</td><td data-stat="repNonRevCompleted">—</td>
+          <td data-stat="repWbo">—</td><td data-stat="repWboPct">—</td><td data-stat="repLdp">—</td><td data-stat="repLdpPct">—</td>
+          <td data-stat="repSemPotential">—</td><td data-stat="repSemConfirmed">—</td><td data-stat="repSemConfirmedPct">—</td>
+          <td data-stat="repAcPotential">—</td><td data-stat="repAcRegistered">—</td><td data-stat="repAcPct">—</td>
+          <td data-stat="repAcDesPct">—</td><td data-stat="repAcAltPct">—</td>
+          <td data-stat="repAssistPotential">—</td><td data-stat="repAssistRegistered">—</td><td data-stat="repAssistPct">—</td>
+          <td data-stat="repCoach">—</td>
+        </tr></tbody>
+      </table>
     </div>
   </div>
 

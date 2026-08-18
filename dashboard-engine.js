@@ -1231,33 +1231,92 @@ function dashboardRenderSnapshot(registrations, eventFields, staffCount){
     : (gap > 0 ? '+' + gap + ' more than expected' : Math.abs(gap) + ' fewer than expected'));
 }
 
-/* ---------- In Course Stats Summary (Reporting Dashboard) — REAL BUILD 2026-08-16.
-   Mirrors the sheet the CS works from, category for category, as a holding shape while a
-   deeper version is designed. Every row is rendered even when its source is unmapped: the
-   shape of the sheet is the point, and a row reading "—" is honest where a number derived
-   from a plausible-looking field would not be — a CS has no way to tell a real 93 from an
-   invented one.
+/* ---------- In Course Stats Summary (Reporting Dashboard) — REAL BUILD 2026-08-16,
+   re-audited against the live sheet 2026-08-17.
 
-   ROWS NOT YET MAPPED, and why, so nobody has to re-derive this:
-     Scholarships              no field found on oRegistrations
-     # who started Day 2 / 3   the sheet's 108 is not starts (113) minus Day 1 leavers (2),
-                               so this is its own measure, not arithmetic on the rows above
-     Attendance percentage     denominator unconfirmed
-     GPH baseline              reads 93 on the sheet, equal to Standards — likely related,
-                               unverified, so not wired on the resemblance
-     Adjusted guest count, # LF guests, # guests unidentified, verified guest LF reg
-                               guest-object metrics with no confirmed mapping
+   Mirrors the sheet the CS works from (Google Sheets gid 2123819044), category for
+   category. Every row is rendered even when its source is unmapped: the shape of the sheet
+   is the point, and a row reading "—" is honest where a number derived from a
+   plausible-looking field would not be — a CS has no way to tell a real 93 from an
+   invented one.
+ 
+   WHAT THE 2026-08-18 REVIEW REMOVED (client instruction, both "not needed on their end")
+
+     Assisting Interest / Course Interest   The sheet's third 4-square column. Built on
+       2026-08-17 and cut the next day. The mapping is recorded here rather than in the
+       deleted code because the reconciliation doc still has it filed wrong: D20/D21 say no
+       Ontraport field exists for these, and that is not true — oRegistrations carries
+       f3063 Interested In: Assisting, f3074 Family Division, f3075 TCP and f3064 Vanto,
+       and oEventTeam carries f2922-f2924 for the assisting rollup. Restoring the column is
+       four countTrue() calls if it is ever wanted back.
+     % conf in designate / % conf in alternate   Seminar Confirmation rows, computed from
+       f3302 DES Seminars / f3303 Alternate SEM as a share of those confirmed. Removed with
+       their source reads; f3302/f3303 are no longer used anywhere in this function.
+
+   The Preliminary Statistics Report strips still carry their assisting and ADV
+   designated/alternate columns. That is deliberate: those strips mirror the CS's own
+   report line for line and are read by column POSITION, so dropping a column silently
+   shifts every column after it. They render "—", the same as the other cells with no write
+   path. Say the word and they come out too.
+
+   ROWS READING "—", and why, so nobody has to re-derive this. These are not "unmapped":
+   oEventTeam (10007) carries a 62-field statistics block, f2892-f2953, whose field names
+   match this sheet almost label for label. That block is the system's own version of the
+   CS's hand report. Forum 218 reconciliation D13 found it reading 0 across ALL SIX
+   event-team records for the event — the fields exist and are never written. So each row
+   below is blocked on a write path, not on a mapping:
+
+     Scholarships              f2900 Current Scholarships. Not derived from the roster
+                               instead: Price Type reads Scholarship on 43 rows of event
+                               218 against the CS's 0, and all 43 carry $495 gross, which
+                               is standard tuition (D6). Two irreconcilable answers, so
+                               neither is shown.
+     # who started Day 2 / 3   f2906 Day 2 Starts / f2908 Day 3 Starts. Confirmed NOT
+                               derivable: the sheet reads 113 / 108 / 108 while
+                               113 - 2 = 111, so starts are their own measure and not
+                               arithmetic on the rows above (D16).
+     Final session (7 rows)    f2926-f2939. The CS's own sheet marks this section
+                               preliminary — it is filled at graduation, after the point
+                               this dashboard is used (D19). GPH Baseline specifically is
+                               f2927, a real field: it reads equal to Standards on both
+                               sheet snapshots seen so far, but two coincidences are not a
+                               rule, so it is not wired on the resemblance.
+     Strip-only columns        # Pot/Int assist and % Int assist (f2922-f2924), % Reg des
+                               ADV and % Reg 2nd ADV (f2920 / f2921), and Coach, which is
+                               free text on the sheet with no field behind it at all.
+
+   WHERE THIS DIFFERS FROM THE CS's SHEET — and why the difference is now the sheet's, not
+   this function's. Client ruling 2026-08-18: "Why are we excluding LDP 5? It's still an
+   LDP." So LDP 5 (request transfer to a future course) COUNTS as a departure. That settles
+   D5 in favour of what this code already did — it has always counted every departure and
+   has never known about LDP 5, because Ontraport stamps all 11 departures on event 218 as
+   f3056 = 428 (LDP 1) and the distinction only ever existed in the CS's hand log.
+
+   No code change followed from that ruling. What it changes is which side is out of date:
+
+     % total LDP      Reads 10% (11 of 113 starts) against the sheet's 9% (8 of 93). The
+                      sheet drops the three LDP 5 records from the numerator AND uses a
+                      non-Reviewer base. This function keeps all 11 and divides by f3299
+                      Event Starts, which is the client's own earlier ruling ("WBO is not a
+                      sub number of Left. It's off the total of participants, same for
+                      LDP") and is unaffected by the LDP 5 question.
+     # Non-Rev start  Reads 96 (starts - Reviewers) against the sheet's 93 — the same three
+                      records, same root cause.
+
+   Both now resolve to "the sheet is under-counting", not "the dashboard is wrong". Worth
+   saying out loud to the CS before they reconcile the two by hand and assume this page is
+   the broken one.
 
    Standards is computed as participants who are neither Reviewers nor statistically
-   excluded. Once Scholarships is mapped it must also be subtracted — on the CS's own
-   sheet Total 108 = Reviewers 15 + Scholarships 0 + Standards 93 + SE 0, which only
-   agrees with this formula while Scholarships is zero. ---------- */
+   excluded. Once Scholarships is mapped it must ALSO be subtracted — on the CS's sheet
+   Total = Reviewers + Scholarships + Standards + SE, which only agrees with this formula
+   while Scholarships is zero. ---------- */
 function dashboardRenderReport(active, eventFields, m){
   var isRev = function(r){ return rosterIsTrue(r.f3044); };
   var leftDay = function(r){ return Number(ROSTER_LEFT_DAY_TO_NUM[String(r.f3059 || '')] || 0); };
   var wboRows = active.filter(function(r){ return rosterIsTrue(r.f2688); });
   /* Total participants = starts minus those who left. Matches the sheet, where
-     113 starts − 5 LDP = 108 Total Part. */
+     113 starts - 11 LDP = 102 Total Part. */
   var totalPart = Math.max(0, m.eventStarts - m.ldp);
   var standards = active.filter(function(r){ return !isRev(r) && !rosterIsTrue(r.f3046); }).length;
 
@@ -1278,21 +1337,37 @@ function dashboardRenderReport(active, eventFields, m){
   dashboardSetStat('repWboPct', dashboardFmtPct(m.wbo, m.eventStarts));
   /* Completions come from the f3301 COMPLETES rollup, the client's authoritative number,
      not from counting f2809 on the roster. The non-Reviewer split has no rollup, so it is
-     counted — the two can disagree if f2809 and f3301 ever drift apart. */
+     counted — the two can disagree if f2809 and f3301 ever drift apart. On event 218 they
+     already do: f2809 Forum Completed is set on 0 of 142 registrations (D12), so the
+     counted split reads 0 while the rollup reads a real number. */
   dashboardSetStat('repCompleted', Number(eventFields.f3301 || 0));
   dashboardSetStat('repNonRevCompleted', active.filter(function(r){ return rosterIsTrue(r.f2809) && !isRev(r); }).length);
 
   dashboardSetStat('repSemPotential', m.seminarPotential);
   dashboardSetStat('repSemConfirmed', m.seminarReg);
-  /* f3302 DES Seminars / f3303 Alternate SEM are counts; the sheet shows them as a share
-     OF THOSE CONFIRMED, which is the only reading under which the two can sum to 100%. */
-  dashboardSetStat('repSemDesPct', dashboardFmtPct(Number(eventFields.f3302 || 0), m.seminarReg));
-  dashboardSetStat('repSemAltPct', dashboardFmtPct(Number(eventFields.f3303 || 0), m.seminarReg));
   dashboardSetStat('repSemConfirmedPct', dashboardFmtPct(m.seminarReg, m.seminarPotential));
 
   dashboardSetStat('repAcPotential', m.acPotential);
   dashboardSetStat('repAcRegistered', m.acReg);
   dashboardSetStat('repAcPct', dashboardFmtPct(m.acReg, m.acPotential));
+
+  /* Preliminary Statistics Report strips. Every other cell in them reuses a data-stat key
+     already written above — dashboardSetStat() writes every matching element on the page,
+     so the strips fill themselves. Only the two keys that appear nowhere else are set here. */
+  dashboardSetStat('repNonRevStart', Math.max(0, m.eventStarts - m.reviewer));
+  dashboardSetStat('repLdp', m.ldp);
+  dashboardSetStat('repWbo', m.wbo);
+}
+
+/* Destination behind the sheet's "CLICK HERE for support" banner — the CS support WhatsApp
+   group, supplied by the client 2026-08-18. (The Drive export returns cell text, not the
+   hyperlink target, so this could not be read off the sheet.) Opened in a new tab with
+   noopener. The empty-string branch is kept for the case where this is ever blanked: a
+   button that says why it did nothing beats one that silently does nothing. */
+var REPORT_SUPPORT_URL = 'https://chat.whatsapp.com/DKM5qORd82RDFSoAYSVmuV';
+function openReportHelp(){
+  if(REPORT_SUPPORT_URL){ window.open(REPORT_SUPPORT_URL, '_blank', 'noopener'); return; }
+  toast('Support link not set yet — needs the destination behind the sheet’s “CLICK HERE for support” banner.');
 }
 
 function dashboardFetchRoster(){
@@ -1360,22 +1435,33 @@ function guestProgPill(kind, registered, potential, reasonCode, reasonMap){
   return '<button class="pill ' + cls + ' ev-clickable prog-' + kind + '" data-reg="' + (registered ? 1 : 0) + '" onclick="openDetailPop(this)" data-pop-title="' + (kind === 'ac' ? 'Advanced Course' : 'Forum') + ' Registration" data-pop-kv=\'' + guestEscAttr(JSON.stringify(kv)) + '\'>' + label + '</button>';
 }
 
-function guestBuildCardHtml(inv, localeAbbr){
+/* Guest row, nested inside its inviting participant's party card (2026-08-17).
+   Carries data-inv-id itself — toggleGuestChip()/openNotes()/confirmNotes() all resolve
+   the invitation from this element, never from the .ev-card above it, because that card is
+   now the party rather than a single guest.
+
+   Chips are self-labelling rather than sitting under a column caption row. A caption row
+   would have to repeat AFTER 7:30PM / ATTEND / LF GRAD? once per party, and with parties of
+   one to three guests that is more label than data on the page; it would also detach from
+   its columns at the narrow breakpoint, where the row stacks. */
+function guestBuildGuestRowHtml(inv){
   var guestFirst = inv['f2259//firstname'] || '';
   var guestLast = inv['f2259//lastname'] || '';
-  var guestName = (guestFirst + ' ' + guestLast).trim() || 'Unknown Guest';
-  var invFirst = inv['f2257//firstname'] || '';
-  var invLast = inv['f2257//lastname'] || '';
-  var invNameLikes = inv['f2257//f2792'] || '';
-  var inviterDisplay = ((invNameLikes || invFirst) + ' ' + invLast).trim() || 'Not associated';
-  var searchStr = (guestName + ' ' + inviterDisplay).toLowerCase();
+  var guestName = (guestFirst + ' ' + guestLast).trim() || 'Unknown guest';
+  /* Guest email is on the f2259 Guest parent link, NOT the f2961 text copy — f2961 is empty
+     on all 154 invitations of event 218 while 153 of them resolve to a Contact with a working
+     address. Rendered only when the webhook actually returns the extern: printing an empty
+     line would read as "this guest has no email", which is a different and wrong claim. */
+  var guestEmail = inv['f2259//email'] || '';
 
   var after730 = guestIsTrue(inv.f2966);
   var attended = guestIsTrue(inv.f3210);
   var lfGrad = guestIsTrue(inv.f2292);
 
   function regChip(on, label, key){
-    return '<button class="togchip chip-check' + (on ? ' on' : '') + '" data-key="' + key + '" onclick="toggleGuestChip(this)" title="' + label + (on ? ': Yes' : ': No') + '"><span class="dot"></span></button>';
+    return '<button class="togchip chip-check gg-chip' + (on ? ' on' : '') + '" data-key="' + key +
+      '" onclick="toggleGuestChip(this)" title="' + label + (on ? ': Yes' : ': No') + '"><span class="dot"></span>' +
+      guestEscHtml(label) + '</button>';
   }
 
   var regPill = guestProgPill('lf', guestIsTrue(inv.f2299), guestIsTrue(inv.f3211), inv.f3050, GUEST_NP_REASON_MAP);
@@ -1384,23 +1470,115 @@ function guestBuildCardHtml(inv, localeAbbr){
   var notes = inv.f3214 || '';
   var notesBtn = '<button class="ev-notesbtn' + (notes ? ' has-note' : '') + '" onclick="openNotes(this)" title="Operational note" aria-label="Operational note"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h10a1 1 0 0 1 1 1v8l-3 3H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M7 8h6M7 11h4"/></svg></button>';
 
-  return '<div class="ev-card" data-search="' + guestEscAttr(searchStr) + '" data-inv-id="' + guestEscAttr(inv.id) + '">' +
-    '<div class="ev-row1">' +
-      '<div class="ev-name"><b>' + guestEscHtml(guestName) + '</b><div class="ev-sub">Invited by ' + guestEscHtml(inviterDisplay) + '</div></div>' +
-      '<div class="ev-field"><div class="ev-l">After 7:30pm</div>' + regChip(after730, 'After 7:30pm', 'after730') + '</div>' +
-      '<div class="ev-field"><div class="ev-l">Attend</div>' + regChip(attended, 'Attend', 'attend') + '</div>' +
-      '<div class="ev-field"><div class="ev-l">Format</div><span class="pill p-locale">' + guestEscHtml(localeAbbr.abbr) + '</span></div>' +
-      '<div class="ev-field"><div class="ev-l">LF Grad?</div>' + regChip(lfGrad, 'LF Grad', 'lfGrad') + '</div>' +
-      '<div class="ev-field"><div class="ev-l">REG</div>' + regPill + '</div>' +
-      '<div class="ev-field"><div class="ev-l">ADV. CRS</div>' + acPill + '</div>' +
-      '<div class="ev-field"><div class="ev-l">Notes</div>' + notesBtn + '</div>' +
-    '</div>' +
-  '</div>';
+  /* .ev-name on the name block is load-bearing, not decorative: openNotes() finds the record
+     it is acting on with querySelector('.ev-name b'), so without it the notes panel would
+     title itself "this record" for every guest. */
+  return '<div class="gg-guest" data-inv-id="' + guestEscAttr(inv.id) + '">' +
+      '<div class="ev-name gg-gname"><b>' + guestEscHtml(guestName) + '</b>' +
+        (guestEmail ? '<div class="gg-gmail">' + guestEscHtml(guestEmail) + '</div>' : '') +
+      '</div>' +
+      '<div class="gg-chips">' + regChip(after730, 'After 7:30pm', 'after730') + regChip(attended, 'Attend', 'attend') + regChip(lfGrad, 'LF Grad', 'lfGrad') + '</div>' +
+      '<div class="gg-pills">' + regPill + acPill + '</div>' +
+      notesBtn +
+    '</div>';
+}
+
+/* One card per inviting participant, holding every guest they invited.
+   Keeps the .ev-card class so paginate()/filterList() need no changes — they page over the
+   list's direct .ev-card children and match on data-search, and both still hold. What
+   changes is only what one card MEANS: a party, not a guest. */
+function guestBuildPartyCardHtml(party, localeAbbr){
+  var rows = party.guests.map(guestBuildGuestRowHtml).join('') ||
+    '<div class="gg-none">No guest is linked to this invitation record.</div>';
+
+  /* Party size is participant + guests: the number of seats a breakout room actually has to
+     hold. Guest count is stated separately because they are different questions — a room
+     needs the first, a CS chasing invitations wants the second. */
+  var partySize = party.isUnassociated ? party.guests.length : party.guests.length + 1;
+  var guestWord = party.guests.length === 1 ? 'guest' : 'guests';
+  var sub = party.isUnassociated
+    ? 'No inviting participant on the invitation record — assign before rooms are set'
+    : party.guests.length + ' ' + guestWord + ' invited';
+
+  return '<div class="ev-card' + (party.isUnassociated ? ' gg-unassoc' : '') + '" data-search="' + guestEscAttr(party.search) + '">' +
+      '<div class="gg-hd">' +
+        rosterAvatarFaceHtml(party.name, '') +
+        '<div class="ev-name"><b>' + guestEscHtml(party.name) + '</b><div class="ev-goesby">' + guestEscHtml(sub) + '</div></div>' +
+        '<span class="gg-count">Party of <b>' + partySize + '</b></span>' +
+        '<span class="pill p-locale">' + guestEscHtml(localeAbbr.abbr) + '</span>' +
+      '</div>' +
+      '<div class="gg-guests">' + rows + '</div>' +
+    '</div>';
+}
+
+/* Group invitations by inviting participant.
+   Keyed on the f2257 participant ID, never on the rendered name: two participants can share
+   a display name, and merging their parties would seat a stranger's guests with them. Rows
+   with no f2257 at all collect into one card at the end — they are the group a CS has to
+   resolve by hand, since there is nobody to seat them with, so they are surfaced rather
+   than dropped or silently attached to someone. */
+function guestGroupByInviter(guests){
+  var byInviter = {};
+  var order = [];
+  var unassociated = { key: '__none__', name: 'Not associated with a participant', guests: [], search: 'not associated', isUnassociated: true };
+
+  guests.forEach(function(inv){
+    /* Prefer the explicit id extern. Ontraport renders a parent-link field as a DISPLAY
+       STRING rather than an ID (the same trap as f2214, where f2214//id is the only way to
+       get the number), so keying on a bare f2257 would merge two same-named participants
+       into one party and seat a stranger's guests with them. Falls back to the raw value so
+       grouping still works if the webhook has not been asked for f2257//id yet — with that
+       one known collision risk, which is strictly better than every row landing in the
+       unassociated pile. */
+    var invId = inv['f2257//id'] != null && inv['f2257//id'] !== '' ? String(inv['f2257//id'])
+      : (inv.f2257 == null ? '' : String(inv.f2257));
+    var guestName = ((inv['f2259//firstname'] || '') + ' ' + (inv['f2259//lastname'] || '')).trim();
+    var guestEmail = inv['f2259//email'] || '';
+
+    var party;
+    if(!invId){
+      party = unassociated;
+    } else if(byInviter[invId]){
+      party = byInviter[invId];
+    } else {
+      var first = inv['f2257//firstname'] || '';
+      var last = inv['f2257//lastname'] || '';
+      /* f2792 is the participant's "goes by" name. Preferred over the legal first name for
+         the same reason the roster prefers it — it is what the room calls them. */
+      var likes = inv['f2257//f2792'] || '';
+      party = byInviter[invId] = {
+        key: invId,
+        name: ((likes || first) + ' ' + last).trim() || 'Participant ' + invId,
+        sortKey: (last + ' ' + (likes || first)).trim().toLowerCase(),
+        guests: [],
+        search: '',
+        isUnassociated: false
+      };
+      order.push(party);
+    }
+    party.guests.push(inv);
+    /* The card's data-search has to carry every guest in the party as well as the
+       participant, or searching for a guest by name would hide the only card containing
+       them — paginate() matches against the card, and the card is now the party. */
+    party.search += ' ' + (party.isUnassociated ? '' : party.name.toLowerCase()) + ' ' + guestName.toLowerCase() + ' ' + guestEmail.toLowerCase();
+  });
+
+  order.sort(function(a, b){ return a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0; });
+  if(unassociated.guests.length){
+    unassociated.search = 'not associated unassigned ' + unassociated.search;
+    order.push(unassociated);
+  }
+  return order;
 }
 
 function toggleGuestChip(btn){
   if(btn.disabled) return;
-  var card = btn.closest('.ev-card');
+  /* Resolve by the data attribute, not by the .ev-card class. Since guests are grouped
+     under the inviting participant (2026-08-17), the nearest .ev-card is the PARTY, not the
+     guest — toggling any chip would have written to whichever invitation happened to own the
+     group card. data-inv-id sits on the guest row itself, so this is correct under both the
+     grouped layout and the flat one it replaced. */
+  var card = btn.closest('[data-inv-id]');
   var invId = Number(card.dataset.invId);
   var key = btn.dataset.key;
   var wasOn = btn.classList.contains('on');
@@ -1430,10 +1608,19 @@ function dashboardRenderGuests(guests){
   var list = document.getElementById('guestList');
   var localeFull = dashboardEventFormat();
   var localeAbbr = { full: localeFull, abbr: ROSTER_LOCALE_ABBR[localeFull] || localeFull };
-  var html = guests.map(function(inv){ return guestBuildCardHtml(inv, localeAbbr); }).join('');
+  var parties = guestGroupByInviter(guests);
+  var html = parties.map(function(p){ return guestBuildPartyCardHtml(p, localeAbbr); }).join('');
   list.innerHTML = html || '<div class="tokline" style="padding:12px 20px;">No guests recorded yet for this event.</div>';
-  var totalEl = list.closest('.card').querySelector('.card-hd .sub .mf');
+  /* Two counts, by id rather than by walking the card header, because they answer different
+     questions and the header now states both: how many guests are expected, and how many
+     parties they arrive in. The old code found its one count with
+     querySelector('.card-hd .sub .mf'), which silently bound to whichever figure happened to
+     be first in the markup — it would have started writing the guest total into the party
+     total the moment a second .mf was added to that line, which this change does. */
+  var totalEl = document.getElementById('guestTotalCount');
   if(totalEl) totalEl.textContent = guests.length;
+  var partyEl = document.getElementById('guestPartyCount');
+  if(partyEl) partyEl.textContent = parties.length;
   paginate('guest');
 }
 
@@ -2051,7 +2238,9 @@ function syncNpFlag(progEl, slotType, isNp){
 
 var pendingNotesCard = null;
 function openNotes(btn){
-  var card = btn.closest('.ev-card, .hr-row');
+  /* .gg-guest first: a nested guest row must win over the party .ev-card that contains it,
+     or the panel would open against the inviting participant and save the note to them. */
+  var card = btn.closest('.gg-guest, .ev-card, .hr-row');
   pendingNotesCard = card;
   var nameEl = card.querySelector('.ev-name b, .ev-name input, .hr-name b');
   document.getElementById('notesName').textContent = nameEl ? (nameEl.value || nameEl.textContent) : 'this record';
@@ -2084,7 +2273,12 @@ function confirmNotes(){
   var val = document.getElementById('notesText').value.trim();
   if(!val){ toast('A note is required.', 'err'); return; }
   var isRealRoster = card.classList.contains('ev-card') && /^\d+$/.test(card.dataset.regId || '');
-  var isRealGuest = card.classList.contains('ev-card') && /^\d+$/.test(card.dataset.invId || '');
+  /* Guests are identified by data-inv-id alone. The .ev-card class was dropped from this
+     test on 2026-08-17: under the grouped layout the element carrying data-inv-id is the
+     .gg-guest row, which is not an .ev-card, so requiring both would have sent every real
+     guest note down the demo branch — writing it to a DOM dataset and reporting "Note
+     saved." while nothing reached Ontraport. */
+  var isRealGuest = /^[0-9]+$/.test(card.dataset.invId || '');
   if(!isRealRoster && !isRealGuest){
     card.dataset.note = val;
     var demoBtn = card.querySelector('.ev-notesbtn');

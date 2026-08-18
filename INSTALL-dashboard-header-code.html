@@ -825,13 +825,72 @@ body.cs-dashboard .snap-att:focus-visible{outline-offset:-3px;border-radius:0;}
 .rep-row.tot{background:var(--paper-2);border-top:1px solid var(--line-2);}
 .rep-row.tot .l{font-weight:600;color:var(--ink);}
 .rep-row.tot .v{font-weight:600;}
-/* Non-Potential rules — the pink explainer at the top of the CS's sheet. Kept because
-   it is the thing that makes Potential numbers legible, restyled off the coral token. */
-.rep-rules{background:var(--coral-bg);border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:16px;}
-.rep-rules h4{font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);margin:0 0 7px;}
-.rep-rules p{font-size:12.5px;color:var(--gray);margin:0 0 6px;line-height:1.5;}
-.rep-rules p:last-child{margin-bottom:0;}
-.rep-rules b{color:var(--ink);font-weight:600;}
+/* Support affordance (2026-08-17) — replaces the .rep-rules explainer. The CS's sheet
+   carries a merged banner across the top of the 4-square view holding the Non-Potential
+   rules and a "CLICK HERE for support" link. Client instruction 2026-08-17: the rules
+   block is not needed on the dashboard, but the support escape hatch is. So it becomes a
+   floating ? anchored to the section header instead of spending a full band on it.
+   .sechd is flex-column, so the button is positioned rather than placed in flow — putting
+   it in flow would push the lede down and re-flow the heading on every view. */
+.sechd.has-help{position:relative;padding-right:44px;}
+.rep-help{position:absolute;top:2px;right:0;width:30px;height:30px;border-radius:50%;border:1px solid var(--line-2);background:#fff;color:var(--gray);font-size:14px;font-weight:700;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,color .15s,border-color .15s;}
+.rep-help:hover{background:var(--ink);color:#fff;border-color:var(--ink);}
+.rep-help:focus-visible{outline:2px solid var(--green);outline-offset:2px;}
+
+/* Preliminary Statistics Report strips (2026-08-17) — the two summary rows the CS's sheet
+   carries below the 4-square: a short cut for the Forum Leader and a wider one for the
+   Course Supervisor. Rendered as a scrolling row, never wrapped: the CS reads these by
+   column position, and wrapping silently re-orders them. */
+.rep-strip{background:#fff;border:1px solid rgba(230,226,216,.9);border-radius:13px;overflow-x:auto;}
+.rep-strip table{border-collapse:collapse;width:100%;min-width:max-content;}
+.rep-strip th,.rep-strip td{padding:9px 13px;text-align:center;white-space:nowrap;border-right:1px solid var(--line);}
+.rep-strip th:last-child,.rep-strip td:last-child{border-right:0;}
+.rep-strip th{font-size:9.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--gray);border-bottom:1px solid var(--line-2);background:var(--paper-2);}
+.rep-strip td{font-family:var(--mono);font-size:14px;color:var(--ink);letter-spacing:-.01em;}
+
+/* ---- Guests, grouped by inviting participant (2026-08-17) --------------------------
+   One card per PARTICIPANT with their guests nested inside, replacing one flat card per
+   guest. The driving use is breakout rooms (client, 2026-08-17): whoever assigns rooms
+   has to keep a participant and everyone they invited together, and a flat list sorted by
+   guest name scatters a party of three across three pages. Grouping makes the party both
+   the unit on screen and the unit of pagination.
+
+   The group card keeps the .ev-card class deliberately, so paginate()/filterList() need no
+   changes at all — they page over .ev-card children and match on data-search, and both
+   still hold. What changes is only what one .ev-card MEANS: a party, not a guest. The
+   card's data-search therefore has to carry every guest name in the party as well as the
+   participant's, or searching a guest would hide the card that contains them. */
+.gg-hd{display:flex;align-items:center;gap:12px;min-width:0;}
+.gg-hd .ev-name{flex:1 1 auto;min-width:0;}
+/* Party size — the number a room assignment is actually made on, so it is set as a figure
+   rather than folded into the subtitle line as prose. */
+.gg-count{flex:none;display:inline-flex;align-items:baseline;gap:6px;background:var(--paper-2);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:10px;font-weight:700;color:var(--gray);letter-spacing:.09em;text-transform:uppercase;white-space:nowrap;}
+.gg-count b{font-family:var(--mono);font-size:13px;color:var(--ink);letter-spacing:-.01em;}
+/* The rule down the left is the grouping signal — it is what makes a nested guest read as
+   "belongs to the card above" rather than as another top-level row. */
+.gg-guests{margin-top:11px;border-left:2px solid var(--line-2);padding-left:14px;display:flex;flex-direction:column;gap:2px;}
+.gg-guest{display:grid;grid-template-columns:minmax(150px,1.15fr) minmax(232px,auto) minmax(140px,auto) 30px;align-items:center;gap:14px;padding:7px 10px;border-radius:9px;transition:background .15s;}
+.gg-guest:hover{background:var(--paper-2);}
+.gg-gname{display:flex;flex-direction:column;min-width:0;}
+.gg-gname b{font-size:13px;font-weight:600;line-height:1.3;overflow-wrap:anywhere;}
+.gg-gmail{font-size:11px;color:var(--gray-2);line-height:1.3;margin-top:1px;overflow-wrap:anywhere;}
+.gg-chips,.gg-pills{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+/* Chips carry their own label instead of sitting under a column caption. A caption row
+   would have to repeat AFTER 7:30PM / ATTEND / LF GRAD? once per party — with parties of
+   one to three guests that is more label than data on the page. Self-describing chips also
+   survive the narrow breakpoint, where the columns stack and captions would detach. */
+.gg-chip{padding-right:11px;font-size:10px;letter-spacing:.07em;text-transform:uppercase;}
+/* A party with no guest rows: the participant invited someone whose invitation record has
+   no guest link. Stated, not skipped — a missing row is indistinguishable from a party of
+   zero otherwise. */
+.gg-none{font-size:12px;color:var(--gray-2);font-style:italic;padding:7px 10px;}
+/* Invitations with no inviting participant at all. Coral because it is the one group a CS
+   has to resolve by hand before rooms can be assigned — nobody to seat them with. */
+.gg-unassoc .av-face{background:var(--coral) !important;}
+@media(max-width:900px){
+  .gg-guest{grid-template-columns:minmax(0,1fr);row-gap:9px;}
+  .gg-guest .ev-notesbtn{justify-self:start;}
+}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;}
 .kpi{background:#fff;border:1px solid rgba(230,226,216,.9);border-radius:13px;padding:16px 15px 14px;text-align:center;min-width:0;}
 .kpi .l{font-size:10.5px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--gray);line-height:1.35;min-height:28px;display:flex;align-items:center;justify-content:center;}
