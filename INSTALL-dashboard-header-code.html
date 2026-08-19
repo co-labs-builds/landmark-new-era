@@ -860,8 +860,26 @@ body.cs-dashboard .snap-att:focus-visible{outline-offset:-3px;border-radius:0;}
    still hold. What changes is only what one .ev-card MEANS: a party, not a guest. The
    card's data-search therefore has to carry every guest name in the party as well as the
    participant's, or searching a guest would hide the card that contains them. */
-.gg-hd{display:flex;align-items:center;gap:12px;min-width:0;}
+/* The party header is the collapse control (2026-08-18), so it is a real <button>: full-row
+   hit area, keyboard operable for free, and aria-expanded announces the state instead of the
+   chevron being decoration a screen reader cannot read. Button defaults (border, background,
+   centred text, intrinsic width) all have to be unset for it to lay out like the row it
+   replaced. It holds no other interactive element, which is what makes wrapping the whole
+   header legal. */
+.gg-hd{display:flex;align-items:center;gap:12px;min-width:0;width:100%;background:none;border:0;padding:0;margin:0;font:inherit;color:inherit;text-align:left;cursor:pointer;border-radius:9px;}
+.gg-hd:focus-visible{outline:2px solid var(--green);outline-offset:3px;}
 .gg-hd .ev-name{flex:1 1 auto;min-width:0;}
+/* Chevron points right when collapsed, down when open. Rotation rather than two icons so the
+   movement itself reads as the same object opening. */
+.gg-chev{flex:none;width:22px;height:22px;display:flex;align-items:center;justify-content:center;color:var(--gray-2);transition:transform .18s,color .15s;}
+.gg-chev svg{width:13px;height:13px;}
+.gg-hd:hover .gg-chev{color:var(--ink);}
+.ev-card.gg-open .gg-chev{transform:rotate(90deg);}
+/* Collapsed is the DEFAULT state (client, 2026-08-18) — the list is scanned as a roll of
+   participants and their party sizes, and opened only for the party being worked on. Hiding
+   with display:none rather than height animation keeps the guest rows out of the tab order
+   while collapsed, which a max-height trick would not. */
+.ev-card:not(.gg-open) .gg-guests{display:none;}
 /* Party size — the number a room assignment is actually made on, so it is set as a figure
    rather than folded into the subtitle line as prose. */
 .gg-count{flex:none;display:inline-flex;align-items:baseline;gap:6px;background:var(--paper-2);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:10px;font-weight:700;color:var(--gray);letter-spacing:.09em;text-transform:uppercase;white-space:nowrap;}

@@ -1456,6 +1456,14 @@ function guestBuildGuestRowHtml(inv){
 
   var after730 = guestIsTrue(inv.f2966);
   var attended = guestIsTrue(inv.f3210);
+  /* f2292 is NOT the live grad status. The Guest snapshot moved to f2337 on 2026-08-18
+     because f2292 reads 0 on every record — no automation writes it; the invitation form
+     writes f2337 (147 Yes / 148 No / 159 Unsure). This chip is deliberately left on f2292:
+     it is a WRITE control whose key maps to f2292 inside the CS Dashboard : Guest Toggle
+     n8n workflow, so repointing it needs that workflow changed in step, and f2337 is a
+     three-value dropdown that a two-state toggle cannot represent honestly anyway.
+     Consequence to know: this chip and the snapshot's Grad tiles read different fields and
+     can disagree. Resolving it is an n8n + control-type change, not a one-liner. */
   var lfGrad = guestIsTrue(inv.f2292);
 
   function regChip(on, label, key){
@@ -1493,22 +1501,56 @@ function guestBuildPartyCardHtml(party, localeAbbr){
 
   /* Party size is participant + guests: the number of seats a breakout room actually has to
      hold. Guest count is stated separately because they are different questions — a room
-     needs the first, a CS chasing invitations wants the second. */
-  var partySize = party.isUnassociated ? party.guests.length : party.guests.length + 1;
+     needs the first, a CS chasing invitations wants the second.
+
+     For the unassociated group neither reading applies — there is no participant to seat
+     anyone with — so it shows a plain guest count instead of a party size. Calling a pile of
+     orphaned invitations a "party of 9" would imply they belong together, which is the exact
+     opposite of what that card means. */
   var guestWord = party.guests.length === 1 ? 'guest' : 'guests';
+  var countChip = party.isUnassociated
+    ? '<span class="gg-count">Unassigned <b>' + party.guests.length + '</b></span>'
+    : '<span class="gg-count">Party of <b>' + (party.guests.length + 1) + '</b></span>';
   var sub = party.isUnassociated
-    ? 'No inviting participant on the invitation record — assign before rooms are set'
+    ? 'No inviting participant on the invitation record — resolve before rooms are set'
     : party.guests.length + ' ' + guestWord + ' invited';
 
-  return '<div class="ev-card' + (party.isUnassociated ? ' gg-unassoc' : '') + '" data-search="' + guestEscAttr(party.search) + '">' +
-      '<div class="gg-hd">' +
+  /* Collapsed by default: no gg-open class here. The header is a <button> carrying
+     aria-expanded so the state is announced, not just drawn. */
+  return '<div class="ev-card' + (party.isUnassociated ? ' gg-unassoc' : '') + '" data-party-key="' + guestEscAttr(party.key) + '" data-search="' + guestEscAttr(party.search) + '">' +
+      '<button type="button" class="gg-hd" aria-expanded="false" onclick="toggleGuestParty(this)">' +
+        '<span class="gg-chev"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></span>' +
         rosterAvatarFaceHtml(party.name, '') +
-        '<div class="ev-name"><b>' + guestEscHtml(party.name) + '</b><div class="ev-goesby">' + guestEscHtml(sub) + '</div></div>' +
-        '<span class="gg-count">Party of <b>' + partySize + '</b></span>' +
+        '<span class="ev-name"><b>' + guestEscHtml(party.name) + '</b><span class="ev-goesby">' + guestEscHtml(sub) + '</span></span>' +
+        countChip +
         '<span class="pill p-locale">' + guestEscHtml(localeAbbr.abbr) + '</span>' +
-      '</div>' +
+      '</button>' +
       '<div class="gg-guests">' + rows + '</div>' +
     '</div>';
+}
+
+/* Open/close one party. Reads the state off the card rather than off the button so the two
+   can never disagree — the CSS keys on .gg-open, and aria-expanded is written from the same
+   result rather than toggled independently. */
+function toggleGuestParty(btn){
+  var card = btn.closest('.ev-card');
+  if(!card) return;
+  var open = card.classList.toggle('gg-open');
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+/* Expand/collapse every party currently rendered. Used by the search hook in paginate():
+   with cards collapsed by default, a search that matches a GUEST would otherwise show a
+   closed card bearing only the participant's name, with no visible reason why it matched.
+   Searching therefore opens what it finds, and clearing the box puts it all back. */
+function guestSetAllParties(open){
+  var list = document.getElementById('guestList');
+  if(!list) return;
+  Array.prototype.forEach.call(list.querySelectorAll('.ev-card'), function(card){
+    card.classList.toggle('gg-open', open);
+    var btn = card.querySelector('.gg-hd');
+    if(btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
 }
 
 /* Group invitations by inviting participant.
@@ -1564,9 +1606,18 @@ function guestGroupByInviter(guests){
   });
 
   order.sort(function(a, b){ return a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0; });
+  /* Unassociated invitations go FIRST, not last (client, 2026-08-18: "need a group for the
+     unaffiliated guests"). They were already grouped, but sitting after every participant
+     they fell onto page 2 of a 10-per-page list and a CS could work the whole roll without
+     ever seeing them. They are the one group that BLOCKS room assignment — nobody to seat
+     them with — so they lead. Every other card is alphabetical by participant surname.
+
+     Note this group is legitimately absent on a clean event: the 2026-08-17 invitations
+     cleanup found 0 of 174 invitations with no inviting participant. An empty group is not
+     rendered, so "no coral card" means "nothing to resolve", not "the feature is missing". */
   if(unassociated.guests.length){
-    unassociated.search = 'not associated unassigned ' + unassociated.search;
-    order.push(unassociated);
+    unassociated.search = 'not associated unassigned unaffiliated ' + unassociated.search;
+    order.unshift(unassociated);
   }
   return order;
 }
@@ -1608,9 +1659,28 @@ function dashboardRenderGuests(guests){
   var list = document.getElementById('guestList');
   var localeFull = dashboardEventFormat();
   var localeAbbr = { full: localeFull, abbr: ROSTER_LOCALE_ABBR[localeFull] || localeFull };
+
+  /* Remember which parties were open BEFORE the markup is replaced. Refresh re-renders the
+     whole list, so without this a CS working through a party has it slam shut under them
+     every time the data reloads — which is precisely the annoyance refreshing in place was
+     added to avoid. Keyed on data-party-key (the participant id), not on position, so it
+     survives rows being added, removed or re-sorted between refreshes. */
+  var wasOpen = {};
+  Array.prototype.forEach.call(list.querySelectorAll('.ev-card.gg-open'), function(card){
+    if(card.dataset.partyKey) wasOpen[card.dataset.partyKey] = true;
+  });
+
   var parties = guestGroupByInviter(guests);
   var html = parties.map(function(p){ return guestBuildPartyCardHtml(p, localeAbbr); }).join('');
   list.innerHTML = html || '<div class="tokline" style="padding:12px 20px;">No guests recorded yet for this event.</div>';
+
+  Array.prototype.forEach.call(list.querySelectorAll('.ev-card'), function(card){
+    if(!wasOpen[card.dataset.partyKey]) return;
+    card.classList.add('gg-open');
+    var btn = card.querySelector('.gg-hd');
+    if(btn) btn.setAttribute('aria-expanded', 'true');
+  });
+
   /* Two counts, by id rather than by walking the card header, because they answer different
      questions and the header now states both: how many guests are expected, and how many
      parties they arrive in. The old code found its one count with
@@ -1644,6 +1714,13 @@ var dashboardLastStaffCount = 0;
    staffPresence array Roster Fetch was extended to return (2026-08-14), then maintained by
    dashboardApplyStaffChanged(). Null until the first successful fetch. */
 var dashboardLastStaffPresence = null;
+/* Grad status codes on oInvitations f2337 "Is guest a grad of The Landmark Forum?".
+   This is the field the invitation FORM writes, and it is the only populated one. The two
+   whose names sound more authoritative — f2292 "Guest is a graduate" and f2968 "Guest
+   Graduate Status" — read 0 on all 185 records checked on 2026-08-17, i.e. no automation
+   has ever set them. Do not reach for f2292/f2968 here. */
+var GUEST_GRAD_YES = '147', GUEST_GRAD_NO = '148', GUEST_GRAD_UNSURE = '159';
+
 function dashboardRenderGuestSnapshot(){
   if(!dashboardLastRoster || !dashboardLastGuests || !dashboardLastEventFields) return;
   var roster = dashboardLastRoster;
@@ -1663,10 +1740,72 @@ function dashboardRenderGuestSnapshot(){
   var ggph = Number(ev.f2307 || 0);
   var rph = participantsLessSE ? Math.round((Number(ev.f2301 || 0) / participantsLessSE) * 100) + '%' : '—';
 
-  var nonGradGuests = guests.filter(function(g){ return String(g.f2292) !== '1'; });
-  var gradGuestsCount = guests.length - nonGradGuests.length;
-  var nonGradRegistered = nonGradGuests.filter(function(g){ return String(g.f2299) === '1'; }).length;
-  var forumRegEff = nonGradGuests.length ? Math.round((nonGradRegistered / nonGradGuests.length) * 100) + '%' : '—';
+  /* ---- Invitations-tracker parity (2026-08-18) -------------------------------------
+     The four tiles the team's Invitations tracker sheet leads with — Total Invites, Grad
+     Invites, Non-Grad Invites, Avg GPP — so the dashboard and that sheet cannot disagree.
+
+     Counted per INVITATION ROW, which is what the tracker counts. That is deliberately a
+     different unit from the "Total guests"/"Grad guests" tiles above, which count DISTINCT
+     guests: a repeat guest holds two invitation rows and is one guest. On event 218 that
+     gap was real (146 distinct emails across 154 rows), so the two sets are not
+     interchangeable and are labelled to say so. */
+  var gradCodeSeen = false;
+  for(var gi = 0; gi < guests.length; gi++){
+    if(guests[gi].f2337 != null && String(guests[gi].f2337) !== ''){ gradCodeSeen = true; break; }
+  }
+  var totalInvites = guests.length;
+  var gradInvites = guests.filter(function(g){ return String(g.f2337) === GUEST_GRAD_YES; }).length;
+  var nonGradInvites = guests.filter(function(g){ return String(g.f2337) === GUEST_GRAD_NO; }).length;
+  var unsureInvites = totalInvites - gradInvites - nonGradInvites;
+
+  /* Avg GPP — invitations per participant who actually invited someone, matching the
+     tracker's 331 / 4.7. The denominator is participants WHO INVITED, not the whole roster:
+     averaging over people who invited nobody answers a different question and always reads
+     lower. Keyed the same way the party grouping is keyed, so the two can never disagree
+     about how many distinct inviters there are. */
+  var inviterKeys = {};
+  guests.forEach(function(g){
+    var k = g['f2257//id'] != null && g['f2257//id'] !== '' ? String(g['f2257//id'])
+          : (g.f2257 == null ? '' : String(g.f2257));
+    if(k) inviterKeys[k] = true;
+  });
+  var inviterCount = Object.keys(inviterKeys).length;
+  var avgGpp = inviterCount ? (totalInvites / inviterCount).toFixed(1) : '—';
+  /* Grad/non-grad guest split, now off f2337. Until 2026-08-18 this read f2292, which is
+     never written — so "Grad guests" always showed 0 and Forum reg. effectiveness silently
+     used the ENTIRE guest population as its non-graduate denominator instead of the actual
+     non-graduates. Both numbers move as a result of this fix; the old ones were wrong.
+
+     Classification is STRICT: 147 is a graduate, 148 is not, and 159 "Unsure" or an unset
+     value is NEITHER. So these two tiles do not necessarily add up to Total guests, on
+     purpose — the alternative is filing an Unsure guest under "not a graduate", which is a
+     statement about that person nobody actually made. The remainder is reported in the
+     Non-grad invites sub-line rather than hidden. Forum reg. effectiveness uses the same
+     strict denominator, so it answers "of guests known not to be graduates, how many
+     registered" rather than quietly including the unknowns.
+
+     Counted by DISTINCT guest contact (f2259), not by invitation row: a guest invited twice
+     is one guest. The per-invite tiles below deliberately count rows instead — that is what
+     the Invitations tracker counts, and the two units are labelled so they cannot be read
+     as a discrepancy.
+
+     If the webhook does not return f2337 at all, every count would collapse to zero and
+     read as a confident "no graduates". gradCodeSeen distinguishes that case and shows "—",
+     because "we cannot see the field" and "nobody is a graduate" are different answers. */
+  var gradGuestIds = {}, nonGradGuestIds = {};
+  guests.forEach(function(g){
+    var key = g.f2259 || ('inv-' + g.id);
+    if(String(g.f2337) === GUEST_GRAD_YES) gradGuestIds[key] = true;
+    else if(String(g.f2337) === GUEST_GRAD_NO) nonGradGuestIds[key] = true;
+  });
+  var gradGuestsCount = Object.keys(gradGuestIds).length;
+  var nonGradGuestsCount = Object.keys(nonGradGuestIds).length;
+
+  var nonGradRegistered = guests.filter(function(g){
+    return String(g.f2337) === GUEST_GRAD_NO && String(g.f2299) === "1";
+  }).length;
+  var nonGradRows = guests.filter(function(g){ return String(g.f2337) === GUEST_GRAD_NO; }).length;
+  var forumRegEff = nonGradRows ? Math.round((nonGradRegistered / nonGradRows) * 100) + '%' : '—';
 
   dashboardSetStat('gsInvitationsSent', invitationsSent);
   dashboardSetSub('gsInvitationsSent', perParticipant + ' per participant');
@@ -1675,14 +1814,28 @@ function dashboardRenderGuestSnapshot(){
   dashboardSetStat('gsGph', gph);
   dashboardSetStat('gsGgph', ggph);
   dashboardSetStat('gsRph', rph);
-  dashboardSetStat('gsForumRegEff', forumRegEff);
-  dashboardSetSub('gsForumRegEff', nonGradRegistered + ' ÷ ' + nonGradGuests.length + ' non-graduate guests');
-  dashboardSetStat('gsGradGuests', gradGuestsCount);
-  dashboardSetStat('gsNonGradGuests', nonGradGuests.length);
+  dashboardSetStat('gsForumRegEff', gradCodeSeen ? forumRegEff : '—');
+  dashboardSetSub('gsForumRegEff', gradCodeSeen ? (nonGradRegistered + ' ÷ ' + nonGradRows + ' non-graduate invitations') : 'f2337 not in the guest payload');
+  dashboardSetStat('gsGradGuests', gradCodeSeen ? gradGuestsCount : '—');
+  dashboardSetStat('gsNonGradGuests', gradCodeSeen ? nonGradGuestsCount : '—');
+
+  dashboardSetStat('gsTotalInvites', totalInvites);
+  dashboardSetSub('gsTotalInvites', inviterCount + ' participants inviting');
+  dashboardSetStat('gsGradInvites', gradCodeSeen ? gradInvites : '—');
+  dashboardSetSub('gsGradInvites', gradCodeSeen ? (totalInvites ? Math.round((gradInvites / totalInvites) * 100) + '% of invites' : '—') : 'f2337 not in the guest payload');
+  dashboardSetStat('gsNonGradInvites', gradCodeSeen ? nonGradInvites : '—');
+  /* The unsure/unset remainder is surfaced rather than folded into non-grad. Folding is what
+     makes Grad + Non-Grad add up to Total on the tracker, but it also silently relabels
+     "159 Unsure" as "not a graduate", which is a claim about a guest nobody made. */
+  dashboardSetSub('gsNonGradInvites', gradCodeSeen ? (unsureInvites ? unsureInvites + ' more unsure or unset' : 'grad + non-grad = all invites') : 'f2337 not in the guest payload');
+  dashboardSetStat('gsAvgGpp', avgGpp);
+  dashboardSetSub('gsAvgGpp', 'invites per inviting participant');
 }
 
 function dashboardFetchGuests(){
-  fetch(DASHBOARD_GUESTS_WEBHOOK_URL, {
+  /* Returns the promise so callers can wait on it — the Refresh button needs to know when
+     the round trip is done to restore its label. Every existing caller ignores it. */
+  return fetch(DASHBOARD_GUESTS_WEBHOOK_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ eventTeamId: DASHBOARD_DATA.eventTeamId })
@@ -1693,11 +1846,46 @@ function dashboardFetchGuests(){
     dashboardRenderGuests(r.result.guests);
     dashboardLastGuests = r.result.guests;
     dashboardRenderGuestSnapshot();
+    return true;
   }).catch(function(err){
+    /* Resolves false rather than rejecting. Every caller but the Refresh button ignores the
+       return value, and rejecting would turn those into unhandled promise rejections in the
+       console for a failure that is already logged here. */
     console.error('dashboardFetchGuests failed:', err);
+    return false;
   });
 }
 
+
+/* Refresh the Guests list in place (2026-08-18).
+   Exists because a browser reload is genuinely expensive here: the engine calls go('home')
+   unconditionally on load, with no hash route and no stored view state, so refreshing the
+   page drops the CS back to Home and costs them two clicks (Event Management, then Guests,
+   since Roster is the default subtab) plus a full bootstrap. During graduation, when the
+   guest attendance poller is ticking Attend chips every minute, that is the difference
+   between watching the list and fighting the page.
+
+   Deliberately a button rather than a timer. An interval that re-renders under someone
+   mid-edit can close a notes panel or stomp a chip in flight; the CS choosing the moment
+   avoids all of it. dashboardRenderGuests() restores which parties were open, so pressing
+   this does not lose their place either. */
+function dashboardRefreshGuests(btn){
+  if(btn.disabled) return;
+  var original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Refreshing…';
+  dashboardFetchGuests().then(function(ok){
+    btn.disabled = false;
+    if(ok){
+      btn.textContent = original;
+      return;
+    }
+    /* Says so rather than silently reverting: an unchanged list after a refresh that failed
+       is indistinguishable from an unchanged list after one that worked. */
+    btn.textContent = 'Could not refresh';
+    setTimeout(function(){ btn.textContent = original; }, 2600);
+  });
+}
 function dashboardRenderHome(){
   var first = DASHBOARD_DATA.csFirstName;
   var last = DASHBOARD_DATA.csLastName;
@@ -3707,7 +3895,22 @@ function paginate(kind){
     if(advCount) advCount.textContent = filtered.length + ' of ' + cards.length + ' match';
   }
 }
-function filterList(kind){ pageState[kind] = 1; paginate(kind); }
+/* Guests only: a search opens what it finds, and clearing the box puts the roll back the way
+   it was. Parties render collapsed, so a query matching a GUEST would otherwise leave a shut
+   card showing only the participant's name with no visible reason it survived the filter.
+
+   This lives in filterList, NOT paginate, on purpose. paginate() also runs on page changes
+   and on every refresh, and doing it there slammed shut every party the CS had opened by
+   hand the moment they turned a page. Search is the only thing that should override their
+   choice, and searching is the only thing that calls this. */
+function filterList(kind){
+  pageState[kind] = 1;
+  if(kind === 'guest'){
+    var q = (document.getElementById('guestSearch').value || '').trim();
+    guestSetAllParties(!!q);
+  }
+  paginate(kind);
+}
 function pagerGo(kind, delta){ pageState[kind] = (pageState[kind] || 1) + delta; paginate(kind); }
 
 /* ---------- Roster search + Advanced search (2026-08-15) ----------

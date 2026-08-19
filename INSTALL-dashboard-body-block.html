@@ -553,8 +553,20 @@
       <div class="stat"><div class="l">GGPH</div><div class="n"><span class="mf-lg" data-stat="gsGgph">—</span></div><div class="sub">graduate guests per 100</div></div>
       <div class="stat big"><div class="l">Forum reg. effectiveness</div><div class="n"><span class="mf-lg" data-stat="gsForumRegEff">—</span></div><div class="sub" style="color:rgba(255,255,255,.55);" data-stat-sub="gsForumRegEff">—</div></div>
       <div class="stat"><div class="l">RPH</div><div class="n"><span class="mf-lg" data-stat="gsRph">—</span></div><div class="sub">registrations per 100 participants</div></div>
-      <div class="stat"><div class="l">Grad guests</div><div class="n"><span class="mf-lg" data-stat="gsGradGuests">—</span></div><div class="sub">prior programme on record</div></div>
-      <div class="stat"><div class="l">Non-grad guests</div><div class="n"><span class="mf-lg" data-stat="gsNonGradGuests">—</span></div><div class="sub">no prior programme</div></div>
+      <div class="stat"><div class="l">Grad guests</div><div class="n"><span class="mf-lg" data-stat="gsGradGuests">—</span></div><div class="sub">distinct guests · f2337</div></div>
+      <div class="stat"><div class="l">Non-grad guests</div><div class="n"><span class="mf-lg" data-stat="gsNonGradGuests">—</span></div><div class="sub">distinct guests · f2337</div></div>
+      <!-- Invitations-tracker parity (2026-08-18) — the four tiles that sheet leads with, so
+           the dashboard and the team's tracker cannot show different numbers for the same
+           thing. Counted per INVITATION ROW, which is what the tracker counts, and therefore
+           a different unit from the "Total guests"/"Grad guests" tiles above, which count
+           distinct guests. A repeat guest is two invitations and one guest — on event 218
+           that was 154 rows against 146 distinct emails, so the two genuinely differ. Both
+           units are labelled in the sub-line rather than left for someone to work out from a
+           mismatch. -->
+      <div class="stat"><div class="l">Total invites</div><div class="n"><span class="mf-lg" data-stat="gsTotalInvites">—</span></div><div class="sub" data-stat-sub="gsTotalInvites">—</div></div>
+      <div class="stat"><div class="l">Grad invites</div><div class="n"><span class="mf-lg" data-stat="gsGradInvites">—</span></div><div class="sub" data-stat-sub="gsGradInvites">—</div></div>
+      <div class="stat"><div class="l">Non-grad invites</div><div class="n"><span class="mf-lg" data-stat="gsNonGradInvites">—</span></div><div class="sub" data-stat-sub="gsNonGradInvites">—</div></div>
+      <div class="stat"><div class="l">Avg GPP</div><div class="n"><span class="mf-lg" data-stat="gsAvgGpp">—</span></div><div class="sub" data-stat-sub="gsAvgGpp">—</div></div>
     </div>
   </div>
   <!-- Guest attendance / registration / inviter association → oInvitation
@@ -569,6 +581,7 @@
         <div class="search" style="position:relative;">
           <input type="text" id="guestSearch" oninput="filterList('guest')" placeholder="Search guest name or inviting participant…" style="border:1px solid var(--line);border-radius:7px;padding:8px 12px;font-size:12.5px;width:260px;">
         </div>
+        <button class="btn btn-sm" onclick="dashboardRefreshGuests(this)" title="Reload the guest list without reloading the page">Refresh</button>
         <button class="btn btn-sm" onclick="toast('Export queued — audit entry recorded.')">Export</button>
       </div>
     </div>
