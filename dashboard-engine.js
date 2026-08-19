@@ -1731,14 +1731,58 @@ function dashboardRenderGuestSnapshot(){
   var invitationsSent = ev.f2266 != null ? ev.f2266 : 0;
   var perParticipant = participantsLessSE ? (invitationsSent / participantsLessSE).toFixed(1) : '—';
 
-  var distinctGuestIds = {};
-  guests.forEach(function(g){ if(g.f2259) distinctGuestIds[g.f2259] = true; });
-  var totalGuests = Object.keys(distinctGuestIds).length;
-  var pctOfInvitations = invitationsSent ? Math.round((totalGuests / invitationsSent) * 100) + '%' : '—';
+  /* ---- Show-up based tiles (2026-08-19) --------------------------------------------
+     "Total guests" now means guests who ACTUALLY SHOWED UP — f3210 Attended — not guests
+     who were invited. Until now it counted every distinct invited guest, so on event 218
+     it read 372 (91% of invitations) before a single person had joined, which is a
+     turnout number nobody could act on.
 
-  var gph = Number(ev.f2306 || 0) + Number(ev.f2307 || 0);
-  var ggph = Number(ev.f2307 || 0);
-  var rph = participantsLessSE ? Math.round((Number(ev.f2301 || 0) / participantsLessSE) * 100) + '%' : '—';
+     GPH/GGPH/RPH previously read the oEvents rollups f2306/f2307/f2301. Those are not
+     maintained for this event — all three sat at 0 while real attendance was landing on
+     the invitations — so the tiles showed a confident zero. They are now derived from the
+     invitation rows the dashboard already holds, which is the same source the Guests tab
+     renders from, so the card and the list cannot disagree.
+
+     Counted by DISTINCT GUEST (f2259), not by invitation row: a guest holding two
+     invitations who shows up once is one person. The "invites" tiles below deliberately
+     count rows instead — that is what the Invitations tracker counts — and both units are
+     labelled so the difference cannot read as a discrepancy.
+
+     f3210 is written live during the graduation by the "LM | Zoom | Guest Graduation
+     Attendance" workflow, which matches Zoom attendees on f3307 Guest Zoom Registrant ID.
+     So these tiles climb through the evening rather than being final at page load. */
+  function distinctGuestCount(rows){
+    var seen = {};
+    rows.forEach(function(g){ seen[g.f2259 || ('inv-' + g.id)] = true; });
+    return Object.keys(seen).length;
+  }
+
+  var invitedGuests = distinctGuestCount(guests);
+  var attendedRows = guests.filter(function(g){ return guestIsTrue(g.f3210); });
+  var totalGuests = distinctGuestCount(attendedRows);
+  var pctOfInvitations = invitedGuests
+    ? Math.round((totalGuests / invitedGuests) * 100) + '% of ' + invitedGuests + ' invited'
+    : '—';
+
+  var attendedGrads = distinctGuestCount(attendedRows.filter(function(g){
+    return String(g.f2337) === GUEST_GRAD_YES;
+  }));
+  var attendedNonGrads = distinctGuestCount(attendedRows.filter(function(g){
+    return String(g.f2337) === GUEST_GRAD_NO;
+  }));
+  var registeredGuests = distinctGuestCount(guests.filter(function(g){
+    return guestIsTrue(g.f2299);
+  }));
+
+  /* Per-hundred rates. Denominator is the roster less SE participants, matching every
+     other per-100 figure on the dashboard. Guarded so an unloaded roster shows "—"
+     rather than a division artefact. */
+  function per100(n){
+    return participantsLessSE ? Math.round((n / participantsLessSE) * 100) : '—';
+  }
+  var gph = per100(totalGuests);
+  var ggph = per100(attendedGrads);
+  var rph = participantsLessSE ? per100(registeredGuests) + '%' : '—';
 
   /* ---- Invitations-tracker parity (2026-08-18) -------------------------------------
      The four tiles the team's Invitations tracker sheet leads with — Total Invites, Grad
@@ -1792,14 +1836,24 @@ function dashboardRenderGuestSnapshot(){
      If the webhook does not return f2337 at all, every count would collapse to zero and
      read as a confident "no graduates". gradCodeSeen distinguishes that case and shows "—",
      because "we cannot see the field" and "nobody is a graduate" are different answers. */
-  var gradGuestIds = {}, nonGradGuestIds = {};
+  /* Grad / non-grad GUESTS are show-up figures: attended AND known grad status. The
+     invite-side split lives in the Grad/Non-grad invites tiles below. Keeping "guests"
+     meaning turnout and "invites" meaning sends is what lets GGPH sit next to GPH and be
+     read as the same kind of number. */
+  var gradGuestsCount = attendedGrads;
+  var nonGradGuestsCount = attendedNonGrads;
+
+  /* Unique invites deduped by guest NAME, as the team counts them. Name is a weaker key
+     than email — two different people can share one — but it is the key that matches how
+     the list is read on screen, so it is the one asked for. Normalised on case and
+     internal whitespace so "Kim  Bradley" and "kim bradley" are one person. */
+  var uniqueNameKeys = {};
   guests.forEach(function(g){
-    var key = g.f2259 || ('inv-' + g.id);
-    if(String(g.f2337) === GUEST_GRAD_YES) gradGuestIds[key] = true;
-    else if(String(g.f2337) === GUEST_GRAD_NO) nonGradGuestIds[key] = true;
+    var nm = ((g['f2259//firstname'] || '') + ' ' + (g['f2259//lastname'] || ''))
+      .replace(/\s+/g, ' ').trim().toLowerCase();
+    uniqueNameKeys[nm || ('inv-' + g.id)] = true;
   });
-  var gradGuestsCount = Object.keys(gradGuestIds).length;
-  var nonGradGuestsCount = Object.keys(nonGradGuestIds).length;
+  var uniqueInvites = Object.keys(uniqueNameKeys).length;
 
   var nonGradRegistered = guests.filter(function(g){
     return String(g.f2337) === GUEST_GRAD_NO && String(g.f2299) === "1";
@@ -1810,14 +1864,18 @@ function dashboardRenderGuestSnapshot(){
   dashboardSetStat('gsInvitationsSent', invitationsSent);
   dashboardSetSub('gsInvitationsSent', perParticipant + ' per participant');
   dashboardSetStat('gsTotalGuests', totalGuests);
-  dashboardSetSub('gsTotalGuests', pctOfInvitations + ' of invitations');
+  dashboardSetSub('gsTotalGuests', 'showed up · ' + pctOfInvitations);
   dashboardSetStat('gsGph', gph);
-  dashboardSetStat('gsGgph', ggph);
+  /* GGPH depends on f2337 the same way the grad tiles do — if the field is not in the
+     payload, a real 0 and "we cannot see grad status" are different answers. */
+  dashboardSetStat('gsGgph', gradCodeSeen ? ggph : '—');
   dashboardSetStat('gsRph', rph);
   dashboardSetStat('gsForumRegEff', gradCodeSeen ? forumRegEff : '—');
   dashboardSetSub('gsForumRegEff', gradCodeSeen ? (nonGradRegistered + ' ÷ ' + nonGradRows + ' non-graduate invitations') : 'f2337 not in the guest payload');
   dashboardSetStat('gsGradGuests', gradCodeSeen ? gradGuestsCount : '—');
+  dashboardSetSub('gsGradGuests', gradCodeSeen ? 'attended · f2337 grad' : 'f2337 not in the guest payload');
   dashboardSetStat('gsNonGradGuests', gradCodeSeen ? nonGradGuestsCount : '—');
+  dashboardSetSub('gsNonGradGuests', gradCodeSeen ? 'attended · not a grad' : 'f2337 not in the guest payload');
 
   dashboardSetStat('gsTotalInvites', totalInvites);
   dashboardSetSub('gsTotalInvites', inviterCount + ' participants inviting');
@@ -1830,6 +1888,14 @@ function dashboardRenderGuestSnapshot(){
   dashboardSetSub('gsNonGradInvites', gradCodeSeen ? (unsureInvites ? unsureInvites + ' more unsure or unset' : 'grad + non-grad = all invites') : 'f2337 not in the guest payload');
   dashboardSetStat('gsAvgGpp', avgGpp);
   dashboardSetSub('gsAvgGpp', 'invites per inviting participant');
+  dashboardSetStat('gsUniqueInvites', uniqueInvites);
+  dashboardSetSub('gsUniqueInvites', totalInvites - uniqueInvites
+    ? (totalInvites - uniqueInvites) + ' repeat name(s) collapsed'
+    : 'no repeated names');
+  dashboardSetStat('gsInvitingParticipants', inviterCount);
+  dashboardSetSub('gsInvitingParticipants', participantsLessSE
+    ? Math.round((inviterCount / participantsLessSE) * 100) + '% of the room invited someone'
+    : '—');
 }
 
 function dashboardFetchGuests(){
