@@ -1449,6 +1449,95 @@ Portal.session = (function(){
 })();
 
 /* =========================================================
+   Portal.render._materials — the assignments stack, shared by the During page
+   and the Post-event page (2026-08-19).
+
+   Extracted rather than copied. It was local to render.during until the Post-event
+   page needed the same section, and a second copy is how the two silently drift:
+   the link markup here is also what the During page's Forum Resources modal
+   renders, so a change made in one place has to land in both or the modal and the
+   cards stop matching.
+
+   WHY POST-EVENT SHOWS THESE AT ALL. Same reason they went back on Graduation
+   (c795d29) and then stayed: participants are still working the material after the
+   weekend ends. The day-3 follow-through in particular is the piece people come
+   back for. Cutting them assumed "the course is over" means "the work is over",
+   and the people using the page settled that one already.
+
+   The Post-event caller passes allPast, which is the one real behavioural
+   difference. On the During page the session index is compared against the current
+   session to drive the "Today" pill and the dimmed not-yet-begun state; once the
+   event is over neither is meaningful, and leaving currentIdx to decide would badge
+   the final day "Today" for the rest of the participant's life.
+   ========================================================= */
+Portal.render._materials = (function(){
+
+  function escapeHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', '\'':'&#39;' }[c];
+    });
+  }
+
+  /* Only released items ever render. An unreleased item is not a locked row, it is
+     absent - the Forum Leader controls the moment, and showing a greyed name is a
+     spoiler dressed up as a courtesy. */
+  function releasedLinks(items){
+    return (items || []).filter(function(it){ return it && it.released; }).map(function(it){
+      return '<a href="' + escapeHtml(it.url) + '" target="_blank" rel="noopener">' + escapeHtml(it.name) +
+        ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 17L17 7M9 7h8v8"/></svg></a>';
+    }).join('');
+  }
+
+  var DOC_ICON = '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h4"/>';
+
+  /* 2026-08-10: the card carries no "Day N Assignments" <h3> - with the day already
+     in the .teye row above it that was pure redundancy, so the released item's own
+     name reads as the heading instead (.alinks a). Per annotated-screenshot
+     feedback; do not reinstate it. */
+  function sessionCardHtml(session, currentIdx, allPast){
+    var isFinal = allPast || currentIdx === 'Final';
+    var isCurrent = !isFinal && session.index === currentIdx;
+    var isFuture = !isFinal && session.index > currentIdx;
+    var links = releasedLinks(session.items);
+    var body = isFuture ?
+      '<div class="res-empty">This session’s materials will be released during the event.</div>' :
+      (links ? '<div class="alinks">' + links + '</div>' : '<div class="res-empty">Course materials will be made available during the event.</div>');
+    var cardClass = 'today' + (isCurrent ? ' current' : '') + (isFuture ? ' dim' : '');
+    var pillHtml = isCurrent ? '<span class="pill pill-current">Today</span> &middot; ' : '';
+    return '<div class="' + cardClass + '"><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + DOC_ICON + '</svg></div>' +
+      '<div class="tbody"><div class="teye">' + pillHtml + escapeHtml(session.label) + '</div>' +
+      body + '</div></div>';
+  }
+
+  /* Every session always renders, strictly chronologically - never omitted, never
+     reordered "newest first". Both were tried and both were corrected in review:
+     omission hides that a day exists, and inbox ordering fights the way the course
+     is actually lived. Nothing here hardcodes a day count or a day1/2/3 shape;
+     it all comes from data.materials.sessions. */
+  function sectionHtml(data, opts){
+    opts = opts || {};
+    var sessions = ((data || {}).materials || {}).sessions || [];
+    var allPast = !!opts.allPast;
+    var currentIdx = opts.currentIdx;
+    var eyebrow = opts.eyebrow || 'Today';
+    var heading = opts.heading || 'Your assignments';
+    var emptyText = opts.emptyText ||
+      'Your first day’s assignments will appear here once your Forum Leader releases them.';
+
+    var ordered = sessions.slice().sort(function(a, b){ return a.index - b.index; });
+    var bodyHtml = ordered.length ?
+      '<div class="today-row">' + ordered.map(function(s){ return sessionCardHtml(s, currentIdx, allPast); }).join('') + '</div>' :
+      '<div class="today-empty">' + escapeHtml(emptyText) + '</div>';
+
+    return '<section class="block alt"><div class="wrap">' +
+      '<div class="sec-head"><div class="eyebrow">' + escapeHtml(eyebrow) + '</div><h2>' + escapeHtml(heading) + '</h2></div>' +
+      bodyHtml +
+    '</div></section>';
+  }
+
+  return { escapeHtml: escapeHtml, releasedLinks: releasedLinks, sectionHtml: sectionHtml };
+})();
+/* =========================================================
    Portal.render.during — the During-event page. Ported from
    member-portal-during.html with the plan's flagship Stage-4
    defect fixed at the source: the hero hardcoded "Day One"
@@ -1761,63 +1850,14 @@ Portal.render.during = function(data, phase){
       '</div>' +
     '</div></section>';
 
-  // ---- your assignments — the inbox stack. One card per session
-  // that has actually begun (index <= currentIdx, or every session
-  // once currentIdx is 'Final'), newest on top per the mockup's own
-  // stated intent, each showing its released items or the per-
-  // section empty-state copy. Nothing hardcodes a day count or a
-  // day1/day2/day3 shape — both come from data.materials.sessions.
-  //
-  // 2026-08-07 review round: every session now always renders (never
-  // omitted), strictly chronologically (Day 1 -> Day 2 -> Day 3,
-  // regardless of which is current — the old "newest on top" inbox
-  // ordering is gone, per direct feedback). Sessions past currentIdx
-  // render dimmed with a distinct "not yet begun" empty state, even
-  // if they happen to have items with released:true (shouldn't occur,
-  // but the future/dim state is driven by the session's index vs.
-  // currentIdx, not by its own item data, so it can't happen). The
-  // current session gets a .pill.pill-current "Today" badge, reusing
-  // the exact component the program grid already uses for its own
-  // "Current" pill, instead of a bespoke text prefix.
-  function releasedLinksHtml(items){
-    return (items || []).filter(function(it){ return it && it.released; }).map(function(it){
-      return '<a href="' + escapeHtml(it.url) + '" target="_blank" rel="noopener">' + escapeHtml(it.name) +
-        ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M7 17L17 7M9 7h8v8"/></svg></a>';
-    }).join('');
-  }
-  var DOC_ICON = '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h4"/>';
-  // 2026-08-10: dropped the card's own "Day N Assignments" <h3> — with
-  // the session's day already shown in the .teye row above it, the
-  // title was pure redundancy. The released item links now carry that
-  // same bold/18px treatment directly (.alinks a), so the assignment's
-  // own name is what reads as the card's heading instead of a generic
-  // label, per direct feedback with an annotated screenshot.
-  function sessionCardHtml(session, currentIdx){
-    var isFinal = currentIdx === 'Final';
-    var isCurrent = !isFinal && session.index === currentIdx;
-    var isFuture = !isFinal && session.index > currentIdx;
-    var links = isFuture ? '' : releasedLinksHtml(session.items);
-    var body = isFuture ?
-      '<div class="res-empty">This session’s materials will be released during the event.</div>' :
-      (links ? '<div class="alinks">' + links + '</div>' : '<div class="res-empty">Course materials will be made available during the event.</div>');
-    var cardClass = 'today' + (isCurrent ? ' current' : '') + (isFuture ? ' dim' : '');
-    var pillHtml = isCurrent ? '<span class="pill pill-current">Today</span> &middot; ' : '';
-    return '<div class="' + cardClass + '"><div class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + DOC_ICON + '</svg></div>' +
-      '<div class="tbody"><div class="teye">' + pillHtml + escapeHtml(session.label) + '</div>' +
-      body + '</div></div>';
-  }
+  /* ---- your assignments. Built by Portal.render._materials, shared with the
+     Post-event page (2026-08-19) so the two cannot drift; the section's own history
+     and rendering rules live in that module's header. releasedLinksHtml stays as a
+     thin alias because the Forum Resources modal below still calls it, and the modal
+     must keep rendering links identically to the cards. */
+  function releasedLinksHtml(items){ return Portal.render._materials.releasedLinks(items); }
 
-  var sessionsToShow = sessions.slice().sort(function(a, b){ return a.index - b.index; });
-
-  var assignmentsBodyHtml = sessionsToShow.length ?
-    '<div class="today-row">' + sessionsToShow.map(function(s){ return sessionCardHtml(s, currentIdx); }).join('') + '</div>' :
-    '<div class="today-empty">Your first day’s assignments will appear here once your Forum Leader releases them.</div>';
-
-  var assignmentsHtml =
-    '<section class="block alt"><div class="wrap">' +
-      '<div class="sec-head"><div class="eyebrow">Today</div><h2>Your assignments</h2></div>' +
-      assignmentsBodyHtml +
-    '</div></section>';
+  var assignmentsHtml = Portal.render._materials.sectionHtml(data, { currentIdx: currentIdx });
 
   // ---- Forum Resources modal content — every session in ascending
   // order (never hidden, per the Data Contract's rendering rule),
@@ -2415,7 +2455,24 @@ Portal.render.post = function(data){
     '</div></section>';
 
   var root = document.getElementById('portal-root');
-  if(root) root.innerHTML = heroHtml + midSectionsHtml + lmfBandHtml + curricHtml + contactHtml;
+  /* ---- your assignments, carried through to Post-event (2026-08-19).
+     Same section the During and Graduation pages render, from the same builder, so
+     the material a participant was working on does not vanish the moment the course
+     ends — the day-3 follow-through especially is worked long after Day 3.
+
+     allPast is the difference: with the event over, no session is "Today" and none is
+     "not yet begun", so the pill and the dimmed state are both suppressed. Leaving
+     currentIdx to decide would badge the final day "Today" indefinitely.
+
+     Placed directly under the hero, matching the prominence it has on the During page
+     (hero -> actions -> assignments) rather than being buried beneath the FAQ. */
+  var assignmentsHtml = Portal.render._materials.sectionHtml(data, {
+    allPast: true,
+    eyebrow: 'Course materials',
+    emptyText: 'No assignments were released for this course.'
+  });
+
+  if(root) root.innerHTML = heroHtml + assignmentsHtml + midSectionsHtml + lmfBandHtml + curricHtml + contactHtml;
 
   // ---- Upcoming/Up-Next tab + All Programs tab, shared grid ----
   var progTabs = document.getElementById('progTabs');
