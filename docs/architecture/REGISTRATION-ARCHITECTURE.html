@@ -1,0 +1,249 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Registration Data Architecture</title>
+<style>
+  body { background:#fff; color:#000; font-family: Arial, Helvetica, sans-serif;
+         max-width: 46em; margin: 2em auto; padding: 0 1em; line-height: 1.5; }
+  code { font-family: "Courier New", monospace; }
+</style>
+</head>
+<body>
+<h1>Registration Data Architecture</h1>
+<p>
+<strong>Landmark Worldwide — New Era</strong>
+</p>
+<p>
+The three-layer model, how a purchase moves through it, and what has to change so a shared browser can never again overwrite one participant with another.
+</p>
+<p>
+Ontraport account 270197 · n8n landmarkworldwide.awesomate.io · All figures read live 21 Aug 2026
+</p>
+<h2>The model</h2>
+<p>
+Three objects, three jobs. Every field belongs to exactly one of them.
+</p>
+<ul>
+<li><strong>Invitation — the entry point.</strong> How this person first entered the ecosystem. Who invited them, to which event, and what that invitation eventually produced. Written once, at the start. Not everyone has one.</li>
+<li><strong>Contact — the journey.</strong> Surface level. Where is this person now, in one glance: Registered for Forum, Completed Forum, Attended Graduation, Registered for Seminar, Registered for Advanced Course. This is the layer you segment, filter and report on.</li>
+<li><strong>Registration — the deep dive.</strong> One record per course engagement, holding everything about that step: the event, the dates, the money, attendance, the information form, the outcome.</li>
+</ul>
+<h3>Deciding where a field goes</h3>
+<ul>
+<li>Would you build a list or a group on it? → <strong>Contact.</strong></li>
+<li>Does it describe one specific course engagement? → <strong>Registration.</strong></li>
+<li>Does it describe how they arrived? → <strong>Invitation.</strong></li>
+</ul>
+<p>
+The contact layer is a <em>summary</em> of the registration layer. It never holds anything the registrations don't already prove, and it is always derived, never typed.
+</p>
+<h2>Layer 1 — Invitation: the entry point</h2>
+<p>
+376 invitation records exist. 281 carry an inviter; the rest are self-registered guests.
+</p>
+<p>
+<strong>Key fields.</strong> <code>f2258</code> Event (the source event), <code>f2259</code> Guest, <code>f2260</code> / <code>f2257</code> Inviter, <code>f2291</code> Status, <code>f2337</code> Graduate Status, <code>f3210</code> Attended. Conversion is recorded by <code>f2299</code> Registered for Forum, <code>f2298</code> Registered for Advanced Course, <code>f2300</code> Registered for Seminar, and <code>f2466</code> Resulting Registration.
+</p>
+<p>
+<strong>Current state.</strong> <code>f2299</code> is set on <strong>2</strong> invitations — 946 and 1124, both written 20 Aug. <code>f2298</code> and <code>f2300</code> are set on <strong>0</strong>.
+</p>
+<h3>Three rules</h3>
+<ul>
+<li><strong>Credit the source event, always.</strong> A guest invited at event 218 who registers for the November Forum is a <em>registrant</em> of 283 but a <em>conversion</em> of 218. The scope is the invitation's <code>f2258</code>, never the event they joined.</li>
+<li><strong>One contact may hold several invitations for the same event.</strong> Contact 1183 holds both 1124 and 1133 for event 218. Deduplicate: prefer the invitation carrying an inviter, tie-break on lowest id, mark exactly one. Otherwise one conversion counts twice.</li>
+<li><strong><code>f2466</code> holds one registration only.</strong> It already points at the Forum registration on both marked invitations. If the same guest later buys the Advanced Course and something writes <code>f2466</code> again, the Forum attribution is destroyed. <strong><code>f2466</code> records the first conversion. Advanced Course and Seminar conversions ride on <code>f2298</code> and <code>f2300</code> alone.</strong></li>
+</ul>
+<h2>Layer 2 — Contact: the journey</h2>
+<p>
+<strong>The journey fields already exist. Nothing needs creating.</strong>
+</p>
+<ul>
+<li><code>f3359</code> <strong>Registered For Forum</strong> — check</li>
+<li><code>f3360</code> <strong>Completed Forum</strong> — check</li>
+<li><code>f3361</code> <strong>Attended Graduation</strong> — check</li>
+<li><code>f3362</code> <strong>Registered For Seminar</strong> — check</li>
+<li><code>f3363</code> <strong>Registered For Advanced Course</strong> — check</li>
+<li><code>f3372</code> <strong>Date Purchased</strong> — timestamp</li>
+<li><code>f3373</code> <strong>Price Paid</strong> — price</li>
+<li><code>f3374</code> <strong>Forum Registration ID</strong> — text</li>
+<li><code>f3305</code> <strong>Master Record ID</strong> — text</li>
+</ul>
+<p>
+<strong>Current population, across 667 contacts.</strong> <code>f3359</code> is set on <strong>113</strong>. <code>f3360</code> is set on <strong>102</strong> — exactly the event 218 completer count, so this was backfilled once from that cohort and never maintained. <code>f3361</code>, <code>f3362</code> and <code>f3363</code> are set on <strong>0</strong>. <code>f3374</code> and <code>f3305</code> are set on <strong>0</strong>.
+</p>
+<p>
+So half the journey layer was populated by hand for one event, and nothing writes any of it going forward.
+</p>
+<h3>Rules for the journey layer</h3>
+<ul>
+<li><strong>Derived, never typed.</strong> Every flag is written by the router from a registration that actually exists. If a flag is true, a registration proves it.</li>
+<li><strong>Monotonic. Set, never clear.</strong> "Completed Forum" stays true forever. Withdrawal and refund are registration-level facts; they do not un-happen a journey step.</li>
+<li><strong><code>f3374</code> Forum Registration ID is the pointer to the master.</strong> Today the Advanced Course and Seminar stampers find the master Forum registration by searching contact + <code>f2424</code> = 154 Active + newest event. <code>f2424</code> is blank on every newly created Forum registration, so that search misses exactly the people who registered most recently. Writing <code>f3374</code> at Forum registration removes the search entirely.</li>
+</ul>
+<h2>Layer 3 — Registration: the deep dive</h2>
+<p>
+224 registrations: <strong>139 Forum</strong>, <strong>75 Seminar</strong>, <strong>10 Advanced Course</strong>.
+</p>
+<p>
+<strong>The Forum registration is the master.</strong> It holds the participant's own course detail <em>and</em> a summary block for whatever they signed up for next, so the portal and the email templates can render the next step without a second lookup.
+</p>
+<ul>
+<li>Advanced Course block — <code>f2302</code> checked, <code>f2889</code> Registration Status, <code>f2887</code> Potential Status, plus <code>f3287</code> Event ID, <code>f3186</code> Title, <code>f3288</code> Dates, <code>f3290</code> Begins, <code>f3289</code> Pattern, <code>f3291</code> Schedule, <code>f3285</code> Start Date, <code>f3286</code> End Date, <code>f3292</code> Session Dates, <code>f3067</code> Reg Date, <code>f3293</code> Session Start Time, <code>f3294</code> Time Zone, <code>f3295</code> Graduation Day and Date, <code>f3296</code> / <code>f3297</code> Graduation Times, <code>f3298</code> Format, <code>f3304</code> Add To Calendar URL.</li>
+<li>Seminar block — <code>f2303</code> checked, <code>f2882</code> Potential Status, <code>f2884</code> Confirmation Status, plus <code>f3276</code> Event ID, <code>f3185</code> Title, <code>f3271</code> Dates, <code>f3274</code> Begins, <code>f3272</code> Pattern, <code>f3275</code> Schedule, <code>f3277</code> Start Date, <code>f3283</code> End Date, <code>f3278</code> Session Dates, <code>f3282</code> Language.</li>
+</ul>
+<p>
+<strong>Advanced Course and Seminar each get their own registration record too</strong>, so each engagement has somewhere to hold its own event, dates, money and attendance. The block on the master is a mirror for display; the AC or Seminar record is the source of truth for that step.
+</p>
+<h3>Dates: never compute what the event already holds</h3>
+<p>
+<code>f3099</code> Graduation Day and Date, <code>f3100</code> / <code>f3101</code> graduation times, <code>f3102</code> time zone, <code>f2394</code> start date, <code>f3086</code> countdown reference and <code>f3080</code> course all arrive <strong>free</strong> as related-data mirrors the moment <code>f2214</code> is set. Confirmed live on registration 1325.
+</p>
+<p>
+Only three registration fields have no event source — <code>f3108</code> Graduation Day Full, <code>f3109</code> Short, <code>f3110</code> TOD. Add those to the <strong>event</strong> and mirror them, rather than deriving a day name on every registration forever. Event 218 reads <code>Tues, Aug 18, 2026</code> while event 283 reads <code>Tuesday, November 10, 2026</code>; parsing both reliably is work you don't need to own.
+</p>
+<h2>Protecting identity — the duplicate and cookie override</h2>
+<h3>What happens</h3>
+<p>
+Ontraport's tracking script identifies the visitor from a browser cookie <strong>before</strong> the form is submitted. The fillout is matched to that contact — <strong>not to the email typed into the form</strong>. So when a second person uses the same browser, their submit updates the first person's record, identity fields included.
+</p>
+<p>
+On 20 Aug, two people checked out on one laptop 41 minutes apart. The record was created on 18 Aug by Participant A's own graduation self-registration, so her 2:49pm checkout matched correctly. At 3:30pm Participant B checked out on the same still-cookied session, and the log shows the overwrite explicitly: first name, last name and email all rewritten from A's values to B's, and the address moved from Arkansas to London. Two $875 invoices ended up on one contact, and B's own record — contact 1210, created 18 Aug — was never touched.
+</p>
+<p>
+<strong>The cookie that caused it was left by the previous checkout on the same browser.</strong> That matters: it is the chaining case, and it is preventable.
+</p>
+<h3>Six defences, in order of leverage</h3>
+<p>
+<strong>1. Stop the checkout form overwriting identity fields.</strong> If the form's First Name, Last Name and Email mappings are set not to overwrite an existing populated value, a second person's submit can no longer destroy the first person's identity. The purchase still attaches to the wrong contact, but nothing is lost and the mismatch stays detectable. This converts a destructive failure into a recoverable one, which is why it comes first. <em>To verify: whether Ontraport form field mappings support set-if-empty on this account.</em>
+</p>
+<p>
+<strong>2. Clear the tracking session at the end of every checkout.</strong> On the confirmation and Step 03 completion pages, clear Ontraport's tracking and session cookies — the ones feeding <code>gsid</code>. This alone would have prevented the 20 Aug incident. Confirm the exact cookie names in DevTools on the live page.
+</p>
+<p>
+<strong>3. Put a "Not you?" control on the checkout page.</strong> Landmark's audience genuinely shares laptops at graduation events. Show the session-matched name and email at the top of the form with a link that clears the session and reloads. Design for the shared device instead of treating it as an edge case.
+</p>
+<p>
+<strong>4. Guard typed email against the session contact.</strong> On submit, compare the typed email to the session-matched contact; on mismatch, force a new-contact submission. This is the capability in the open Ontraport support ticket.
+</p>
+<p>
+<strong>5. Detect it server-side — the defence we fully control.</strong> <code>f2674</code> Email on the registration is captured at Step 02 from the form and is never rewritten afterwards. The contact's own <code>email</code> can be overwritten later. <strong>A registration whose <code>f2674</code> differs from its contact's <code>email</code> is the signature of an override.</strong> That is exactly how the two records were untangled. Make it a check in the router and a standing sweeper — it needs nothing from Ontraport.
+</p>
+<p>
+<strong>6. Sweep for duplicate contacts, and use <code>f3305</code>.</strong> Email uniqueness is not enforced here: contacts 1183 and 1210 both hold <code>b@example.com</code>. <code>f3305</code> Master Record ID exists and is unused on all 667 contacts. When duplicates are found, point the duplicate at the surviving record rather than deleting it, so invitations and history stay traceable.
+</p>
+<h3>Repairing one after the fact</h3>
+<ol>
+<li><strong><code>f2674</code> on each registration tells you who actually submitted it.</strong> It survives the overwrite.</li>
+<li>The information-form answers on that registration — emergency contact, preferred name, what I want to accomplish — belong to whoever submitted it, not to whoever the contact now says it is.</li>
+<li>The purchase and invoice stay on the contact that was matched at the time. They must be moved deliberately; they do not follow the registration.</li>
+<li>Check for a stranded invitation. Invitation 1133 is Participant A's graduation self-registration and still sits on Participant B's contact today.</li>
+<li>Re-point records; do not delete them.</li>
+</ol>
+<h2>The pipeline — two doors</h2>
+<h3>Door 1 — Purchase submitted</h3>
+<p>
+<em>Trigger: Ontraport automation 15, on every purchase</em>
+</p>
+<p>
+There is no registration and no chosen event yet, and ordering is unreliable — on the two live purchases on 20 Aug the post-purchase webhook fired 17 seconds <em>before</em> the registration existed on one, and 19 seconds <em>after</em> it on the next. So this door is deliberately thin. It writes contact state only:
+</p>
+<ul>
+<li>Forum purchase state → Awaiting Dates.</li>
+<li><code>f3372</code> Date Purchased, <code>f3373</code> Price Paid.</li>
+<li>An immutable snapshot of the invoice id. A single mutable "last invoice" cannot describe a contact with two purchases — on 20 Aug the second checkout moved <code>mriInvoiceNum</code> from 498 to 502.</li>
+</ul>
+<p>
+Seminars skip this door entirely; they have no product.
+</p>
+<h3>Door 2 — Registration created</h3>
+<p>
+<em>Trigger: Ontraport rule on object 10001, record created</em>
+</p>
+<p>
+<strong>This is the anchor, and it is the only trigger all three course types share.</strong> Forum, Advanced Course and Seminar all create a record on 10001. Seminars never produce a purchase, so a purchase-triggered router structurally cannot cover them.
+</p>
+<p>
+<strong>Classify on the event's course, not on <code>f2830</code>.</strong> Course Type is not set at creation — 24 seconds after registration 1325 was created, both <code>f2830</code> and <code>f2458</code> were still <code>0</code>. What <em>is</em> present is the event's course, mirrored in as <code>f3080</code> / <code>f3080_id</code>. The router reads that, then <em>sets</em> <code>f2458</code> and <code>f2830</code> itself — which also retires the unidentified writer that currently sets Course about nine minutes after creation.
+</p>
+<p>
+<strong>Shared head.</strong> Resolve contact and event, classify from <code>f3080_id</code>, set <code>f2424</code> = 154 Active, <code>f2458</code>, <code>f2830</code>, <code>f2237</code>.
+</p>
+<p>
+<strong>Three branches, as separate sub-workflows.</strong>
+</p>
+<ul>
+<li><em>Forum</em> — financials onto this record; contact date fields; write <code>f3374</code> Forum Registration ID; no stamp-back, this record <strong>is</strong> the master.</li>
+<li><em>Advanced Course</em> — financials onto the AC record; AC date block; stamp the AC block back onto the master.</li>
+<li><em>Seminar</em> — no financial stage at all; seminar date block; stamp the Seminar block back onto the master.</li>
+</ul>
+<p>
+Keep them as separate workflows rather than one flow: publishing is a discrete step on this account, and a monolith means a change to the Seminar branch forces a republish of the live Forum path.
+</p>
+<p>
+<strong>Shared tail.</strong> Set the contact journey flag. Find the invitation, dedupe, mark the conversion, credit the source event, recompute event metrics. Identical for all three types; only the flag differs.
+</p>
+<p>
+<strong>Sweepers, built alongside the router, not after it.</strong> One door is one point of failure, and these are what make that acceptable: registrations with <code>f2424</code> = 0; purchases with <code>f2969</code> empty older than 30 minutes; registrations with an event but no financial sync; contacts stuck on Awaiting Dates past 24 hours; and registrations whose <code>f2674</code> disagrees with their contact's email.
+</p>
+<h3>After the branch — post-purchase and welcome sequencing</h3>
+<p>
+The router's job ends when the data is correct. <strong>Communication is a separate layer</strong>, and each branch hands off to its own track. There are 99 automations on the account and no legacy sequences — everything lives in Automations.
+</p>
+<p>
+<strong>The handoff rule: one explicit signal per type.</strong> The router sets the contact journey flag and applies a start tag; the welcome track subscribes to that and nothing else. A sequence must never do its own product or event lookup to decide whether it applies — that is precisely how the current catch-all ended up testing product names inside a webhook and discarding every Forum buyer.
+</p>
+<p>
+<strong>Shared, for every purchase — already live.</strong> 15 <code>REG : Course Reg : Post-Purchase Setup (All Checkouts)</code> · 38 <code>PORTAL : My Account : Grant Access</code>, which issues portal credentials · 2 / 4 / 3 <code>SYS : Maintenance</code> for Sales Stage, First Purchase Date and Last Activity · 40 <code>REG : Confirmation &amp; NO DATE CHOSEN Reminder Loop : Post-Purchase Loop</code>, which nudges buyers who never picked dates — this already exists and is the communication half of the Awaiting Dates sweeper.
+</p>
+<p>
+<strong>Forum track — already live.</strong> 25 <code>REG : Confirm : Registration Confirmation</code> · 19 <code>REG : Fulfillment : Forum Participants</code> · 62 <code>REG : PILOT Confirmation, and Pre-Course Reminders</code> · 72 <code>PILOT: Countdown Sequence: Registration, 14, 7, 2 days out</code> · 93 <code>REG : PILOT During Course</code> and 90 <code>Forum: During: Toggle-Switch Email Sends</code> · 20 <code>INV : Guest : Invite Your Friends</code>.
+</p>
+<p>
+<strong>Advanced Course track.</strong> 13 <code>REG : Course Reg : Advanced for Participant</code> · 105 <code>Advanced Course Registration Confirmation</code> · 106 <code>AC: SET DATES</code>. These sit downstream of an Advanced Course registration that is not being created, so in practice they rarely fire. Turning AC registration creation back on is what activates this whole track.
+</p>
+<p>
+<strong>Seminar track.</strong> 14 <code>REG : Course Reg : Seminar for Participant</code> · 16 <code>REG : Course Reg : Seminar Guest from Invite</code> · 103 <code>SEM: Seminar Confirmation</code>.
+</p>
+<p>
+<strong>Next-step offer funnels.</strong> 108 <code>LF: Non-Grad Guest: Forum Offer Tue-Sat</code> · 109 <code>LF: Grad: Graduate Course Offer Tue-Sat</code> · 110 <code>DISC: Participants: Advanced Course Offer Tue-Sat</code> · 113 <code>LF: Participants: AC/Grad: Tues-Sat Funnel</code>.
+</p>
+<p>
+These offer funnels segment on the journey layer. That is why keeping <code>f3359</code> to <code>f3363</code> accurate matters well beyond reporting — they are the audience definition the next sale runs on. A journey flag that nobody writes is a funnel that targets nobody.
+</p>
+<p>
+<strong>Two automations worth checking while you are in here.</strong> 97 <code>Attended Graduation Checked on Contact Record</code> is plainly intended to write <code>f3361</code> Attended Graduation, and <code>f3361</code> is set on 0 of 667 contacts — so it is either unwired or silently not firing. And 61 <code>REG : Reconcile Duplicate Registration (Pilot)</code> already exists and is directly relevant to the duplicate-contact work below.
+</p>
+<h2>Current state</h2>
+<p>
+<strong>Forum.</strong> Working, but <code>f2424</code> Registration Status is blank on every newly created record, which makes them invisible to every workflow that filters on Active — including the Advanced Course and Seminar stampers.
+</p>
+<p>
+<strong>Seminar.</strong> Working end to end. <code>SEM : Create Seminar Registration (Pilot)</code> and <code>SEM : Seminar Confirmed -&gt; Update Forum Registration</code> are both active. 75 registrations, all Active, 75 masters stamped. No seminar SKU exists in the 16-product catalogue, so zero money on all 75 is correct by design — not a backfill gap.
+</p>
+<p>
+<strong>Advanced Course.</strong> Dead at the door. <code>AC : Create Registration at Checkout</code> and <code>AC : Set Advanced Course Dates</code> are both inactive. <code>AC : Registration Confirmed -&gt; Update Forum Registration</code> is active but orphaned, because both of its callers are the two that are off. The result: <strong>29 Advanced Course purchases, 10 Advanced Course registrations</strong>, 19 of those purchases unclaimed. Only 3 of the 10 AC registrations are Active. 14 masters have <code>f2302</code> checked but only 9 carry the detail block.
+</p>
+<p>
+<strong>Post-purchase catch-all.</strong> Automation 15 posts to <code>AC : Purchase -&gt; Stamp Forum Registration</code>, which tests the product name for "Advanced" and drops everything else into a node named <em>Abandon - Not Advanced Course</em>. Confirmed live on Participant B's purchase: it resolved the product, set <code>isAdvancedCourse: false</code>, and returned <em>"Abandoned … Nothing written."</em> Every Forum purchase reaches an Advanced-Course-shaped filter and is discarded.
+</p>
+<h2>Fix order</h2>
+<ol>
+<li><strong>Set <code>f2424</code> = 154 Active on registration creation.</strong> Single highest-value change — it unblocks the master lookup for the Advanced Course and Seminar tracks at the same time as fixing the Forum records.</li>
+<li><strong>Clear tracking cookies on the confirmation page</strong>, and confirm whether form mappings can be set not to overwrite identity. Defences 1 and 2 above.</li>
+<li><strong>Ship the <code>f2674</code> versus contact-email mismatch check.</strong> It needs nothing from Ontraport and it catches the next incident on the day it happens.</li>
+<li><strong>Build the router on registration-created</strong>, classifying from <code>f3080_id</code>, with the three branches and the shared tail.</li>
+<li><strong>Repoint automation 15</strong> at the thin purchase handler and delete its <code>/1/Invitations</code> payload — it targets <code>f2285</code>, empty on every contact, so it is an inert no-op that will collide the day someone populates that field.</li>
+<li><strong>Turn on Advanced Course registration creation</strong>, de-hardcoded from event 218, then backfill the 19 unclaimed purchases.</li>
+<li><strong>Backfill the journey layer</strong> from the registrations that already exist, then let the router maintain it.</li>
+</ol>
+<h2>Loose ends worth a look</h2>
+<ul>
+<li><strong>Contact 915 holds two $850 Advanced Course purchases</strong> — 466 and 467, both unclaimed. Same double-charge shape as the 20 Aug incident. Check before any AC backfill runs, so it does not create two registrations for one person.</li>
+<li><strong>Five masters carry <code>f2302</code> with no detail block</strong> — registrations 797, 957, 1008, 1042 and 1183. All five contacts do hold a paid $850 AC purchase.</li>
+<li><strong>One master carries <code>f3276</code> Seminar Event ID with <code>f2303</code> unchecked</strong> — registration 748.</li>
+<li><strong>Two AC purchases are parked on master Forum registrations</strong> — 512 on registration 797, 513 on registration 1183 — because no AC record existed to hold them. <code>f2970</code> is an exclusive one-to-one, so the money had nowhere else to go.</li>
+<li><strong>Registration ids and contact ids collide.</strong> Registration 1046 belongs to Havilah Malone; contact 1046 is Bev A. Registration 1183 belongs to Olivia Rolotti; contact 1183 is Participant B. Always state which object an id refers to.</li>
+</ul>
+</body>
+</html>

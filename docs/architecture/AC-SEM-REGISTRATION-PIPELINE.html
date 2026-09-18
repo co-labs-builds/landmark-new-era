@@ -1,0 +1,198 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Advanced Course &amp; Seminar Pipeline</title>
+<style>
+  body { background:#fff; color:#000; font-family: Arial, Helvetica, sans-serif;
+         max-width: 46em; margin: 2em auto; padding: 0 1em; line-height: 1.5; }
+  code { font-family: "Courier New", monospace; }
+</style>
+</head>
+<body>
+<h1>Advanced Course &amp; Seminar Pipeline</h1>
+<p>
+<strong>Landmark Worldwide — New Era</strong>
+</p>
+<p>
+What fires when a participant signs up for the Advanced Course or a Seminar, and which records own each write.
+</p>
+<p>
+Ontraport account 270197 · n8n landmarkworldwide.awesomate.io · Read live 21 Aug 2026
+</p>
+<h2>How this differs from the Forum pipeline</h2>
+<p>
+The Forum pipeline starts with a stranger at a checkout. AC and Seminar start with a <strong>known participant who already holds a master Forum registration</strong>. Three consequences follow.
+</p>
+<ul>
+<li><strong>Identity is not at risk the same way.</strong> The signup page is keyed to the master registration's own unique id — <code>page_107</code> Participant Advanced/Seminar Signup — so there is no cookie-matching step to get wrong. Stage 0 of the Forum pipeline has no equivalent here.</li>
+<li><strong>Every signup has three write targets, not one.</strong> The new registration, the master Forum registration, and the invitation.</li>
+<li><strong>The invitation belongs to the participant's source event</strong>, not the AC or Seminar event they just joined.</li>
+</ul>
+<h2>The three write targets</h2>
+<ol>
+<li><strong>The new registration</strong> — its own record on object 10001, course type 338 Advanced Course or 337 Seminar. This is the anchor.</li>
+<li><strong>The master Forum registration</strong> — a checkbox plus a detail block, so the portal and the email templates can render the participant's next course without a second lookup.</li>
+<li><strong>The invitation</strong> — <code>f2298</code> Registered for Advanced Course or <code>f2300</code> Registered for Seminar. Only if the participant came in as a guest; many did not.</li>
+</ol>
+<h2>Current state, read 21 Aug 2026</h2>
+<h3>Seminar — working end to end</h3>
+<ul>
+<li><code>SEM : Create Seminar Registration (Pilot)</code> (<code>klOH6X4rFYniYJ9i</code>) — <strong>active</strong></li>
+<li><code>SEM : Seminar Confirmed -&gt; Update Forum Registration</code> (<code>I9u1ndXxf2JQhnDh</code>) — <strong>active</strong></li>
+<li>75 seminar registrations exist, and all 75 carry <code>f2424</code> = 154 Active.</li>
+<li>75 master registrations carry <code>f3276</code> Seminar Event ID; 74 of them also have <code>f2303</code> checked.</li>
+<li><strong>No seminar product exists</strong> in the catalogue — 16 products, none of them a seminar SKU. So 0 of 75 seminar registrations carrying purchase or cash data is correct by design, not a gap.</li>
+</ul>
+<h3>Advanced Course — dead at the door</h3>
+<ul>
+<li><code>AC : Create Registration at Checkout</code> (<code>S26UUphNMJGlIH5H</code>) — <strong>inactive</strong></li>
+<li><code>AC : Set Advanced Course Dates</code> (<code>2wIr1oC7lCjPYe7J</code>) — <strong>inactive</strong></li>
+<li><code>AC : Calendars : Build AddEvent Calendars + Session Events</code> (<code>CMsHl0Digu7Opoka</code>) — <strong>inactive</strong></li>
+<li><code>AC : Registration Confirmed -&gt; Update Forum Registration</code> (<code>XuW1rh03v4wyFZPN</code>) — <strong>active, but orphaned.</strong> Both of its callers are switched off, so it is never invoked.</li>
+</ul>
+<p>
+The consequence, in numbers:
+</p>
+<ul>
+<li><strong>29 Advanced Course purchases exist. 10 Advanced Course registrations exist.</strong></li>
+<li>19 of those purchases are unclaimed — <code>f2969</code> is 0, so no registration holds them.</li>
+<li>Of the 10 AC registrations that do exist, only 3 carry <code>f2424</code> = 154 Active.</li>
+<li>14 master registrations have <code>f2302</code> AC Registration checked, but only 9 carry the AC detail block.</li>
+</ul>
+<h3>Invitations — nothing is marked</h3>
+<ul>
+<li><code>f2298</code> Registered for Advanced Course = 1 on <strong>0</strong> invitations.</li>
+<li><code>f2300</code> Registered for Seminar = 1 on <strong>0</strong> invitations.</li>
+<li><code>f2299</code> Registered for Forum = 1 on <strong>2</strong> — invitations 946 and 1124, both written on 20 Aug.</li>
+</ul>
+<h2>Advanced Course track</h2>
+<h3>Stage A1 — Purchase submitted</h3>
+<p>
+<em>Trigger: checkout form, products 8 / 15 / 16</em>
+</p>
+<p>
+Contact, invoice and purchase land. As with the Forum, no event has been chosen yet, so this stage writes contact-level state only and does <strong>not</strong> create a registration.
+</p>
+<ul>
+<li>Set the contact's AC purchase state to Awaiting Dates.</li>
+<li>Record the invoice id immutably, for the same reason the Forum pipeline does — a second purchase overwrites <code>mriInvoiceNum</code>.</li>
+</ul>
+<h3>Stage A2 — Dates chosen → AC registration created</h3>
+<p>
+<em>Trigger: Ontraport rule on object 10001, record created, course type 338</em>
+</p>
+<p>
+The anchor. Writes on the <strong>new AC registration</strong>:
+</p>
+<ul>
+<li><strong><code>f2213</code> Contact, <code>f2214</code> Event</strong> — the AC event.</li>
+<li><strong><code>f2458</code> Course</strong> → 66 Advanced Course. <strong><code>f2830</code> Course Type</strong> → 338.</li>
+<li><strong><code>f2424</code> Registration Status</strong> → 154 Active. Only 3 of the existing 10 have this.</li>
+<li><strong><code>f2237</code> Registration Date</strong>, <strong><code>f3067</code> AC Reg Date</strong>.</li>
+<li><strong>Financials from the resolved purchase</strong> — <code>f2844</code> <code>f2848</code> <code>f2841</code> <code>f2820</code> <code>f2854</code> <code>f2857</code> <code>f2860</code> <code>f2863</code> <code>f2869</code> <code>f2872</code> <code>f2874</code> <code>f2875</code> <code>f2970</code>.</li>
+<li><strong><code>f2465</code> Source Invitation</strong> — currently 0 on all 10.</li>
+</ul>
+<p>
+Dates follow the Forum rule: <strong>never compute a date string the event already holds.</strong> The AC event record carries the written-out formats; mirror them rather than deriving them.
+</p>
+<h3>Stage A3 — Stamp back to the master Forum registration</h3>
+<p>
+<em>Chained off Stage A2, same execution</em>
+</p>
+<p>
+This is what <code>AC : Registration Confirmed -&gt; Update Forum Registration</code> already does. It needs its caller turned back on, not a rewrite.
+</p>
+<p>
+On the <strong>master Forum registration</strong>:
+</p>
+<ul>
+<li><strong><code>f2302</code> AC Registration</strong> → checked.</li>
+<li><strong><code>f2889</code> AC Registration Status</strong> → 390 Registered. <strong><code>f2887</code> AC Potential Status</strong> → 382 Potential.</li>
+<li><strong>Detail block</strong> — <code>f3287</code> AC Event ID, <code>f3186</code> AC Title, <code>f3288</code> AC Dates, <code>f3290</code> AC Begins, <code>f3289</code> AC Pattern, <code>f3291</code> AC Schedule, <code>f3285</code> AC Start Date, <code>f3286</code> AC End Date, <code>f3292</code> AC Session Dates, <code>f3293</code> AC Session Start Time, <code>f3294</code> AC Time Zone, <code>f3295</code> AC Graduation Day and Date, <code>f3296</code> AC Graduation Start Time, <code>f3297</code> AC Graduation End Time, <code>f3298</code> AC Format, <code>f3304</code> AC Add To Calendar URL.</li>
+<li><strong><code>f2890</code> AC Course Choice</strong> — 392 Designated or 391 Alternate.</li>
+</ul>
+<p>
+The existing workflow's PUT body is hand-assembled precisely so the first call cannot blank what the second call sets. Preserve that behaviour.
+</p>
+<h3>Stage A4 — Invitation</h3>
+<p>
+<em>Chained off Stage A2</em>
+</p>
+<p>
+If the participant holds an invitation, set <strong><code>f2298</code></strong> Registered for Advanced Course and recompute metrics on the invitation's source event <code>f2258</code>.
+</p>
+<h2>Seminar track</h2>
+<h3>Stage S1 — Signup</h3>
+<p>
+<em>Trigger: Participant Advanced/Seminar Signup page</em>
+</p>
+<p>
+No purchase, no invoice, no financial stage. Seminars have no SKU. Do not stamp empty financial fields onto the record.
+</p>
+<h3>Stage S2 — Seminar registration created</h3>
+<p>
+<em>Trigger: Ontraport rule on object 10001, record created, course type 337</em>
+</p>
+<p>
+On the <strong>new seminar registration</strong>: <code>f2213</code> Contact, <code>f2214</code> Event, <code>f2458</code> Course, <code>f2830</code> → 337, <code>f2424</code> → 154 Active, <code>f2237</code> Registration Date, and <code>f2465</code> Source Invitation.
+</p>
+<p>
+This half already works — all 75 existing records are Active.
+</p>
+<h3>Stage S3 — Stamp back to the master Forum registration</h3>
+<p>
+<em>Handled today by <code>SEM : Seminar Confirmed -&gt; Update Forum Registration</code></em>
+</p>
+<ul>
+<li><strong><code>f2303</code> SEM Registration</strong> → checked.</li>
+<li><strong><code>f2882</code> Seminar Potential Status</strong> → 371 Potential. <strong><code>f2884</code> Seminar Confirmation Status</strong> → 378 Confirmed.</li>
+<li><strong>Detail block</strong> — <code>f3276</code> Seminar Event ID, <code>f3185</code> Seminar Title, <code>f3271</code> Seminar Dates, <code>f3274</code> Seminar Begins, <code>f3272</code> Seminar Pattern, <code>f3275</code> Seminar Schedule, <code>f3277</code> Seminar Start Date, <code>f3283</code> Seminar End Date, <code>f3278</code> Seminar Session Dates, <code>f3282</code> Seminar Language.</li>
+<li><strong><code>f2885</code> Seminar Course Choice</strong> — 380 Designated or 379 Alternate.</li>
+</ul>
+<h3>Stage S4 — Invitation</h3>
+<p>
+Set <strong><code>f2300</code></strong> Registered for Seminar, credit the source event <code>f2258</code>.
+</p>
+<h2>Cross-cutting rules</h2>
+<h3>Finding the master registration is the landmine</h3>
+<p>
+<code>AC : Registration Confirmed -&gt; Update Forum Registration</code> locates the master by contact, <code>f2424</code> = 154 Active, and is-Forum, newest event first. <strong><code>f2424</code> is blank on every newly created Forum registration.</strong>
+</p>
+<p>
+So a participant who registers for the Forum today and buys the Advanced Course tomorrow has a master the stamper cannot see. Setting <code>f2424</code> = 154 in Forum Stage 2 fixes the Forum pipeline and both of these tracks at the same time. It is the single highest-value change across all three.
+</p>
+<h3><code>f2466</code> holds one registration only</h3>
+<p>
+<code>f2466</code> Resulting Registration already points at the Forum registration on both marked invitations. If the same guest later buys the Advanced Course and the attribution step writes <code>f2466</code> again, the Forum attribution is destroyed.
+</p>
+<p>
+<strong>Rule: <code>f2466</code> records the first conversion — the Forum registration. Advanced Course and Seminar conversions are recorded by <code>f2298</code> and <code>f2300</code> alone.</strong>
+</p>
+<h3>The invitation may not exist, or there may be several</h3>
+<p>
+Most participants have no invitation at all. Some have more than one for the same event — contact 1183 holds both 1124 and 1133 for event 218. Apply the same rule as the Forum track: prefer the invitation carrying an inviter, tie-break on lowest id, mark exactly one, and credit the source event <code>f2258</code> rather than the course just joined.
+</p>
+<h3>Advanced Course money belongs on the AC registration</h3>
+<p>
+<code>f2970</code> Payment Record is an exclusive one-to-one. Two AC purchases are currently parked on master Forum registrations — purchase 512 on registration 797, and purchase 513 on registration 1183 — because no AC registration existed to hold them. Once AC registration creation is live, those two move onto their own records.
+</p>
+<h3>Seminars carry no money, and that is correct</h3>
+<p>
+Zero of 75 seminar registrations have purchase or cash data because no seminar product exists. Do not treat those zeros as a backfill gap.
+</p>
+<h2>What to fix, in order</h2>
+<ol>
+<li><strong>Set <code>f2424</code> = 154 Active</strong> on registration creation. Unblocks the master lookup for both tracks.</li>
+<li><strong>Turn on <code>AC : Create Registration at Checkout</code></strong>, de-hardcoded from event 218 first. This is why 29 purchases produced 10 registrations.</li>
+<li><strong>Backfill the 19 unclaimed Advanced Course purchases</strong> into AC registrations, then move their <code>f2970</code> links off the master.</li>
+<li><strong>Reconcile the 5 master registrations</strong> carrying <code>f2302</code> with no detail block — registrations 797, 957, 1008, 1042 and 1183. All five contacts do hold a paid $850 AC purchase.</li>
+<li><strong>Reconcile the 1 master</strong> carrying <code>f3276</code> Seminar Event ID with <code>f2303</code> unchecked — registration 748.</li>
+<li><strong>Wire <code>f2298</code> and <code>f2300</code></strong> into the attribution step. Both are currently 0 across every invitation.</li>
+</ol>
+<h2>Also worth a look</h2>
+<p>
+<strong>Contact 915 holds two $850 Advanced Course purchases</strong> — 466 and 467, both unclaimed. Same double-charge shape as the Geoff Smyth incident on 20 Aug, and worth checking before the AC backfill runs, so it does not create two registrations for one person.
+</p>
+</body>
+</html>

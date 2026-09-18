@@ -1,0 +1,158 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Forum Checkout Pipeline</title>
+<style>
+  body { background:#fff; color:#000; font-family: Arial, Helvetica, sans-serif;
+         max-width: 46em; margin: 2em auto; padding: 0 1em; line-height: 1.5; }
+  code { font-family: "Courier New", monospace; }
+</style>
+</head>
+<body>
+
+<h1>Forum Checkout Pipeline</h1>
+
+<p><strong>Landmark Worldwide — New Era Forum</strong></p>
+
+<p>What fires from the moment a purchase is submitted, in what order, and which record owns each write.</p>
+
+<p>Ontraport account 270197 · n8n landmarkworldwide.awesomate.io · Reverse-engineered from registrations 1324 &amp; 1325, 20 Aug 2026</p>
+
+<h2>The organising principle</h2>
+
+<p><strong>The registration record is the anchor, not the purchase.</strong></p>
+
+<p>At purchase time there is no registration and no chosen event, so nothing event-shaped can be written yet. The registration is created by the Step 02 date-selection form with the event already attached — that is the first moment contact, event and purchase are all knowable together.</p>
+
+<p>Ordering at purchase time is also unreliable. On the two live purchases on 20 Aug, the post-purchase webhook fired <em>17 seconds before</em> the registration existed on one, and <em>19 seconds after</em> it on the next. Anything triggered off the purchase inherits that race.</p>
+
+<h2>Stage 0 — Before submit</h2>
+
+<p><em>Page-side, not Ontraport</em></p>
+
+<p>The only place identity corruption can be prevented. Everything downstream inherits it.</p>
+
+<ul>
+<li><strong>On checkout page load</strong> — compare the typed email against the session-matched contact. On mismatch, force a new-contact submission.</li>
+<li><strong>On confirmation page</strong> — clear Ontraport's tracking and session cookies (the ones feeding <code>gsid</code>).</li>
+</ul>
+
+<p><strong>Why this is first.</strong> On 20 Aug two people checked out on one browser 41 minutes apart. The second submit overwrote the first buyer's name, email and address on the same contact record. The pipeline then processed both purchases faithfully — for the wrong person. No downstream logic can recover from a bad identity match.</p>
+
+<h2>Stage 1 — Purchase submitted</h2>
+
+<p><em>Trigger: checkout form</em></p>
+
+<p>Contact, invoice and purchase land. Writes <strong>contact-level state only</strong> — it records intent, and does not create a registration.</p>
+
+<p>Contact writes:</p>
+
+<ul>
+<li><strong><code>mriInvoiceNum</code></strong> — set to the invoice id. Already exists as a native field and is already populated.</li>
+<li><strong>Forum Purchase Status</strong> — set to Awaiting Dates. Field must be created. This is "Registered for Forum = true, waiting for dates".</li>
+<li><strong>Forum Purchase Invoice</strong> — set to a snapshot of the invoice id. Field must be created. Immutable per purchase.</li>
+</ul>
+
+<p><strong>Why a second invoice field.</strong> A single mutable "last invoice" field cannot describe a contact with two purchases. On 20 Aug the second checkout moved <code>mriInvoiceNum</code> from 498 to 502, erasing the only pointer to the first purchase.</p>
+
+<h2>Stage 2 — Dates chosen → registration created</h2>
+
+<p><em>Trigger: Ontraport rule on object 10001, record created</em></p>
+
+<p>The anchor. One workflow, one door. Precedent already exists — rule 5049 fires a webhook off object 10001 today.</p>
+
+<h3>Identity and status</h3>
+
+<ul>
+<li><strong><code>f2424</code> Registration Status</strong> → 154 Active. Currently blank on every new record, which makes them invisible to every workflow filtering on Active.</li>
+<li><strong><code>f2458</code> Course</strong> → from the product map. Set deterministically here, replacing the unidentified caller.</li>
+<li><strong><code>f2830</code> Course Type</strong> → 339 Landmark Forum. The rule fires off <code>f2458</code>; set it directly as belt-and-braces.</li>
+</ul>
+
+<h3>Financials, from the resolved purchase</h3>
+
+<p><code>f2844</code> <code>f2848</code> <code>f2841</code> <code>f2820</code> <code>f2854</code> <code>f2857</code> <code>f2860</code> <code>f2863</code> <code>f2869</code> <code>f2872</code> <code>f2874</code> <code>f2875</code> <code>f2970</code> <code>f2835</code> <code>f3045</code></p>
+
+<p><strong>Never</strong> write <code>f2878</code> Test Registration from the invoice refund flag — that silently marks refunded live registrations as test records. Refunds set <code>f2824 = 322 Refunded</code> instead.</p>
+
+<h3>Dates</h3>
+
+<p><strong>Core rule: never compute a date string the event already holds.</strong> <code>f3099</code> Graduation Day and Date, <code>f3100</code>/<code>f3101</code> graduation times, <code>f3102</code> time zone, <code>f2394</code> start date and <code>f3086</code> countdown reference all arrive <em>free</em> as related-data mirrors the moment <code>f2214</code> is set. Verified live on registration 1325.</p>
+
+<p>Only three registration fields have no event source: <code>f3108</code> Graduation Day – Full, <code>f3109</code> Short, and <code>f3110</code> TOD.</p>
+
+<p><strong>Recommendation.</strong> Add those three to the <strong>event</strong> instead and mirror them. Three values per event, authored once by whoever builds the event, versus three derived writes on every registration forever — and derivation is where format drift starts. Event 218 already reads <code>Tues, Aug 18, 2026</code> while event 283 reads <code>Tuesday, November 10, 2026</code>; parsing both reliably is work you don't need to own.</p>
+
+<p>Contact writes — normalise from the event, not from form input:</p>
+
+<ul>
+<li><strong><code>f3013</code> Chosen Event Start Date</strong> ← event <code>f2988</code>. Currently empty.</li>
+<li><strong><code>f2481</code> Chosen Event Dates</strong> ← event <code>f2753</code>. Currently empty.</li>
+<li><strong><code>f2696</code> Chosen Event End Date</strong> ← event <code>f2989</code>. Currently crude — the form writes <code>11-8-2026</code>.</li>
+<li><strong><code>f2454</code> Forum Start Date</strong> ← event <code>f2233</code>. Already works.</li>
+<li><strong>Forum Purchase Status</strong> → Dates Chosen. Field must be created.</li>
+</ul>
+
+<h2>Stage 3 — Terms and conditions</h2>
+
+<p><em>Trigger: Step 03 form</em></p>
+
+<p>Writes the information-form block — <code>f2574</code> to <code>f2585</code>, and <code>f3279</code> Preferred Name. This already works.</p>
+
+<p>Add <code>f2579</code> Information Form Completed so an abandoned Step 03 is detectable. Registration 1325 never received this block and nothing flags it.</p>
+
+<h2>Stage 4 — Guest conversion attribution</h2>
+
+<p><em>Chained off Stage 2, same execution</em></p>
+
+<p>Find the invitation, mark the conversion, recompute the source event. Writes <code>f2291 = 127</code> Registered, <code>f2299 = 1</code> Registered for Forum, and <code>f2466</code> = the registration id.</p>
+
+<ol>
+<li><strong>Deduplicate.</strong> One contact can hold several invitations for the same event — contact 1183 holds both 1124 and 1133 for event 218. Pick one deterministically: <em>prefer the invitation carrying an inviter</em>, tie-break on lowest id, and mark exactly one. Otherwise a single conversion counts twice.</li>
+<li><strong>Credit the source event.</strong> The invitation's <code>f2258</code> — the event where they were a guest — not the event they just bought into.</li>
+</ol>
+
+<p><strong>Already proven.</strong> This logic is currently correct on invitation 946 → registration 1324 and invitation 1124 → registration 1325. It needs moving onto the registration-created trigger rather than being run by hand.</p>
+
+<h2>Stage 5 — Sweepers</h2>
+
+<p><em>Scheduled, idempotent</em></p>
+
+<ul>
+<li><strong>Forum purchase, <code>f2969</code> empty, older than 30 min</strong> — bought but never completed Step 02. Handled operationally rather than answered theoretically.</li>
+<li><strong>Registration with <code>f2214</code> set, <code>f2875</code> not Synced</strong> — financial stamp missed.</li>
+<li><strong>Registration <code>f2424</code> = 0</strong> — anything that slipped past Stage 2.</li>
+<li><strong>Contact Forum Purchase Status = Awaiting Dates, older than 24h</strong> — abandoned funnel, CS follow-up list.</li>
+</ul>
+
+<h2>Guardrails to build in</h2>
+
+<ul>
+<li><strong>One door.</strong> Repoint automation 15 at the router and delete its <code>/1/Invitations</code> payload. It targets <code>f2285</code> Temp Invitation ID, which is empty on every contact in the account, so it is an inert no-op that will collide the day someone populates that field.</li>
+<li><strong>Claim before write.</strong> <code>f2970</code> Payment Record is an exclusive one-to-one, and <code>f2969</code> is its purchase-side twin. Use it as the idempotency key so a re-run cannot double-stamp.</li>
+<li><strong>Never send a sentinel id.</strong> Ontraport ignores an unusable <code>ids</code> value and returns an arbitrary page rather than an empty set. Guard on the source list being non-empty and skip the call, then filter the response against that same list.</li>
+<li><strong>Buyer is not always the registrant.</strong> Four of the five cross-contact payment links in the account are household purchases — one family member paying for another. At creation time buyer and registrant are the same record; divergence is created later by human correction, and the link still points at the right purchase. Do not "fix" it.</li>
+<li><strong>Publishing means publishing.</strong> <code>update_workflow</code> saves a draft; the previously active version keeps serving until <code>publish_workflow</code> is called.</li>
+<li><strong>Rate limit is 360 requests per minute</strong> on this account, not the documented 180. Requests over the limit fail; they do not queue.</li>
+</ul>
+
+<h2>Blocking Stage 2</h2>
+
+<ol>
+<li><strong>The <code>f2458</code> writer is still unidentified.</strong> Something using the n8n API credential sets Course roughly nine minutes after registration creation. Eliminated so far: <code>QjA13vVwnalgDvEr</code> (its only write targets the contact), <code>6Ki7pEPczPvI8Cqq</code> (abandons and writes nothing) and <code>npITxdMALHR0tdPK</code>. If Stage 2 sets <code>f2458</code> while that caller is still live, they race. It must be found and retired first.</li>
+<li><strong>Field creation by API is refused on this account.</strong> The new contact fields — and the three event fields, if that route is taken — must be created by hand in Field Manager before anything can write to them.</li>
+</ol>
+
+<h2>Hand-work before build</h2>
+
+<ul>
+<li>Create contact field <strong>Forum Purchase Status</strong> (dropdown: Awaiting Dates / Dates Chosen / Complete).</li>
+<li>Create contact field <strong>Forum Purchase Invoice</strong> (text).</li>
+<li>Create event fields <strong>Graduation Day – Full</strong>, <strong>Graduation Day – Short</strong>, <strong>Graduation TOD</strong>, plus their related-data mirrors on the registration.</li>
+<li>Normalise the existing day-and-date formats across event records so the mirrors read consistently.</li>
+<li>Locate and retire the unidentified <code>f2458</code> writer.</li>
+</ul>
+
+</body>
+</html>

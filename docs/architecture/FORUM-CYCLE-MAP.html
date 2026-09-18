@@ -1,0 +1,956 @@
+<title>The Forum Cycle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+
+<style>
+:root{
+  --paper:#EFF2F4;
+  --card:#FFFFFF;
+  --sunk:#E4E8EC;
+  --ink:#13171D;
+  --ink-2:#454C57;
+  --ink-3:#6D7681;
+  --rule:#CFD6DD;
+  --rule-soft:#E1E6EB;
+  --reg:#2F4B8F;   --reg-soft:#E4EAF6;
+  --inv:#94620F;   --inv-soft:#F5ECD9;
+  --con:#1A6A61;   --con-soft:#DCEDEA;
+  --alert:#A2352B; --alert-soft:#F7E4E1;
+  --sans:"IBM Plex Sans Condensed","Helvetica Neue",Arial,sans-serif;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"IBM Plex Mono",ui-monospace,"Courier New",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1116; --card:#161B22; --sunk:#1C222B;
+    --ink:#E7EBF0; --ink-2:#AFB8C3; --ink-3:#818C99;
+    --rule:#2B323C; --rule-soft:#222833;
+    --reg:#8FA9E8; --reg-soft:#1A2338;
+    --inv:#D9A54F; --inv-soft:#2C2317;
+    --con:#5CBFAF; --con-soft:#122927;
+    --alert:#E3837A; --alert-soft:#2D1A18;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1116; --card:#161B22; --sunk:#1C222B;
+  --ink:#E7EBF0; --ink-2:#AFB8C3; --ink-3:#818C99;
+  --rule:#2B323C; --rule-soft:#222833;
+  --reg:#8FA9E8; --reg-soft:#1A2338;
+  --inv:#D9A54F; --inv-soft:#2C2317;
+  --con:#5CBFAF; --con-soft:#122927;
+  --alert:#E3837A; --alert-soft:#2D1A18;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:var(--serif); font-size:17px; line-height:1.62;
+  margin:0; padding:0 20px 96px;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto}
+
+header.top{padding:64px 0 34px; border-bottom:1px solid var(--rule)}
+.eyebrow{
+  font-family:var(--mono); font-size:11px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink-3); margin:0 0 18px;
+}
+h1{
+  font-family:var(--sans); font-weight:700; font-size:clamp(44px,7vw,76px);
+  line-height:.95; letter-spacing:-.022em; margin:0 0 20px; text-wrap:balance;
+}
+.standfirst{
+  font-size:20px; line-height:1.5; color:var(--ink-2);
+  max-width:34em; margin:0 0 26px;
+}
+.meta{
+  font-family:var(--mono); font-size:11.5px; color:var(--ink-3);
+  line-height:1.9; margin:0;
+}
+
+main{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) min(64ch,100%) minmax(0,1fr);
+}
+main > *{grid-column:2}
+main > .wide{grid-column:1/-1; justify-self:center; width:min(1180px,100%)}
+
+h2{
+  font-family:var(--sans); font-weight:700; font-size:31px; letter-spacing:-.012em;
+  line-height:1.14; margin:66px 0 8px; text-wrap:balance;
+}
+h2 .num{
+  display:block; font-family:var(--mono); font-size:11px; font-weight:400;
+  letter-spacing:.16em; color:var(--ink-3); margin-bottom:9px;
+}
+h3{
+  font-family:var(--sans); font-weight:600; font-size:19px;
+  margin:34px 0 8px; text-wrap:balance;
+}
+p{margin:0 0 15px}
+.lede{font-size:18.5px; color:var(--ink-2); margin-bottom:22px}
+ul,ol{margin:0 0 18px; padding-left:1.15em}
+li{margin:0 0 9px; padding-left:.15em}
+strong{font-weight:600}
+code{
+  font-family:var(--mono); font-size:.83em;
+  background:var(--sunk); padding:.1em .34em; border-radius:3px; color:var(--ink-2);
+}
+a{color:var(--reg)}
+:focus-visible{outline:2px solid var(--reg); outline-offset:3px; border-radius:2px}
+
+figure{
+  margin:34px 0 8px; background:var(--card);
+  border:1px solid var(--rule); border-radius:6px;
+  padding:22px 22px 16px;
+}
+.scroll{overflow-x:auto}
+figure svg{display:block; width:100%; height:auto; min-width:1000px}
+figcaption{
+  font-family:var(--sans); font-size:13.5px; line-height:1.55; color:var(--ink-3);
+  margin-top:16px; padding-top:13px; border-top:1px solid var(--rule-soft);
+  max-width:80ch;
+}
+figcaption b{color:var(--ink-2); font-weight:600}
+
+svg text{font-family:var(--sans); fill:var(--ink)}
+.bx{fill:var(--card); stroke:var(--rule); stroke-width:1.4}
+.bx-q{fill:var(--sunk); stroke:var(--rule); stroke-width:1.4}
+.bx-reg{fill:var(--reg-soft); stroke:var(--reg); stroke-width:1.4}
+.bx-inv{fill:var(--inv-soft); stroke:var(--inv); stroke-width:1.4}
+.bx-con{fill:var(--con-soft); stroke:var(--con); stroke-width:1.4}
+.bx-off{fill:var(--alert-soft); stroke:var(--alert); stroke-width:1.4; stroke-dasharray:5 3.5}
+.bx-read{fill:none; stroke:var(--reg); stroke-width:1.4; stroke-dasharray:4 3.5}
+.e{fill:none; stroke:var(--ink-3); stroke-width:1.4; stroke-linejoin:round}
+.e-reg{fill:none; stroke:var(--reg); stroke-width:1.5; stroke-linejoin:round}
+.e-inv{fill:none; stroke:var(--inv); stroke-width:1.5; stroke-linejoin:round}
+.e-con{fill:none; stroke:var(--con); stroke-width:1.5; stroke-linejoin:round}
+.e-off{fill:none; stroke:var(--alert); stroke-width:1.5; stroke-dasharray:5 3.5; stroke-linejoin:round}
+.e-dash{fill:none; stroke:var(--ink-3); stroke-width:1.3; stroke-dasharray:4 3.5; stroke-linejoin:round}
+.mk-n{fill:var(--ink-3)} .mk-r{fill:var(--reg)} .mk-i{fill:var(--inv)}
+.mk-c{fill:var(--con)} .mk-a{fill:var(--alert)}
+.t-hd{font-size:13px; font-weight:600}
+.t-sm{font-size:11.5px; fill:var(--ink-2)}
+.t-mn{font-family:var(--mono); font-size:10.2px; fill:var(--ink-3)}
+.t-day{font-family:var(--mono); font-size:10px; letter-spacing:.13em; fill:var(--ink-3)}
+.t-edge{font-size:11px; fill:var(--ink-3)}
+.t-rail{font-family:var(--mono); font-size:10px; letter-spacing:.11em; fill:var(--reg)}
+.f-reg{fill:var(--reg)} .f-inv{fill:var(--inv)} .f-con{fill:var(--con)} .f-alert{fill:var(--alert)}
+
+.legend{
+  display:flex; flex-wrap:wrap; gap:11px 26px; align-items:center;
+  margin:30px 0 0; padding:15px 18px; background:var(--card);
+  border:1px solid var(--rule); border-radius:6px;
+}
+.lg{display:flex; align-items:center; gap:8px; font-family:var(--sans); font-size:13px; color:var(--ink-2)}
+.sw{width:19px; height:14px; border-radius:2.5px; border:1.4px solid; flex:none}
+.sw.r{background:var(--reg-soft); border-color:var(--reg)}
+.sw.i{background:var(--inv-soft); border-color:var(--inv)}
+.sw.c{background:var(--con-soft); border-color:var(--con)}
+.sw.o{background:var(--alert-soft); border-color:var(--alert); border-style:dashed}
+.lg .k{font-family:var(--mono); font-size:10.5px; color:var(--ink-3)}
+
+.matrix{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin:30px 0 10px}
+@media (max-width:720px){.matrix{grid-template-columns:1fr}}
+.cell{
+  background:var(--card); border:1px solid var(--rule);
+  border-radius:6px; padding:18px; border-top-width:3px;
+}
+.cell.p{border-top-color:var(--reg)}
+.cell.g{border-top-color:var(--inv)}
+.cell .who{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--ink-3); margin:0 0 7px;
+}
+.cell h4{font-family:var(--sans); font-weight:600; font-size:18px; margin:0 0 6px; line-height:1.24}
+.cell p{font-size:15px; line-height:1.5; color:var(--ink-2); margin:0 0 12px}
+.cell .aut{
+  font-family:var(--mono); font-size:11px; color:var(--ink-3);
+  line-height:1.7; border-top:1px solid var(--rule-soft); padding-top:10px;
+}
+.cell .aut b{color:var(--ink-2); font-weight:500}
+
+.note{
+  border-left:3px solid var(--alert); background:var(--alert-soft);
+  padding:14px 18px; border-radius:0 5px 5px 0; margin:26px 0;
+  font-size:15.5px; line-height:1.55;
+}
+.note .h{
+  font-family:var(--sans); font-weight:600; font-size:12px;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--alert);
+  display:block; margin-bottom:5px;
+}
+.note p{margin:0 0 9px} .note p:last-child{margin:0}
+
+.states{list-style:none; padding:0; margin:26px 0}
+.states li{
+  display:grid; grid-template-columns:104px minmax(0,1fr);
+  gap:16px; padding:13px 0; border-top:1px solid var(--rule-soft); margin:0;
+}
+.states li:last-child{border-bottom:1px solid var(--rule-soft)}
+.states .tag{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.08em;
+  text-transform:uppercase; padding-top:4px;
+}
+.states .ok{color:var(--con)} .states .bad{color:var(--alert)} .states .warn{color:var(--inv)}
+.states .body{font-size:15.5px; line-height:1.5}
+
+footer{
+  margin:84px 0 0; padding-top:24px; border-top:1px solid var(--rule);
+  font-family:var(--mono); font-size:11.5px; color:var(--ink-3); line-height:1.9;
+}
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow">Landmark Worldwide &middot; New Era</p>
+  <h1>The Forum Cycle</h1>
+  <p class="standfirst">One cohort, from the moment a stranger buys a seat to the Tuesday night their guests walk into graduation &mdash; and how that night writes the records that fill the next Forum.</p>
+  <p class="meta">Ontraport account 270197 &middot; n8n landmarkworldwide.awesomate.io<br>Figures read live 21 Aug 2026 &middot; worked example: event 218, Forum 14&ndash;18 Aug 2026</p>
+</header>
+
+<main>
+
+<div class="wide">
+  <div class="legend">
+    <span class="lg"><span class="sw r"></span>Registration <span class="k">object 10001</span></span>
+    <span class="lg"><span class="sw i"></span>Invitation <span class="k">the entry point</span></span>
+    <span class="lg"><span class="sw c"></span>Contact <span class="k">the journey layer</span></span>
+    <span class="lg"><span class="sw o"></span>Wired, but not firing today</span>
+  </div>
+</div>
+
+<p class="lede" style="margin-top:38px">The Forum runs Friday to Sunday and graduates on the Tuesday evening. Everything below is keyed to that week, because every record in the system is written on one of those days &mdash; and the last two days of the cycle are the ones that fill the next one.</p>
+
+<p>Three objects carry the whole thing. An <strong>Invitation</strong> records how someone arrived. A <strong>Contact</strong> records where they are in the journey, in one glance. A <strong>Registration</strong> records one course engagement in full. The Forum registration is the master: it holds the participant&rsquo;s own course detail and a mirrored block for whatever they sign up for next, so the portal and every email template can render the next step from a single record.</p>
+
+<div class="wide">
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 1240 434" role="img" aria-label="The full Forum cycle: a guest registers, the portal opens two days before the Forum, Seminar registration is stamped onto the master on Saturday, Advanced Course on Sunday, invitations are created between Sunday and Tuesday, guests attend graduation on Tuesday, and the Tuesday-to-Saturday offer window splits everyone into four buckets whose registrations seed the next cohort.">
+<defs>
+  <marker id="a-n1" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-n" d="M0,0 L7,3.5 L0,7 z"/></marker>
+  <marker id="a-r1" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-r" d="M0,0 L7,3.5 L0,7 z"/></marker>
+</defs>
+
+<!-- return loop, drawn first so it sits behind -->
+<path class="e-dash" d="M 1123 404 L 24 404 L 24 83 L 41 83" marker-end="url(#a-n1)"/>
+<text class="t-edge" x="300" y="396" text-anchor="middle">new Forum, Advanced Course and Seminar registrations &mdash; the next cohort begins</text>
+
+<!-- day eyebrows -->
+<text class="t-day" x="118"  y="30" text-anchor="middle">ANY DAY</text>
+<text class="t-day" x="285"  y="30" text-anchor="middle">WED</text>
+<text class="t-day" x="453"  y="30" text-anchor="middle">FRI &ndash; SAT</text>
+<text class="t-day" x="620"  y="30" text-anchor="middle">SUN</text>
+<text class="t-day" x="788"  y="30" text-anchor="middle">SUN &ndash; TUE</text>
+<text class="t-day" x="955"  y="30" text-anchor="middle">TUE</text>
+<text class="t-day" x="1123" y="30" text-anchor="middle">TUE &ndash; SAT</text>
+
+<!-- stage boxes -->
+<rect class="bx" x="48"   y="44" width="140" height="78" rx="4"/>
+<rect class="bx" x="215"  y="44" width="140" height="78" rx="4"/>
+<rect class="bx" x="383"  y="44" width="140" height="78" rx="4"/>
+<rect class="bx" x="550"  y="44" width="140" height="78" rx="4"/>
+<rect class="bx" x="718"  y="44" width="140" height="78" rx="4"/>
+<rect class="bx" x="885"  y="44" width="140" height="78" rx="4"/>
+<rect class="bx" x="1053" y="44" width="140" height="78" rx="4"/>
+
+<text class="t-hd" x="118" y="70" text-anchor="middle">Guest registers</text>
+<text class="t-sm" x="118" y="88" text-anchor="middle">checkout for the Forum</text>
+<text class="t-sm" x="118" y="104" text-anchor="middle">the master is born</text>
+
+<text class="t-hd" x="285" y="70" text-anchor="middle">Portal opens</text>
+<text class="t-sm" x="285" y="88" text-anchor="middle">two days before start</text>
+<text class="t-sm" x="285" y="104" text-anchor="middle">pre-Forum sequence</text>
+
+<text class="t-hd" x="453" y="70" text-anchor="middle">The Forum</text>
+<text class="t-sm" x="453" y="88" text-anchor="middle">during-Forum sequence</text>
+<text class="t-sm" x="453" y="104" text-anchor="middle">Sat: Seminar opens</text>
+
+<text class="t-hd" x="620" y="70" text-anchor="middle">Final day</text>
+<text class="t-sm" x="620" y="88" text-anchor="middle">Advanced Course</text>
+<text class="t-sm" x="620" y="104" text-anchor="middle">announced from stage</text>
+
+<text class="t-hd" x="788" y="70" text-anchor="middle">Invites go out</text>
+<text class="t-sm" x="788" y="88" text-anchor="middle">participants invite</text>
+<text class="t-sm" x="788" y="104" text-anchor="middle">guests to graduation</text>
+
+<text class="t-hd" x="955" y="70" text-anchor="middle">Graduation</text>
+<text class="t-sm" x="955" y="88" text-anchor="middle">guests in the room</text>
+<text class="t-sm" x="955" y="104" text-anchor="middle">grads and non-grads</text>
+
+<text class="t-hd" x="1123" y="70" text-anchor="middle">Offer window</text>
+<text class="t-sm" x="1123" y="88" text-anchor="middle">everyone splits into</text>
+<text class="t-sm" x="1123" y="104" text-anchor="middle">four buckets</text>
+
+<!-- stubs from stage to record chip -->
+<line class="e" x1="118"  y1="122" x2="118"  y2="144" marker-end="url(#a-n1)"/>
+<line class="e" x1="285"  y1="122" x2="285"  y2="144" marker-end="url(#a-n1)"/>
+<line class="e" x1="453"  y1="122" x2="453"  y2="144" marker-end="url(#a-n1)"/>
+<line class="e" x1="620"  y1="122" x2="620"  y2="144" marker-end="url(#a-n1)"/>
+<line class="e" x1="788"  y1="122" x2="788"  y2="144" marker-end="url(#a-n1)"/>
+<line class="e" x1="955"  y1="122" x2="955"  y2="144" marker-end="url(#a-n1)"/>
+<line class="e" x1="1123" y1="122" x2="1123" y2="144" marker-end="url(#a-n1)"/>
+
+<!-- chip row 1 -->
+<rect class="bx-reg"  x="48"   y="148" width="140" height="34" rx="3"/>
+<text class="t-sm f-reg" x="118" y="163" text-anchor="middle" font-weight="600">Forum registration</text>
+<text class="t-mn" x="118" y="176" text-anchor="middle">10001 &middot; THE MASTER</text>
+
+<rect class="bx-read" x="215"  y="148" width="140" height="34" rx="3"/>
+<text class="t-sm f-reg" x="285" y="163" text-anchor="middle" font-weight="600">Portal reads master</text>
+<text class="t-mn" x="285" y="176" text-anchor="middle">one lookup, no joins</text>
+
+<rect class="bx-reg"  x="383"  y="148" width="140" height="34" rx="3"/>
+<text class="t-sm f-reg" x="453" y="163" text-anchor="middle" font-weight="600">Seminar registration</text>
+<text class="t-mn" x="453" y="176" text-anchor="middle">f2830 = 337</text>
+
+<rect class="bx-off"  x="550"  y="148" width="140" height="34" rx="3"/>
+<text class="t-sm f-alert" x="620" y="163" text-anchor="middle" font-weight="600">AC registration</text>
+<text class="t-mn" x="620" y="176" text-anchor="middle">f2830 = 338</text>
+
+<rect class="bx-inv"  x="718"  y="148" width="140" height="34" rx="3"/>
+<text class="t-sm f-inv" x="788" y="163" text-anchor="middle" font-weight="600">Invitation created</text>
+<text class="t-mn" x="788" y="176" text-anchor="middle">f2258 = this Forum</text>
+
+<rect class="bx-inv"  x="885"  y="148" width="140" height="34" rx="3"/>
+<text class="t-sm f-inv" x="955" y="163" text-anchor="middle" font-weight="600">Invitation: Attended</text>
+<text class="t-mn" x="955" y="176" text-anchor="middle">f3210</text>
+
+<rect class="bx-con"  x="1053" y="148" width="140" height="34" rx="3"/>
+<text class="t-sm f-con" x="1123" y="163" text-anchor="middle" font-weight="600">Segments on journey</text>
+<text class="t-mn" x="1123" y="176" text-anchor="middle">f3359 &ndash; f3363</text>
+
+<!-- chip row 2 -->
+<rect class="bx-con"  x="48"  y="190" width="140" height="34" rx="3"/>
+<text class="t-sm f-con" x="118" y="205" text-anchor="middle" font-weight="600">Contact: f3359</text>
+<text class="t-mn" x="118" y="218" text-anchor="middle">+ f3374 master pointer</text>
+
+<rect class="bx-reg"  x="383" y="190" width="140" height="34" rx="3"/>
+<text class="t-sm f-reg" x="453" y="205" text-anchor="middle" font-weight="600">block stamped in</text>
+<text class="t-mn" x="453" y="218" text-anchor="middle">f2303 &middot; f3276 &middot; f3185</text>
+
+<rect class="bx-reg"  x="550" y="190" width="140" height="34" rx="3"/>
+<text class="t-sm f-reg" x="620" y="205" text-anchor="middle" font-weight="600">block stamped in</text>
+<text class="t-mn" x="620" y="218" text-anchor="middle">f2302 &middot; f3287 &middot; f3186</text>
+
+<rect class="bx-con"  x="885" y="190" width="140" height="34" rx="3"/>
+<text class="t-sm f-con" x="955" y="205" text-anchor="middle" font-weight="600">Contact: f3361</text>
+<text class="t-mn" x="955" y="218" text-anchor="middle">Attended Graduation</text>
+
+<!-- master rail -->
+<line class="e-reg" x1="48" y1="244" x2="1025" y2="244" stroke-width="2.5"/>
+<line class="e-reg" x1="118" y1="228" x2="118" y2="244"/>
+<line class="e-reg" x1="453" y1="228" x2="453" y2="244"/>
+<line class="e-reg" x1="620" y1="228" x2="620" y2="244"/>
+<line class="e-reg" x1="285" y1="244" x2="285" y2="186" stroke-dasharray="4 3.5" marker-end="url(#a-r1)"/>
+<text class="t-rail" x="536" y="262" text-anchor="middle">MASTER FORUM REGISTRATION &middot; ONE RECORD &middot; EVERY CARD THE PORTAL RENDERS COMES FROM IT</text>
+
+<!-- fan out to buckets -->
+<path class="e" d="M 1123 182 L 1123 286 L 625 286"/>
+<line class="e" x1="625"  y1="286" x2="625"  y2="298" marker-end="url(#a-n1)"/>
+<line class="e" x1="791"  y1="286" x2="791"  y2="298" marker-end="url(#a-n1)"/>
+<line class="e" x1="957"  y1="286" x2="957"  y2="298" marker-end="url(#a-n1)"/>
+<line class="e" x1="1123" y1="286" x2="1123" y2="298" marker-end="url(#a-n1)"/>
+
+<rect class="bx-reg" x="550"  y="300" width="150" height="76" rx="4"/>
+<rect class="bx-reg" x="716"  y="300" width="150" height="76" rx="4"/>
+<rect class="bx-inv" x="882"  y="300" width="150" height="76" rx="4"/>
+<rect class="bx-inv" x="1048" y="300" width="150" height="76" rx="4"/>
+
+<text class="t-sm" x="625" y="320" text-anchor="middle" font-weight="600">Participant &middot; no AC</text>
+<text class="t-mn" x="625" y="336" text-anchor="middle">just finished the Forum</text>
+<text class="t-sm" x="625" y="354" text-anchor="middle">Advanced Course Offer</text>
+<text class="t-mn" x="625" y="368" text-anchor="middle">automation 110</text>
+
+<text class="t-sm" x="791" y="320" text-anchor="middle" font-weight="600">Participant &middot; graduate</text>
+<text class="t-mn" x="791" y="336" text-anchor="middle">already took the AC</text>
+<text class="t-sm" x="791" y="354" text-anchor="middle">Graduates Offer</text>
+<text class="t-mn" x="791" y="368" text-anchor="middle">automation 113</text>
+
+<text class="t-sm" x="957" y="320" text-anchor="middle" font-weight="600">Guest &middot; graduate</text>
+<text class="t-mn" x="957" y="336" text-anchor="middle">completed the Forum before</text>
+<text class="t-sm" x="957" y="354" text-anchor="middle">Graduate Course Offer</text>
+<text class="t-mn" x="957" y="368" text-anchor="middle">automation 109</text>
+
+<text class="t-sm" x="1123" y="320" text-anchor="middle" font-weight="600">Guest &middot; non-grad</text>
+<text class="t-mn" x="1123" y="336" text-anchor="middle">never taken the Forum</text>
+<text class="t-sm" x="1123" y="354" text-anchor="middle">Forum Offer</text>
+<text class="t-mn" x="1123" y="368" text-anchor="middle">automation 108</text>
+
+<line class="e-dash" x1="625"  y1="376" x2="625"  y2="404"/>
+<line class="e-dash" x1="791"  y1="376" x2="791"  y2="404"/>
+<line class="e-dash" x1="957"  y1="376" x2="957"  y2="404"/>
+<line class="e-dash" x1="1123" y1="376" x2="1123" y2="404"/>
+</svg>
+</div>
+<figcaption><b>The whole cycle on one week.</b> The top row is the calendar. Beneath each stage sits the record written there, coloured by object. The blue rail is the master Forum registration: born at stage one, stamped twice during the course, and read by the portal on every page load. The dashed return path is the point of the whole diagram &mdash; the offer window does not end the cycle, it restarts it.</figcaption>
+</figure>
+</div>
+
+<h2><span class="num">STAGE 01</span>The master is born</h2>
+
+<p class="lede">A stranger buys a seat. Everything downstream hangs off the single record that moment creates.</p>
+
+<p>The purchase and the registration are two different events, and they do not arrive in a reliable order &mdash; on the two live purchases on 20 Aug, the post-purchase webhook fired 17 seconds <em>before</em> the registration existed on one, and 19 seconds <em>after</em> it on the next. So the purchase door stays deliberately thin, and the <strong>registration-created rule is the anchor</strong>. It is also the only trigger all three course types share: Forum, Advanced Course and Seminar every one of them creates a record on object 10001, while Seminars never produce a purchase at all.</p>
+
+<div class="wide">
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 1140 296" role="img" aria-label="A checkout creates a Forum registration on object 10001; a router classifies it from the event course field and writes to three targets: the master registration, the contact journey layer, and the invitation that brought the person in.">
+<defs>
+  <marker id="a-n2" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-n" d="M0,0 L7,3.5 L0,7 z"/></marker>
+  <marker id="a-r2" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-r" d="M0,0 L7,3.5 L0,7 z"/></marker>
+  <marker id="a-i2" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-i" d="M0,0 L7,3.5 L0,7 z"/></marker>
+  <marker id="a-c2" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-c" d="M0,0 L7,3.5 L0,7 z"/></marker>
+  <marker id="a-a2" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-a" d="M0,0 L7,3.5 L0,7 z"/></marker>
+</defs>
+
+<text class="t-day" x="26" y="24">WHO ARRIVES</text>
+<text class="t-day" x="266" y="24">THE DOOR</text>
+<text class="t-day" x="500" y="24">THE ANCHOR</text>
+<text class="t-day" x="800" y="24">THREE WRITE TARGETS</text>
+
+<rect class="bx-con" x="26" y="40" width="176" height="62" rx="4"/>
+<text class="t-hd f-con" x="114" y="66" text-anchor="middle">Contact</text>
+<text class="t-mn" x="114" y="84" text-anchor="middle">new, or already known</text>
+
+<rect class="bx-inv" x="26" y="128" width="176" height="70" rx="4" stroke-dasharray="5 3.5"/>
+<text class="t-hd f-inv" x="114" y="152" text-anchor="middle">Invitation</text>
+<text class="t-mn" x="114" y="169" text-anchor="middle">only if they came</text>
+<text class="t-mn" x="114" y="182" text-anchor="middle">as someone&rsquo;s guest</text>
+
+<rect class="bx" x="266" y="70" width="164" height="62" rx="4"/>
+<text class="t-hd" x="348" y="96" text-anchor="middle">Checkout</text>
+<text class="t-mn" x="348" y="114" text-anchor="middle">pick event, pay</text>
+
+<rect class="bx" x="500" y="56" width="196" height="92" rx="4"/>
+<text class="t-hd" x="598" y="80" text-anchor="middle">The router</text>
+<text class="t-sm" x="598" y="100" text-anchor="middle">rule: record created</text>
+<text class="t-sm" x="598" y="116" text-anchor="middle">on object 10001</text>
+<text class="t-mn" x="598" y="134" text-anchor="middle">classify on f3080_id</text>
+
+<line class="e" x1="202" y1="101" x2="262" y2="101" marker-end="url(#a-n2)"/>
+<line class="e" x1="430" y1="101" x2="496" y2="101" marker-end="url(#a-n2)"/>
+<path class="e-dash" d="M 202 163 L 340 163 L 340 136" marker-end="url(#a-n2)"/>
+
+<rect class="bx-reg" x="800" y="26" width="314" height="84" rx="4"/>
+<text class="t-hd f-reg" x="816" y="50">Forum registration &mdash; the master</text>
+<text class="t-mn" x="816" y="68">f2424 = 154 Active &middot; f2458 Course &middot; f2830 Type</text>
+<text class="t-mn" x="816" y="83">f2237 Reg Date &middot; financials from the purchase</text>
+<text class="t-mn" x="816" y="98">f2214 Event &rarr; every date arrives mirrored, free</text>
+
+<rect class="bx-con" x="800" y="126" width="314" height="66" rx="4"/>
+<text class="t-hd f-con" x="816" y="150">Contact &mdash; the journey layer</text>
+<text class="t-mn" x="816" y="168">f3359 Registered For Forum &middot; f3372 &middot; f3373</text>
+<text class="t-mn" x="816" y="183">f3374 Forum Registration ID &rarr; pointer to the master</text>
+
+<rect class="bx-inv" x="800" y="208" width="314" height="66" rx="4"/>
+<text class="t-hd f-inv" x="816" y="232">Invitation &mdash; the conversion</text>
+<text class="t-mn" x="816" y="250">f2299 Registered for Forum &middot; f2466 Resulting Reg</text>
+<text class="t-mn" x="816" y="265">credit stays on f2258, the event they were invited to</text>
+
+<path class="e-reg" d="M 696 92 L 748 92 L 748 68 L 796 68" marker-end="url(#a-r2)"/>
+<path class="e-con" d="M 696 102 L 748 102 L 748 159 L 796 159" marker-end="url(#a-c2)"/>
+<path class="e-inv" d="M 696 112 L 748 112 L 748 241 L 796 241" marker-end="url(#a-i2)"/>
+
+<rect class="bx-off" x="500" y="212" width="196" height="62" rx="4"/>
+<text class="t-sm f-alert" x="598" y="236" text-anchor="middle" font-weight="600">today: f2424 is blank</text>
+<text class="t-mn" x="598" y="252" text-anchor="middle">on every new record, so the</text>
+<text class="t-mn" x="598" y="265" text-anchor="middle">master lookup cannot find it</text>
+<line class="e-off" x1="598" y1="148" x2="598" y2="208" marker-end="url(#a-a2)"/>
+</svg>
+</div>
+<figcaption><b>One trigger, three write targets.</b> Course Type is not set when the record is created &mdash; 24 seconds after registration 1325 appeared, both <code>f2830</code> and <code>f2458</code> were still <code>0</code>. What <em>is</em> present is the event&rsquo;s course, mirrored in as <code>f3080_id</code>. The router reads that and sets the type fields itself, rather than waiting on a writer that arrives nine minutes later.</figcaption>
+</figure>
+</div>
+
+<div class="note">
+<span class="h">The one thing that must be true here</span>
+<p><code>f2424</code> Registration Status is blank on every newly created Forum record. Every workflow that looks for a participant&rsquo;s master registration filters on Active, so those records are invisible to the Advanced Course and Seminar stampers &mdash; and they are invisible to exactly the people who registered most recently.</p>
+<p>Writing <code>f3374</code> Forum Registration ID onto the contact at this stage removes the search altogether: later stages follow a pointer instead of guessing.</p>
+</div>
+
+<h2><span class="num">STAGE 02</span>The portal opens, two days out</h2>
+
+<p class="lede">From here until long after graduation, the participant sees the system through one page, and that page reads one record.</p>
+
+<p>The portal does not assemble a view from the contact, the event and the registration. It reads the <strong>master Forum registration</strong> and renders what it finds. That is the reason the master carries mirrored blocks for the Seminar and the Advanced Course rather than pointers to them &mdash; a card that needs a second lookup is a card that does not render.</p>
+
+<p>It is also why the event fields matter more than they look. The moment <code>f2214</code> Event is set, the graduation day and date, the graduation times, the time zone, the start date, the countdown reference and the course all arrive on the registration as related-data mirrors, at no cost. Confirmed live on registration 1325. Never compute a date the event already holds.</p>
+
+<div class="wide">
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 1140 212" role="img" aria-label="The event record mirrors its date fields onto the master registration for free; the portal reads the master in a single lookup and renders the participant view. Portal access is granted two days before the course starts.">
+<defs>
+  <marker id="a-n3" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-n" d="M0,0 L7,3.5 L0,7 z"/></marker>
+  <marker id="a-r3" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-r" d="M0,0 L7,3.5 L0,7 z"/></marker>
+</defs>
+
+<rect class="bx-q" x="26" y="70" width="182" height="96" rx="4"/>
+<text class="t-hd" x="117" y="96" text-anchor="middle">Event record</text>
+<text class="t-mn" x="117" y="116" text-anchor="middle">f3099 grad day and date</text>
+<text class="t-mn" x="117" y="131" text-anchor="middle">f3100 / f3101 times</text>
+<text class="t-mn" x="117" y="146" text-anchor="middle">f3102 tz &middot; f2394 start</text>
+
+<path class="e-reg" d="M 208 118 L 314 118" marker-end="url(#a-r3)"/>
+<text class="t-edge" x="261" y="106" text-anchor="middle">mirrored free</text>
+<text class="t-edge" x="261" y="136" text-anchor="middle">once f2214 is set</text>
+
+<rect class="bx-reg" x="314" y="48" width="270" height="140" rx="4"/>
+<text class="t-hd f-reg" x="449" y="74" text-anchor="middle">Master Forum registration</text>
+<text class="t-mn" x="330" y="98">the participant&rsquo;s own course detail</text>
+<line class="e-dash" x1="330" y1="110" x2="568" y2="110"/>
+<text class="t-mn" x="330" y="128">+ Seminar block &mdash; arrives Saturday</text>
+<text class="t-mn" x="330" y="146">+ Advanced Course block &mdash; arrives Sunday</text>
+<line class="e-dash" x1="330" y1="158" x2="568" y2="158"/>
+<text class="t-mn" x="330" y="176">+ attendance, information form, outcome</text>
+
+<path class="e-reg" d="M 584 118 L 700 118" marker-end="url(#a-r3)"/>
+<text class="t-edge" x="642" y="106" text-anchor="middle">one read</text>
+<text class="t-edge" x="642" y="136" text-anchor="middle">no joins</text>
+
+<rect class="bx" x="700" y="48" width="200" height="140" rx="4"/>
+<text class="t-hd" x="800" y="74" text-anchor="middle">Member portal</text>
+<text class="t-mn" x="716" y="98">pre-event view</text>
+<text class="t-mn" x="716" y="116">during-event view</text>
+<text class="t-mn" x="716" y="134">post-event view</text>
+<text class="t-mn" x="716" y="158">every card is a field</text>
+<text class="t-mn" x="716" y="172">on the record at left</text>
+
+<rect class="bx-con" x="948" y="48" width="166" height="66" rx="4"/>
+<text class="t-hd f-con" x="1031" y="72" text-anchor="middle">Access granted</text>
+<text class="t-mn" x="1031" y="90" text-anchor="middle">two days before start</text>
+<text class="t-mn" x="1031" y="104" text-anchor="middle">automation 38</text>
+
+<rect class="bx" x="948" y="130" width="166" height="58" rx="4"/>
+<text class="t-sm" x="1031" y="152" text-anchor="middle" font-weight="600">Pre-Forum sequence</text>
+<text class="t-mn" x="1031" y="169" text-anchor="middle">automations 25, 62, 72</text>
+<text class="t-mn" x="1031" y="182" text-anchor="middle">countdown 14 / 7 / 2 days</text>
+
+<path class="e" d="M 948 81 L 916 81 L 916 118 L 904 118" marker-end="url(#a-n3)"/>
+<path class="e" d="M 948 159 L 916 159 L 916 118" />
+
+<text class="t-day" x="26" y="52">THE EVENT HOLDS THE DATES</text>
+<text class="t-day" x="314" y="30">ONE RECORD HOLDS THE PARTICIPANT</text>
+<text class="t-day" x="700" y="30">ONE PAGE RENDERS IT</text>
+</svg>
+</div>
+<figcaption><b>The portal is a view of the master, not a query across the system.</b> Only three registration fields have no event source &mdash; <code>f3108</code> Graduation Day Full, <code>f3109</code> Short and <code>f3110</code> TOD. Those belong on the event too, so they can be mirrored like the rest instead of parsing a day name on every registration forever.</figcaption>
+</figure>
+</div>
+
+<h2><span class="num">STAGE 03 &amp; 04</span>Saturday and Sunday: two records dock onto the master</h2>
+
+<p class="lede">Seminar registration opens on the Saturday of the Forum. The Advanced Course is announced on the final day. Both create their own record, and both stamp a summary block back onto the master.</p>
+
+<p>The split matters. The new Seminar or Advanced Course registration is the <strong>source of truth</strong> for that engagement &mdash; it owns its event, its dates, its money and its attendance. The block on the master is a <strong>mirror for display</strong>, and it exists purely so the portal and the email templates can render the participant&rsquo;s next course without a second lookup. Change the AC dates and you change them on the AC record; the stamp then republishes them onto the master.</p>
+
+<div class="wide">
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 1140 400" role="img" aria-label="On Saturday a Seminar registration is created and stamps a block onto the master Forum registration from above; on Sunday an Advanced Course registration does the same from below. The portal re-reads the master and the participant sees new cards. The Advanced Course creation workflows are inactive today.">
+<defs>
+  <marker id="a-n4" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-n" d="M0,0 L7,3.5 L0,7 z"/></marker>
+  <marker id="a-r4" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-r" d="M0,0 L7,3.5 L0,7 z"/></marker>
+  <marker id="a-i4" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-i" d="M0,0 L7,3.5 L0,7 z"/></marker>
+  <marker id="a-a4" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-a" d="M0,0 L7,3.5 L0,7 z"/></marker>
+</defs>
+
+<!-- SATURDAY, above -->
+<text class="t-day" x="26" y="24">SATURDAY OF THE FORUM &mdash; ONE EXECUTION, THREE WRITES</text>
+<rect class="bx-reg" x="26" y="40" width="230" height="76" rx="4"/>
+<text class="t-hd f-reg" x="141" y="64" text-anchor="middle">Seminar registration</text>
+<text class="t-mn" x="42" y="82">own record on 10001 &middot; f2830 = 337</text>
+<text class="t-mn" x="42" y="97">f2424 = 154 &middot; f2214 event &middot; f2237</text>
+<text class="t-mn" x="42" y="110">no SKU exists, so no money by design</text>
+
+<rect class="bx-reg" x="330" y="40" width="300" height="76" rx="4"/>
+<text class="t-hd f-reg" x="346" y="64">Seminar block, mirrored onto the master</text>
+<text class="t-mn" x="346" y="82">f2303 checked &middot; f2882 &middot; f2884</text>
+<text class="t-mn" x="346" y="97">f3276 event id &middot; f3185 title &middot; f3271 dates</text>
+<text class="t-mn" x="346" y="110">f3274 &middot; f3272 &middot; f3275 &middot; f3277 &middot; f3283 &middot; f3282</text>
+
+<line class="e-reg" x1="256" y1="78" x2="326" y2="78" marker-end="url(#a-r4)"/>
+<text class="t-edge" x="291" y="68" text-anchor="middle">stamps</text>
+
+<rect class="bx-inv" x="704" y="40" width="200" height="76" rx="4"/>
+<text class="t-hd f-inv" x="804" y="64" text-anchor="middle">Invitation</text>
+<text class="t-mn" x="804" y="82" text-anchor="middle">f2300 Registered for Seminar</text>
+<text class="t-mn" x="804" y="97" text-anchor="middle">credited to f2258, the</text>
+<text class="t-mn" x="804" y="110" text-anchor="middle">event they were invited to</text>
+<line class="e-inv" x1="630" y1="78" x2="700" y2="78" marker-end="url(#a-i4)"/>
+<text class="t-edge" x="665" y="68" text-anchor="middle">then</text>
+
+<!-- THE MASTER, middle -->
+<rect class="bx-reg" x="330" y="168" width="300" height="64" rx="4" stroke-width="2.5"/>
+<text class="t-hd f-reg" x="480" y="194" text-anchor="middle">Master Forum registration</text>
+<text class="t-mn" x="480" y="212" text-anchor="middle">the participant&rsquo;s own course detail</text>
+<text class="t-mn" x="480" y="225" text-anchor="middle">+ both mirrored blocks above and below</text>
+
+<line class="e-reg" x1="480" y1="116" x2="480" y2="164" marker-end="url(#a-r4)"/>
+<line class="e-reg" x1="480" y1="236" x2="480" y2="314" marker-start="url(#a-r4)"/>
+
+<path class="e-reg" d="M 630 200 L 720 200" marker-end="url(#a-r4)"/>
+<rect class="bx" x="720" y="164" width="200" height="72" rx="4"/>
+<text class="t-hd" x="820" y="188" text-anchor="middle">Portal re-reads</text>
+<text class="t-mn" x="820" y="206" text-anchor="middle">a Seminar card and an</text>
+<text class="t-mn" x="820" y="220" text-anchor="middle">Advanced Course card appear</text>
+<text class="t-edge" x="675" y="192" text-anchor="middle">one read</text>
+
+<!-- SUNDAY, below -->
+<text class="t-day" x="26" y="306">FINAL DAY OF THE FORUM &mdash; SAME SHAPE, SWITCHED OFF AT THE FIRST STEP</text>
+<rect class="bx-off" x="26" y="318" width="230" height="76" rx="4"/>
+<text class="t-hd f-alert" x="141" y="342" text-anchor="middle">Advanced Course registration</text>
+<text class="t-mn" x="42" y="360">own record on 10001 &middot; f2830 = 338</text>
+<text class="t-mn" x="42" y="375">f2424 = 154 &middot; financials from the purchase</text>
+<text class="t-mn" x="42" y="388">creation workflows are switched off today</text>
+
+<rect class="bx-reg" x="330" y="318" width="300" height="76" rx="4"/>
+<text class="t-hd f-reg" x="346" y="342">AC block, mirrored onto the master</text>
+<text class="t-mn" x="346" y="360">f2302 checked &middot; f2889 &middot; f2887 &middot; f2890</text>
+<text class="t-mn" x="346" y="375">f3287 event id &middot; f3186 title &middot; f3288 dates</text>
+<text class="t-mn" x="346" y="388">f3285 &middot; f3286 &middot; f3292 &middot; f3295 &middot; f3298 &middot; f3304 calendar</text>
+
+<line class="e-off" x1="256" y1="356" x2="326" y2="356" marker-end="url(#a-a4)"/>
+<text class="t-edge" x="291" y="346" text-anchor="middle">stamps</text>
+
+<rect class="bx-inv" x="704" y="318" width="200" height="76" rx="4"/>
+<text class="t-hd f-inv" x="804" y="342" text-anchor="middle">Invitation</text>
+<text class="t-mn" x="804" y="360" text-anchor="middle">f2298 Registered for AC</text>
+<text class="t-mn" x="804" y="375" text-anchor="middle">f2466 is not touched &mdash; it already</text>
+<text class="t-mn" x="804" y="388" text-anchor="middle">holds the Forum conversion</text>
+<line class="e-inv" x1="630" y1="356" x2="700" y2="356" marker-end="url(#a-i4)"/>
+<text class="t-edge" x="665" y="346" text-anchor="middle">then</text>
+
+<rect class="bx-q" x="948" y="40" width="166" height="76" rx="4"/>
+<text class="t-sm" x="1031" y="62" text-anchor="middle" font-weight="600">Working today</text>
+<text class="t-mn" x="1031" y="80" text-anchor="middle">75 registrations</text>
+<text class="t-mn" x="1031" y="94" text-anchor="middle">75 all Active</text>
+<text class="t-mn" x="1031" y="108" text-anchor="middle">75 masters stamped</text>
+
+<rect class="bx-off" x="948" y="318" width="166" height="76" rx="4"/>
+<text class="t-sm f-alert" x="1031" y="340" text-anchor="middle" font-weight="600">Dead at the door</text>
+<text class="t-mn" x="1031" y="358" text-anchor="middle">29 AC purchases</text>
+<text class="t-mn" x="1031" y="372" text-anchor="middle">10 AC registrations</text>
+<text class="t-mn" x="1031" y="386" text-anchor="middle">19 purchases unclaimed</text>
+</svg>
+</div>
+<figcaption><b>Both branches dock onto the same record.</b> The Seminar half runs end to end. The Advanced Course half is switched off at creation: <code>AC : Create Registration at Checkout</code> and <code>AC : Set Advanced Course Dates</code> are both inactive, which leaves <code>AC : Registration Confirmed &rarr; Update Forum Registration</code> active but orphaned &mdash; the stamper works, nothing calls it. Turning creation back on is what lights this whole branch, including automations 105 and 106 downstream.</figcaption>
+</figure>
+</div>
+
+<div class="note">
+<span class="h">Keep the branches as separate workflows</span>
+<p>Publishing is a discrete step on this account. A single monolithic router means a change to the Seminar branch forces a republish of the live Forum path. Three sub-workflows behind one shared head and one shared tail costs nothing and isolates the blast radius.</p>
+</div>
+
+<h2><span class="num">STAGE 05</span>Sunday to Tuesday: the participant becomes a source</h2>
+
+<p class="lede">This is the hinge. Between the last day of the Forum and graduation night, participants invite people, and every invite writes an Invitation record.</p>
+
+<p>An Invitation is the entry point object: who invited them, to which event, and what that invitation eventually produced. It is written once, at the start, and never rewritten. 376 exist today; 281 carry an inviter and the rest are guests who registered themselves.</p>
+
+<p>The rule that makes the cycle measurable is <strong>credit the source event, always</strong>. A guest invited at event 218 who ends up registering for the November Forum is a <em>registrant</em> of 283 but a <em>conversion</em> of 218. The scope is the invitation&rsquo;s <code>f2258</code> &mdash; never the event they eventually joined. Break that and the Forum that did the work gets none of the credit.</p>
+
+<div class="wide">
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 1140 300" role="img" aria-label="Between Sunday and Tuesday participants invite guests to graduation. Each invite writes an Invitation record whose source event is permanently this Forum, and whose conversion fields are written later when the guest registers.">
+<defs>
+  <marker id="a-n5" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-n" d="M0,0 L7,3.5 L0,7 z"/></marker>
+  <marker id="a-i5" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-i" d="M0,0 L7,3.5 L0,7 z"/></marker>
+</defs>
+
+<text class="t-day" x="26" y="26">SUNDAY</text>
+<text class="t-day" x="330" y="26">SUNDAY &ndash; TUESDAY</text>
+<text class="t-day" x="700" y="26">WRITTEN ONCE, READ FOREVER</text>
+
+<rect class="bx-reg" x="26" y="88" width="200" height="76" rx="4"/>
+<text class="t-hd f-reg" x="126" y="114" text-anchor="middle">The participant</text>
+<text class="t-mn" x="126" y="132" text-anchor="middle">holds a master Forum</text>
+<text class="t-mn" x="126" y="146" text-anchor="middle">registration on event 218</text>
+
+<line class="e" x1="226" y1="126" x2="326" y2="126" marker-end="url(#a-n5)"/>
+<text class="t-edge" x="276" y="116" text-anchor="middle">automation 20</text>
+<text class="t-edge" x="276" y="144" text-anchor="middle">Invite Your Friends</text>
+
+<rect class="bx" x="326" y="44" width="212" height="48" rx="4"/>
+<text class="t-sm" x="432" y="65" text-anchor="middle" font-weight="600">Guest one</text>
+<text class="t-mn" x="432" y="81" text-anchor="middle">invited by name and email</text>
+<rect class="bx" x="326" y="102" width="212" height="48" rx="4"/>
+<text class="t-sm" x="432" y="123" text-anchor="middle" font-weight="600">Guest two</text>
+<text class="t-mn" x="432" y="139" text-anchor="middle">invited by name and email</text>
+<rect class="bx" x="326" y="160" width="212" height="48" rx="4"/>
+<text class="t-sm" x="432" y="181" text-anchor="middle" font-weight="600">Self-registered guest</text>
+<text class="t-mn" x="432" y="197" text-anchor="middle">no inviter &mdash; 95 of 376</text>
+
+<path class="e-inv" d="M 538 68 L 596 68"/>
+<path class="e-inv" d="M 538 184 L 596 184"/>
+<path class="e-inv" d="M 596 68 L 596 184"/>
+<path class="e-inv" d="M 538 126 L 650 126" marker-end="url(#a-i5)"/>
+
+<rect class="bx-inv" x="654" y="44" width="292" height="152" rx="4"/>
+<text class="t-hd f-inv" x="670" y="70">Invitation record</text>
+<text class="t-mn" x="670" y="92">f2258 Event &mdash; the source event, permanently</text>
+<text class="t-mn" x="670" y="108">f2259 Guest &middot; f2260 / f2257 Inviter</text>
+<text class="t-mn" x="670" y="124">f2291 Status &middot; f2337 Graduate Status</text>
+<line class="e-dash" x1="670" y1="136" x2="930" y2="136"/>
+<text class="t-mn" x="670" y="156">written later, on graduation night:</text>
+<text class="t-mn" x="670" y="171">f3210 Attended</text>
+<text class="t-mn" x="670" y="186">written later, on conversion: f2299 / f2298 / f2300</text>
+
+<rect class="bx-q" x="654" y="216" width="292" height="62" rx="4"/>
+<text class="t-sm" x="670" y="238" font-weight="600">Two traps</text>
+<text class="t-mn" x="670" y="256">one contact can hold several invitations for one event</text>
+<text class="t-mn" x="670" y="270">f2466 holds one registration &mdash; the first conversion only</text>
+<line class="e-dash" x1="800" y1="196" x2="800" y2="212" marker-end="url(#a-n5)"/>
+
+<rect class="bx-q" x="966" y="44" width="148" height="152" rx="4"/>
+<text class="t-sm" x="1040" y="68" text-anchor="middle" font-weight="600">Today</text>
+<text class="t-mn" x="1040" y="90" text-anchor="middle">376 invitations</text>
+<text class="t-mn" x="1040" y="106" text-anchor="middle">281 with an inviter</text>
+<line class="e-dash" x1="982" y1="120" x2="1098" y2="120"/>
+<text class="t-mn" x="1040" y="140" text-anchor="middle">f2299 set on 2</text>
+<text class="t-mn" x="1040" y="156" text-anchor="middle">f2298 set on 0</text>
+<text class="t-mn" x="1040" y="172" text-anchor="middle">f2300 set on 0</text>
+<text class="t-mn" x="1040" y="188" text-anchor="middle">the loop is unmeasured</text>
+</svg>
+</div>
+<figcaption><b>The invitation is the only record that connects one cohort to the next.</b> Deduplicate before marking a conversion &mdash; contact 1183 holds both invitation 1124 and 1133 for event 218. Prefer the one carrying an inviter, tie-break on lowest id, mark exactly one. Otherwise a single guest counts twice against the Forum that produced them.</figcaption>
+</figure>
+</div>
+
+<h2><span class="num">STAGE 06</span>Tuesday night: two populations in one room</h2>
+
+<p class="lede">Graduation is where the participant cohort and the guest cohort meet, and it is the last moment before the system has to tell them apart.</p>
+
+<p>Everyone in the room holds a record, but not the same one. <strong>Participants hold a master Forum registration.</strong> <strong>Guests hold an invitation.</strong> Attendance is written in both places: <code>f3210</code> Attended on the invitation, and <code>f3361</code> Attended Graduation on the contact. The second one is what the offer funnels read the next morning.</p>
+
+<div class="wide">
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 1140 296" role="img" aria-label="On graduation night participants who hold a master Forum registration and guests who hold an invitation are both in the room. Attendance is written to the invitation and to the contact journey layer, and each person is then classified as a graduate or a non-graduate.">
+<defs>
+  <marker id="a-n6" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-n" d="M0,0 L7,3.5 L0,7 z"/></marker>
+  <marker id="a-c6" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-c" d="M0,0 L7,3.5 L0,7 z"/></marker>
+</defs>
+
+<rect class="bx-reg" x="26" y="52" width="228" height="70" rx="4"/>
+<text class="t-hd f-reg" x="140" y="78" text-anchor="middle">Participants</text>
+<text class="t-mn" x="140" y="96" text-anchor="middle">hold a master Forum registration</text>
+<text class="t-mn" x="140" y="110" text-anchor="middle">they just completed the course</text>
+
+<rect class="bx-inv" x="26" y="158" width="228" height="70" rx="4"/>
+<text class="t-hd f-inv" x="140" y="184" text-anchor="middle">Guests</text>
+<text class="t-mn" x="140" y="202" text-anchor="middle">hold an invitation</text>
+<text class="t-mn" x="140" y="216" text-anchor="middle">invited, or self-registered</text>
+
+<rect class="bx" x="332" y="88" width="180" height="104" rx="4"/>
+<text class="t-hd" x="422" y="118" text-anchor="middle">Graduation</text>
+<text class="t-sm" x="422" y="138" text-anchor="middle">Tuesday evening</text>
+<text class="t-mn" x="422" y="158" text-anchor="middle">the guest sees the Forum</text>
+<text class="t-mn" x="422" y="172" text-anchor="middle">for the first time</text>
+
+<line class="e" x1="254" y1="87"  x2="328" y2="122" marker-end="url(#a-n6)"/>
+<line class="e" x1="254" y1="193" x2="328" y2="158" marker-end="url(#a-n6)"/>
+
+<text class="t-day" x="590" y="42">ATTENDANCE IS WRITTEN TWICE</text>
+<rect class="bx-inv" x="590" y="56" width="248" height="58" rx="4"/>
+<text class="t-sm f-inv" x="606" y="78" font-weight="600">On the invitation</text>
+<text class="t-mn" x="606" y="97">f3210 Attended &middot; f2337 Graduate Status</text>
+
+<rect class="bx-con" x="590" y="128" width="248" height="58" rx="4"/>
+<text class="t-sm f-con" x="606" y="150" font-weight="600">On the contact</text>
+<text class="t-mn" x="606" y="169">f3361 Attended Graduation &middot; automation 97</text>
+
+<rect class="bx-con" x="590" y="200" width="248" height="58" rx="4"/>
+<text class="t-sm f-con" x="606" y="222" font-weight="600">And, for participants</text>
+<text class="t-mn" x="606" y="241">f3360 Completed Forum</text>
+
+<line class="e" x1="512" y1="124" x2="586" y2="88"  marker-end="url(#a-n6)"/>
+<line class="e-con" x1="512" y1="140" x2="586" y2="157" marker-end="url(#a-c6)"/>
+<line class="e-con" x1="512" y1="156" x2="586" y2="226" marker-end="url(#a-c6)"/>
+
+<path class="e-con" d="M 838 157 L 890 157 L 890 148 L 940 148" marker-end="url(#a-c6)"/>
+<rect class="bx-off" x="940" y="80" width="174" height="136" rx="4"/>
+<text class="t-sm f-alert" x="1027" y="106" text-anchor="middle" font-weight="600">Not being written</text>
+<text class="t-mn" x="1027" y="128" text-anchor="middle">f3361 set on 0 of 667</text>
+<text class="t-mn" x="1027" y="144" text-anchor="middle">f3362 set on 0</text>
+<text class="t-mn" x="1027" y="160" text-anchor="middle">f3363 set on 0</text>
+<line class="e-dash" x1="956" y1="174" x2="1098" y2="174"/>
+<text class="t-mn" x="1027" y="192" text-anchor="middle">automation 97 is either</text>
+<text class="t-mn" x="1027" y="206" text-anchor="middle">unwired or silently failing</text>
+</svg>
+</div>
+<figcaption><b>Graduation night is where the next cohort is identified.</b> A guest who has never taken the Forum is the highest-value record the system produces all week &mdash; and the flag that identifies them the next morning is currently written on nobody.</figcaption>
+</figure>
+</div>
+
+<h2><span class="num">STAGE 07</span>Wednesday morning: four buckets</h2>
+
+<p class="lede">From Tuesday through the following Saturday, everyone who touched the cycle is in exactly one of four offer tracks. The bucket is decided by two questions: were you a participant or a guest, and are you already a graduate of the thing being offered?</p>
+
+<p>The word <em>graduate</em> means something different on each row, and that is not sloppiness &mdash; it is the actual segmentation. For a participant, the question is whether they have taken the <strong>Advanced Course</strong>. For a guest, the question is whether they have ever completed the <strong>Forum</strong>.</p>
+
+<div class="wide">
+<div class="matrix">
+  <div class="cell p">
+    <p class="who">Participant &middot; non-graduate</p>
+    <h4>Just finished the Forum, no Advanced Course</h4>
+    <p>The single largest source of Advanced Course revenue in the cycle, reached while the course is still four days old.</p>
+    <p class="aut"><b>110</b> DISC : Participants : Advanced Course Offer Tue&ndash;Sat<br>segments on <b>f3360</b> true and <b>f3363</b> false</p>
+  </div>
+  <div class="cell p">
+    <p class="who">Participant &middot; graduate</p>
+    <h4>Already took the Advanced Course</h4>
+    <p>Offered the next step up rather than the one they already own. Sending them the AC offer is the fastest way to look like the system does not know them.</p>
+    <p class="aut"><b>113</b> LF : Participants : AC / Grad : Tues&ndash;Sat Funnel<br>segments on <b>f3363</b> true</p>
+  </div>
+  <div class="cell g">
+    <p class="who">Guest &middot; graduate</p>
+    <h4>Completed the Forum some time before</h4>
+    <p>Came back to support someone else. They do not need the Forum offer; they need the graduate courses.</p>
+    <p class="aut"><b>109</b> LF : Grad : Graduate Course Offer Tue&ndash;Sat<br>segments on <b>f3360</b> true, no current Forum registration</p>
+  </div>
+  <div class="cell g">
+    <p class="who">Guest &middot; non-graduate</p>
+    <h4>Has never taken the Forum</h4>
+    <p>The record that seeds the next cohort. They just watched a graduation, and the offer window closes Saturday.</p>
+    <p class="aut"><b>108</b> LF : Non-Grad Guest : Forum Offer Tue&ndash;Sat<br>segments on <b>f3359</b> and <b>f3360</b> both false</p>
+  </div>
+</div>
+</div>
+
+<p style="margin-top:26px">Every one of those four definitions is a read of the contact journey layer. That is the reason the journey flags matter well beyond reporting: <strong><code>f3359</code> to <code>f3363</code> are the audience definition the next sale runs on.</strong> A journey flag nobody writes is a funnel that targets nobody.</p>
+
+<p>And the flags must be derived, never typed, and monotonic &mdash; set, never cleared. Completed Forum stays true forever. Withdrawal and refund are registration-level facts; they do not un-happen a journey step.</p>
+
+<div class="note">
+<span class="h">Where the segmentation stands today</span>
+<p>Across 667 contacts: <code>f3359</code> Registered For Forum is set on <strong>113</strong>. <code>f3360</code> Completed Forum is set on <strong>102</strong> &mdash; exactly the event 218 completer count, so it was backfilled once from that one cohort and never maintained since. <code>f3361</code>, <code>f3362</code> and <code>f3363</code> are set on <strong>0</strong>.</p>
+<p>Two of the four buckets above currently resolve to an empty audience.</p>
+</div>
+
+<h2><span class="num">STAGE 08</span>The loop closes</h2>
+
+<p class="lede">Each bucket produces a different record, and every one of them re-enters the pipeline at the door it came from.</p>
+
+<div class="wide">
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 1140 340" role="img" aria-label="Each of the four offer buckets produces a different registration type. Guests who have never taken the Forum create a new master registration and mark their invitation as converted; the other three create Advanced Course, graduate course or seminar registrations that stamp onto an existing master. All of them return to the registration-created router.">
+<defs>
+  <marker id="a-n7" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-n" d="M0,0 L7,3.5 L0,7 z"/></marker>
+  <marker id="a-r7" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-r" d="M0,0 L7,3.5 L0,7 z"/></marker>
+  <marker id="a-i7" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-i" d="M0,0 L7,3.5 L0,7 z"/></marker>
+</defs>
+
+<text class="t-day" x="26" y="26">THE FOUR BUCKETS</text>
+<text class="t-day" x="392" y="26">WHAT EACH ONE BUYS</text>
+<text class="t-day" x="760" y="26">WHERE IT RE-ENTERS</text>
+
+<rect class="bx-reg" x="26" y="40" width="212" height="52" rx="4"/>
+<text class="t-sm f-reg" x="132" y="61" text-anchor="middle" font-weight="600">Participant &middot; no AC</text>
+<text class="t-mn" x="132" y="78" text-anchor="middle">automation 110</text>
+
+<rect class="bx-reg" x="26" y="104" width="212" height="52" rx="4"/>
+<text class="t-sm f-reg" x="132" y="125" text-anchor="middle" font-weight="600">Participant &middot; graduate</text>
+<text class="t-mn" x="132" y="142" text-anchor="middle">automation 113</text>
+
+<rect class="bx-inv" x="26" y="168" width="212" height="52" rx="4"/>
+<text class="t-sm f-inv" x="132" y="189" text-anchor="middle" font-weight="600">Guest &middot; graduate</text>
+<text class="t-mn" x="132" y="206" text-anchor="middle">automation 109</text>
+
+<rect class="bx-inv" x="26" y="232" width="212" height="52" rx="4"/>
+<text class="t-sm f-inv" x="132" y="253" text-anchor="middle" font-weight="600">Guest &middot; non-graduate</text>
+<text class="t-mn" x="132" y="270" text-anchor="middle">automation 108</text>
+
+<line class="e" x1="238" y1="66"  x2="388" y2="66"  marker-end="url(#a-n7)"/>
+<line class="e" x1="238" y1="130" x2="388" y2="130" marker-end="url(#a-n7)"/>
+<line class="e" x1="238" y1="194" x2="388" y2="194" marker-end="url(#a-n7)"/>
+<line class="e" x1="238" y1="258" x2="388" y2="258" marker-end="url(#a-n7)"/>
+
+<rect class="bx-off" x="388" y="40" width="252" height="52" rx="4"/>
+<text class="t-sm f-alert" x="514" y="61" text-anchor="middle" font-weight="600">Advanced Course registration</text>
+<text class="t-mn" x="514" y="78" text-anchor="middle">stamps onto their existing master</text>
+
+<rect class="bx-reg" x="388" y="104" width="252" height="52" rx="4"/>
+<text class="t-sm f-reg" x="514" y="125" text-anchor="middle" font-weight="600">Graduate course registration</text>
+<text class="t-mn" x="514" y="142" text-anchor="middle">stamps onto their existing master</text>
+
+<rect class="bx-reg" x="388" y="168" width="252" height="52" rx="4"/>
+<text class="t-sm f-reg" x="514" y="189" text-anchor="middle" font-weight="600">Seminar or graduate course</text>
+<text class="t-mn" x="514" y="206" text-anchor="middle">on the master they already hold</text>
+
+<rect class="bx-reg" x="388" y="232" width="252" height="52" rx="4" stroke-width="2.5"/>
+<text class="t-sm f-reg" x="514" y="253" text-anchor="middle" font-weight="600">A brand new Forum registration</text>
+<text class="t-mn" x="514" y="270" text-anchor="middle">a new master is born</text>
+
+<rect class="bx-inv" x="388" y="296" width="252" height="38" rx="4"/>
+<text class="t-mn f-inv" x="514" y="312" text-anchor="middle">their invitation is marked converted:</text>
+<text class="t-mn f-inv" x="514" y="326" text-anchor="middle">f2299 + f2466, credited to f2258 &mdash; last week&rsquo;s Forum</text>
+<line class="e-inv" x1="514" y1="284" x2="514" y2="292" marker-end="url(#a-i7)"/>
+
+<path class="e" d="M 640 66  L 700 66  L 700 152 L 756 152" marker-end="url(#a-n7)"/>
+<path class="e" d="M 640 130 L 700 130" />
+<path class="e" d="M 640 194 L 700 194 L 700 152" />
+<path class="e-reg" d="M 640 258 L 720 258 L 720 168 L 756 168" marker-end="url(#a-r7)"/>
+
+<rect class="bx" x="756" y="112" width="192" height="82" rx="4"/>
+<text class="t-hd" x="852" y="140" text-anchor="middle">The router</text>
+<text class="t-sm" x="852" y="160" text-anchor="middle">rule: record created</text>
+<text class="t-sm" x="852" y="176" text-anchor="middle">on object 10001</text>
+
+<path class="e-reg" d="M 948 153 L 1010 153" marker-end="url(#a-r7)"/>
+<rect class="bx-reg" x="1010" y="112" width="104" height="82" rx="4"/>
+<text class="t-sm f-reg" x="1062" y="140" text-anchor="middle" font-weight="600">Stage 01</text>
+<text class="t-mn" x="1062" y="158" text-anchor="middle">the next</text>
+<text class="t-mn" x="1062" y="172" text-anchor="middle">cohort</text>
+</svg>
+</div>
+<figcaption><b>One door, four sources.</b> All four buckets re-enter through the same registration-created trigger, which is exactly why it is worth making that one trigger correct. The bottom path is the one that grows the business: a guest who watched a graduation becomes a new master registration, and the invitation they arrived on finally records the conversion &mdash; credited to the Forum that invited them, not the Forum they joined.</figcaption>
+</figure>
+</div>
+
+<h2><span class="num">READ IN ONE PASS</span>Where the cycle is broken today</h2>
+
+<p class="lede">Five of the eight stages work. Read against the map above, here is what each stage is actually doing right now.</p>
+
+<ul class="states">
+  <li><span class="tag bad">Stage 01</span><span class="body"><b>f2424 Registration Status is blank on every new Forum registration.</b> The record exists and the portal renders, but every workflow that filters on Active is blind to it &mdash; including the Seminar and Advanced Course stampers.</span></li>
+  <li><span class="tag ok">Stage 02</span><span class="body"><b>Portal and pre-Forum sequence: working.</b> Access grant, countdown and confirmation tracks are all live.</span></li>
+  <li><span class="tag ok">Stage 03</span><span class="body"><b>Seminar: working end to end.</b> 75 registrations, all Active, 75 masters stamped. No seminar SKU exists in the 16-product catalogue, so zero money on all 75 is correct by design &mdash; not a backfill gap.</span></li>
+  <li><span class="tag bad">Stage 04</span><span class="body"><b>Advanced Course: dead at the door.</b> Both creation workflows are inactive, so 29 purchases have produced 10 registrations and 19 are unclaimed. The stamper downstream is active but never called.</span></li>
+  <li><span class="tag warn">Stage 05</span><span class="body"><b>Invitations are created, but conversions are not marked.</b> 376 records exist; <code>f2299</code> is set on 2, <code>f2298</code> and <code>f2300</code> on none. The cycle runs, but it cannot be measured.</span></li>
+  <li><span class="tag bad">Stage 06</span><span class="body"><b>Graduation attendance never reaches the contact.</b> <code>f3361</code> is set on 0 of 667 contacts, and automation 97 is named for exactly this job.</span></li>
+  <li><span class="tag bad">Stage 07</span><span class="body"><b>Two of the four buckets resolve to an empty audience</b>, because the flags that define them are written on nobody.</span></li>
+  <li><span class="tag warn">Stage 08</span><span class="body"><b>Every Forum purchase reaches an Advanced-Course-shaped filter and is discarded.</b> Automation 15 posts to a workflow that tests the product name for &ldquo;Advanced&rdquo; and drops everything else into a node named <em>Abandon &mdash; Not Advanced Course</em>.</span></li>
+</ul>
+
+<h3>The order that unblocks the most</h3>
+
+<ol>
+  <li><strong>Set <code>f2424</code> = 154 Active at registration creation.</strong> One change; it fixes the Forum records and unblocks the Seminar and Advanced Course master lookups at the same time.</li>
+  <li><strong>Build the router on the registration-created trigger</strong>, classifying from <code>f3080_id</code>, with three branches and a shared tail. Build the sweepers alongside it, not after &mdash; one door is one point of failure.</li>
+  <li><strong>Turn Advanced Course registration creation back on</strong>, de-hardcoded from event 218, then backfill the 19 unclaimed purchases. Check contact 915 first: it holds two $850 AC purchases, and a naive backfill would create two registrations for one person.</li>
+  <li><strong>Backfill the journey layer</strong> from the registrations that already exist, then let the router maintain it. This is what switches the two empty buckets back on.</li>
+  <li><strong>Repoint automation 15</strong> at a thin purchase handler that writes contact state only, and stop testing product names to decide who a sequence applies to.</li>
+</ol>
+
+<div class="note" style="border-left-color:var(--inv); background:var(--inv-soft)">
+<span class="h" style="color:var(--inv)">One rule that keeps the handoffs clean</span>
+<p><strong>One explicit signal per course type.</strong> The router sets the contact journey flag and applies a start tag; the welcome track subscribes to that and nothing else. A sequence must never do its own product or event lookup to decide whether it applies &mdash; that is precisely how the current catch-all ended up testing product names inside a webhook and discarding every Forum buyer.</p>
+</div>
+
+<footer>
+  Sources: REGISTRATION-ARCHITECTURE.md &middot; AC-SEM-REGISTRATION-PIPELINE.md &middot; FORUM-CHECKOUT-PIPELINE.md<br>
+  Counts read live from Ontraport account 270197 on 21 Aug 2026 &middot; 667 contacts, 376 invitations, 224 registrations<br>
+  Registration ids and contact ids collide &mdash; registration 1183 is Olivia Rolotti, contact 1183 is Geoff Smyth. Always state which object an id refers to.
+</footer>
+
+</main>
+</div>

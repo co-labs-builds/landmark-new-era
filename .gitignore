@@ -17,3 +17,18 @@ INSTALL-body-block.html
 # are a backstop, not permission to keep them here.
 claude old machine.zip
 claude old machine/
+
+# Forum Journey page build. Its source now lives in the LWW repo, under
+# page-builds/forum-journey/, alongside the other Ontraport page builds:
+# https://github.com/co-labs-builds/LWW
+# The working copy is kept here only because it is convenient to edit next
+# to the docs. Committing it too would leave two copies to drift apart.
+Journey Page/
+
+# Event 218 pilot results. The script hardcodes an array of 133 real
+# participants -- first name, last name and personal email address. This repo
+# is PUBLIC, so this file must never be committed. It is kept on disk because
+# the pilot analysis still refers to it. If the tooling is worth version
+# controlling, commit the logic with the data array stripped out and read the
+# roster from the sheet at runtime instead.
+apps-script/EVENT-218-PILOT-RESULTS.gs

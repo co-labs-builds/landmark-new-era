@@ -1,0 +1,735 @@
+<title>The Cleanup Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+
+<style>
+:root{
+  --paper:#EFF2F4; --card:#FFFFFF; --sunk:#E4E8EC;
+  --ink:#13171D; --ink-2:#454C57; --ink-3:#6D7681;
+  --rule:#CFD6DD; --rule-soft:#E1E6EB;
+  --reg:#2F4B8F;   --reg-soft:#E4EAF6;
+  --inv:#94620F;   --inv-soft:#F5ECD9;
+  --con:#1A6A61;   --con-soft:#DCEDEA;
+  --alert:#A2352B; --alert-soft:#F7E4E1;
+  --sans:"IBM Plex Sans Condensed","Helvetica Neue",Arial,sans-serif;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"IBM Plex Mono",ui-monospace,"Courier New",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1116; --card:#161B22; --sunk:#1C222B;
+    --ink:#E7EBF0; --ink-2:#AFB8C3; --ink-3:#818C99;
+    --rule:#2B323C; --rule-soft:#222833;
+    --reg:#8FA9E8; --reg-soft:#1A2338;
+    --inv:#D9A54F; --inv-soft:#2C2317;
+    --con:#5CBFAF; --con-soft:#122927;
+    --alert:#E3837A; --alert-soft:#2D1A18;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1116; --card:#161B22; --sunk:#1C222B;
+  --ink:#E7EBF0; --ink-2:#AFB8C3; --ink-3:#818C99;
+  --rule:#2B323C; --rule-soft:#222833;
+  --reg:#8FA9E8; --reg-soft:#1A2338;
+  --inv:#D9A54F; --inv-soft:#2C2317;
+  --con:#5CBFAF; --con-soft:#122927;
+  --alert:#E3837A; --alert-soft:#2D1A18;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:var(--serif); font-size:17px; line-height:1.62;
+  margin:0; padding:0 20px 96px; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto}
+
+header.top{padding:64px 0 34px; border-bottom:1px solid var(--rule)}
+.eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); margin:0 0 18px}
+h1{font-family:var(--sans); font-weight:700; font-size:clamp(44px,7vw,76px); line-height:.95; letter-spacing:-.022em; margin:0 0 20px; text-wrap:balance}
+.standfirst{font-size:20px; line-height:1.5; color:var(--ink-2); max-width:36em; margin:0 0 26px}
+.meta{font-family:var(--mono); font-size:11.5px; color:var(--ink-3); line-height:1.9; margin:0}
+
+main{display:grid; grid-template-columns:minmax(0,1fr) min(66ch,100%) minmax(0,1fr)}
+main > *{grid-column:2}
+main > .wide{grid-column:1/-1; justify-self:center; width:min(1180px,100%)}
+
+h2{font-family:var(--sans); font-weight:700; font-size:31px; letter-spacing:-.012em; line-height:1.14; margin:66px 0 8px; text-wrap:balance}
+h2 .num{display:block; font-family:var(--mono); font-size:11px; font-weight:400; letter-spacing:.16em; color:var(--ink-3); margin-bottom:9px}
+h3{font-family:var(--sans); font-weight:600; font-size:20px; margin:38px 0 8px; text-wrap:balance}
+h4{font-family:var(--sans); font-weight:600; font-size:15px; margin:26px 0 6px; letter-spacing:.01em}
+p{margin:0 0 15px}
+.lede{font-size:18.5px; color:var(--ink-2); margin-bottom:22px}
+ul,ol{margin:0 0 18px; padding-left:1.15em}
+li{margin:0 0 9px; padding-left:.15em}
+strong{font-weight:600}
+code{font-family:var(--mono); font-size:.83em; background:var(--sunk); padding:.1em .34em; border-radius:3px; color:var(--ink-2)}
+a{color:var(--reg)}
+:focus-visible{outline:2px solid var(--reg); outline-offset:3px; border-radius:2px}
+
+/* tables */
+.tbox{background:var(--card); border:1px solid var(--rule); border-radius:6px; margin:22px 0 10px; overflow:hidden}
+.tbox > .cap{
+  font-family:var(--sans); font-size:13px; font-weight:600; color:var(--ink-2);
+  padding:13px 16px; border-bottom:1px solid var(--rule-soft); background:var(--sunk);
+  display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap; align-items:baseline;
+}
+.tbox > .cap .n{font-family:var(--mono); font-size:11px; font-weight:400; color:var(--ink-3)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-family:var(--sans); font-size:14px}
+th{
+  text-align:left; font-weight:600; font-size:11px; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--ink-3); padding:10px 16px; border-bottom:1px solid var(--rule); white-space:nowrap;
+}
+td{padding:9px 16px; border-bottom:1px solid var(--rule-soft); vertical-align:top}
+tr:last-child td{border-bottom:none}
+td.f, th.f{font-family:var(--mono); font-size:12px; white-space:nowrap; color:var(--ink-2)}
+td.n, th.n{text-align:right; font-variant-numeric:tabular-nums; font-family:var(--mono); font-size:12.5px; white-space:nowrap}
+td.grp{font-weight:600; color:var(--ink); background:var(--sunk); font-size:12px; letter-spacing:.05em; text-transform:uppercase}
+.zero{color:var(--alert); font-weight:600}
+.ok{color:var(--con)}
+.warn{color:var(--inv)}
+
+.pill{display:inline-block; font-family:var(--mono); font-size:10.5px; padding:2px 7px; border-radius:10px; border:1px solid; white-space:nowrap}
+.pill.dead{color:var(--alert); border-color:var(--alert); background:var(--alert-soft)}
+.pill.keep{color:var(--con); border-color:var(--con); background:var(--con-soft)}
+.pill.reg{color:var(--reg); border-color:var(--reg); background:var(--reg-soft)}
+.pill.inv{color:var(--inv); border-color:var(--inv); background:var(--inv-soft)}
+
+.note{border-left:3px solid var(--alert); background:var(--alert-soft); padding:14px 18px; border-radius:0 5px 5px 0; margin:26px 0; font-size:15.5px; line-height:1.55}
+.note .h{font-family:var(--sans); font-weight:600; font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--alert); display:block; margin-bottom:5px}
+.note p{margin:0 0 9px} .note p:last-child{margin:0}
+.note.keep{border-left-color:var(--con); background:var(--con-soft)}
+.note.keep .h{color:var(--con)}
+.note.method{border-left-color:var(--ink-3); background:var(--sunk)}
+.note.method .h{color:var(--ink-3)}
+
+.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin:30px 0}
+.stat{background:var(--card); border:1px solid var(--rule); border-radius:6px; padding:15px 16px; border-top:3px solid var(--alert)}
+.stat .v{font-family:var(--sans); font-weight:700; font-size:32px; line-height:1; letter-spacing:-.02em}
+.stat .l{font-family:var(--sans); font-size:13px; color:var(--ink-3); margin-top:6px; line-height:1.35}
+
+figure{margin:30px 0 8px; background:var(--card); border:1px solid var(--rule); border-radius:6px; padding:22px 22px 16px}
+figure svg{display:block; width:100%; height:auto; min-width:640px}
+figcaption{font-family:var(--sans); font-size:13.5px; line-height:1.55; color:var(--ink-3); margin-top:16px; padding-top:13px; border-top:1px solid var(--rule-soft); max-width:80ch}
+svg text{font-family:var(--sans); fill:var(--ink)}
+.bx{fill:var(--card); stroke:var(--rule); stroke-width:1.4}
+.bx-inv{fill:var(--inv-soft); stroke:var(--inv); stroke-width:1.4}
+.bx-con{fill:var(--con-soft); stroke:var(--con); stroke-width:1.4}
+.bx-off{fill:var(--alert-soft); stroke:var(--alert); stroke-width:1.4; stroke-dasharray:5 3.5}
+.e{fill:none; stroke:var(--ink-3); stroke-width:1.4}
+.e-off{fill:none; stroke:var(--alert); stroke-width:1.5; stroke-dasharray:5 3.5}
+.mk-n{fill:var(--ink-3)} .mk-a{fill:var(--alert)}
+.t-hd{font-size:13px; font-weight:600}
+.t-sm{font-size:11.5px; fill:var(--ink-2)}
+.t-mn{font-family:var(--mono); font-size:10.2px; fill:var(--ink-3)}
+.t-day{font-family:var(--mono); font-size:10px; letter-spacing:.13em; fill:var(--ink-3)}
+.f-inv{fill:var(--inv)} .f-con{fill:var(--con)} .f-alert{fill:var(--alert)}
+
+footer{margin:84px 0 0; padding-top:24px; border-top:1px solid var(--rule); font-family:var(--mono); font-size:11.5px; color:var(--ink-3); line-height:1.9}
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow">Landmark Worldwide &middot; New Era</p>
+  <h1>The Cleanup Ledger</h1>
+  <p class="standfirst">Every field nothing writes, every field written twice, every automation with nobody in it, and every page nobody visits &mdash; counted against live records, not guessed from the schema.</p>
+  <p class="meta">Ontraport account 270197 &middot; read live 21 Aug 2026<br>Scope: 133 event-218 registrations (224 total) &middot; 180 events &middot; 375 invitations &middot; 667 contacts &middot; 99 automations &middot; 65 pages</p>
+</header>
+
+<main>
+
+<div class="wide">
+<div class="stats">
+  <div class="stat"><div class="v">37</div><div class="l">registration fields empty on all 224 records</div></div>
+  <div class="stat"><div class="v">31</div><div class="l">event fields empty on all 180 events</div></div>
+  <div class="stat"><div class="v">25</div><div class="l">invitation fields empty on all 375</div></div>
+  <div class="stat"><div class="v">29</div><div class="l">contact fields empty on all 667</div></div>
+  <div class="stat"><div class="v">29</div><div class="l">automations with zero records attached</div></div>
+  <div class="stat"><div class="v">11</div><div class="l">page slots with zero visits</div></div>
+</div>
+</div>
+
+<div class="note method">
+<span class="h">How these were counted</span>
+<p><strong>&ldquo;Empty&rdquo; means null, empty string, <code>0</code>, or <code>0.00</code></strong> &mdash; the values Ontraport stores for an unset check, dropdown, parent or price field. Every count below is a full census of the record set named, not a sample.</p>
+<p><strong>Two field types could not be read this way.</strong> <code>related_data</code> mirrors (<code>f3099</code>&ndash;<code>f3102</code>, <code>f2394</code>, <code>f3080</code>, the portal visibility mirrors) and <code>subscription</code> fields are silently dropped from list queries. They are computed from the parent record, so &ldquo;unused&rdquo; does not apply to them the same way.</p>
+<p><strong>Automations are measured by records currently attached.</strong> Ontraport can detach a record when it completes an automation, so zero attached is strong evidence of never having fired &mdash; not absolute proof. Treat the <code>[LIVE]</code>-named entries with zero as things to confirm in the UI before deleting.</p>
+</div>
+
+<h2><span class="num">SECTION 01</span>Fields nothing ever wrote</h2>
+
+<p class="lede">Counted per object across every record that exists. The registration list is scoped to event 218 as asked, then cross-checked against all 224 registrations so nothing live on an Advanced Course or Seminar record gets deleted by mistake.</p>
+
+<h3>Registrations</h3>
+
+<p><strong>41 fields are empty on all 133 event-218 registrations.</strong> Four of those are populated on other registrations in the system, so they are not dead &mdash; they are just unused by the Forum. The remaining <strong>37 are empty on all 224 registrations</strong> and are safe to retire.</p>
+
+<div class="note keep">
+<span class="h">Do not delete these four</span>
+<p>Empty on event 218, but live elsewhere: <code>f2761</code> Can&rsquo;t Attend First Session (15 records) &middot; <code>f3279</code> Preferred Name (7) &middot; <code>f2465</code> Source Invitation (2) &middot; <code>f2878</code> Test Registration (1).</p>
+</div>
+
+<div class="wide">
+<div class="tbox">
+  <div class="cap"><span>Empty on all 224 registrations</span><span class="n">37 fields</span></div>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Theme</th><th class="f">Field</th><th>Name</th></tr></thead>
+    <tbody>
+      <tr><td class="grp" rowspan="6">Feedback capture</td><td class="f">f2992</td><td>Feedback Form</td></tr>
+      <tr><td class="f">f2994</td><td>Support Request Form</td></tr>
+      <tr><td class="f">f3006</td><td>FDBK: Feedback</td></tr>
+      <tr><td class="f">f3187</td><td>Feedback From Portal &mdash; 1</td></tr>
+      <tr><td class="f">f3188</td><td>Feedback From Portal &mdash; 2</td></tr>
+      <tr><td class="f">f3189</td><td>Feedback From Portal &mdash; 3</td></tr>
+
+      <tr><td class="grp" rowspan="7">Session attendance grid</td><td class="f">f3197</td><td>D2S1 Attended</td></tr>
+      <tr><td class="f">f3198</td><td>D2S2 Attended</td></tr>
+      <tr><td class="f">f3199</td><td>D2S3 Attended</td></tr>
+      <tr><td class="f">f3200</td><td>D2S4 Attended</td></tr>
+      <tr><td class="f">f3203</td><td>D3S3 Attended</td></tr>
+      <tr><td class="f">f3055</td><td>D3S4 Attended</td></tr>
+      <tr><td class="f">f3054</td><td>D3S3 Checkpoint</td></tr>
+
+      <tr><td class="grp" rowspan="4">Zoom &amp; derived attendance</td><td class="f">f2797</td><td>Zoom Provision Error</td></tr>
+      <tr><td class="f">f2853</td><td>Currently Present</td></tr>
+      <tr><td class="f">f2865</td><td>Final Leave Time</td></tr>
+      <tr><td class="f">f2867</td><td>Total Attendance Minutes</td></tr>
+
+      <tr><td class="grp" rowspan="3">Graduation date strings</td><td class="f">f3108</td><td>Graduation Day &mdash; Full</td></tr>
+      <tr><td class="f">f3109</td><td>Graduation Day &mdash; Short</td></tr>
+      <tr><td class="f">f3110</td><td>Graduation TOD</td></tr>
+
+      <tr><td class="grp" rowspan="3">Financial</td><td class="f">f2866</td><td>Refund Amount</td></tr>
+      <tr><td class="f">f2877</td><td>Financial Sync Error</td></tr>
+      <tr><td class="f">f3045</td><td>Pricing Category</td></tr>
+
+      <tr><td class="grp" rowspan="3">AC / Seminar block</td><td class="f">f2884</td><td>Seminar Confirmation Status</td></tr>
+      <tr><td class="f">f2890</td><td>AC Course Choice</td></tr>
+      <tr><td class="f">f2891</td><td>AC Registration Notes</td></tr>
+
+      <tr><td class="grp" rowspan="3">Withdrawal &amp; classification</td><td class="f">f3053</td><td>SE Reason</td></tr>
+      <tr><td class="f">f3070</td><td>PSS Eligible Return Date</td></tr>
+      <tr><td class="f">f3076</td><td>Classification Override Reason</td></tr>
+
+      <tr><td class="grp" rowspan="3">Notes &amp; ops</td><td class="f">f3236</td><td>Zoom / Exception Note</td></tr>
+      <tr><td class="f">f3270</td><td>Notes</td></tr>
+      <tr><td class="f">f3184</td><td>Multi-Device</td></tr>
+
+      <tr><td class="grp" rowspan="5">Miscellaneous</td><td class="f">f2283</td><td>Temp Page ID</td></tr>
+      <tr><td class="f">f3206</td><td>Minor</td></tr>
+      <tr><td class="f">f3273</td><td>Portal Access?</td></tr>
+      <tr><td class="f">f3313</td><td>DNS</td></tr>
+      <tr><td class="f">f3365</td><td># Guests Converted</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+</div>
+
+<p>The session grid is worth a second look. Twelve per-session attendance checkboxes exist (<code>D1S1</code>&ndash;<code>D3S4</code>). Six are empty on every record; the other six are set on <strong>exactly one</strong> registration &mdash; the same one &mdash; and hold identical values. Day-level attendance (<code>f2801</code>&ndash;<code>f2803</code>) and per-day minutes (<code>f2805</code>&ndash;<code>f2807</code>) are the fields that actually carry the data, on 106&ndash;113 records each.</p>
+
+<h3>Events</h3>
+
+<p><strong>31 custom fields are empty on all 180 events</strong>, plus the entire <code>page_128</code> &ldquo;Tuesday Graduation Registration&rdquo; slot, which has never been provisioned on a single event.</p>
+
+<div class="wide">
+<div class="tbox">
+  <div class="cap"><span>Empty on all 180 events</span><span class="n">31 fields</span></div>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Theme</th><th class="f">Field</th><th>Name</th></tr></thead>
+    <tbody>
+      <tr><td class="grp" rowspan="9">Guest-conversion metrics</td><td class="f">f2306</td><td>Non-Graduate Guests Per 100</td></tr>
+      <tr><td class="f">f2307</td><td>Graduate Guests Per 100</td></tr>
+      <tr><td class="f">f2339</td><td>Grad-guests</td></tr>
+      <tr><td class="f">f2340</td><td>Grad Registrations</td></tr>
+      <tr><td class="f">f2341</td><td>Grad Adv. Course Registrations</td></tr>
+      <tr><td class="f">f2369</td><td># Non-grad guests</td></tr>
+      <tr><td class="f">f3366</td><td>Guest Conversion Revenue</td></tr>
+      <tr><td class="f">f3370</td><td>Guest Conversions With Inviter</td></tr>
+      <tr><td class="f">f3371</td><td>Guest Conversions Self-Registered</td></tr>
+
+      <tr><td class="grp" rowspan="3">Attendance rollups</td><td class="f">f3255</td><td>Total Present</td></tr>
+      <tr><td class="f">f3256</td><td>Total Staff Present</td></tr>
+      <tr><td class="f">f3257</td><td>Total Drop-In Viewers</td></tr>
+
+      <tr><td class="grp" rowspan="2">Automation-managed URLs</td><td class="f">f3259</td><td>Advanced Course Sales Page URL</td></tr>
+      <tr><td class="f">f3260</td><td>LF Guest Sales Page URL</td></tr>
+
+      <tr><td class="grp" rowspan="5">Designated next course</td><td class="f">f3078</td><td>Designated Seminar (text)</td></tr>
+      <tr><td class="f">f3079</td><td>Designated Advanced Course (text)</td></tr>
+      <tr><td class="f">f3134</td><td>Designated Seminar 2</td></tr>
+      <tr><td class="f">f3135</td><td>Designated Seminar 3</td></tr>
+      <tr><td class="f">f3136</td><td>Designated Advanced Course Event</td></tr>
+
+      <tr><td class="grp" rowspan="6">Materials &amp; marketing URLs</td><td class="f">f2714</td><td>AC Materials URL</td></tr>
+      <tr><td class="f">f3047</td><td>Vanto Info URL</td></tr>
+      <tr><td class="f">f3048</td><td>Vanto Announcement URL</td></tr>
+      <tr><td class="f">f3049</td><td>Communication Course Interest URL</td></tr>
+      <tr><td class="f">f3077</td><td>Upcoming Forum Dates PDF URL</td></tr>
+      <tr><td class="f">f3071</td><td>Designated AC Start Date</td></tr>
+
+      <tr><td class="grp" rowspan="4">Zoom &amp; device ops</td><td class="f">f3033</td><td>Create Meeting</td></tr>
+      <tr><td class="f">f3043</td><td>Participant Unique Join Links Created?</td></tr>
+      <tr><td class="f">f3072</td><td>Couples Sharing Device</td></tr>
+      <tr><td class="f">f3073</td><td>Double Devices</td></tr>
+
+      <tr><td class="grp" rowspan="2">Other</td><td class="f">f3263</td><td>Event Starts &mdash; Locked</td></tr>
+      <tr><td class="f">f2232</td><td>(legacy, unnamed in meta)</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+</div>
+
+<div class="note">
+<span class="h">Two of these are supposed to be written by an automation</span>
+<p><code>f3259</code> and <code>f3260</code> both carry the field description &ldquo;<em>AUTOMATION-MANAGED &mdash; do not hand-edit &hellip; rewritten at each phase by the n8n workflow Cohort Sales Page URLs &mdash; AC + LF Guest.</em>&rdquo; They are empty on all 180 events. The matching invitation-side countdown fields <code>f3163</code> / <code>f3164</code> / <code>f3165</code> are empty on all 375 invitations. <strong>Neither half of that discount-countdown mechanism has ever been written.</strong></p>
+</div>
+
+<h4>Empty on event 218, but used on other events &mdash; keep</h4>
+
+<div class="wide">
+<div class="tbox">
+  <div class="cap"><span>Blank on 218, populated elsewhere</span><span class="n">13 fields</span></div>
+  <div class="scroll">
+  <table>
+    <thead><tr><th class="f">Field</th><th>Name</th><th class="n">Events with a value</th></tr></thead>
+    <tbody>
+      <tr><td class="f">f2760</td><td>Next Course Recommended Display</td><td class="n">70</td></tr>
+      <tr><td class="f">f3012</td><td>Availability (Open / Full / Closed)</td><td class="n">53</td></tr>
+      <tr><td class="f">f2756</td><td>Event Meeting Pattern</td><td class="n">51</td></tr>
+      <tr><td class="f">f3040</td><td>Event Title</td><td class="n">21</td></tr>
+      <tr><td class="f">f3204</td><td>Page Sort Key</td><td class="n">21</td></tr>
+      <tr><td class="f">f2451</td><td>Translation</td><td class="n">17</td></tr>
+      <tr><td class="f">f2991</td><td>Subscriber Tuition</td><td class="n">6</td></tr>
+      <tr><td class="f">f3205</td><td>Card Badge</td><td class="n">5</td></tr>
+      <tr><td class="f">f2708</td><td>Workbook URL</td><td class="n">4</td></tr>
+      <tr><td class="f">f3166</td><td>Test Event</td><td class="n">2</td></tr>
+      <tr><td class="f">f3192</td><td>Event Notes</td><td class="n">1</td></tr>
+      <tr><td class="f">bulk_mail</td><td>Bulk Email Status</td><td class="n">146</td></tr>
+      <tr><td class="f">import_id</td><td>Import ID</td><td class="n">38</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+</div>
+
+<p><code>f3012</code> Availability is the field that decides whether an event appears on the date-selection pages, and its own description notes that <em>&ldquo;a blank value is treated as not open.&rdquo;</em> It is blank on event 218 and on 127 of 180 events.</p>
+
+<h3>Invitations</h3>
+
+<p><strong>25 custom fields are empty on all 375 invitations.</strong> Seven of them are text copies of links that already exist as proper parent fields.</p>
+
+<div class="wide">
+<div class="tbox">
+  <div class="cap"><span>Empty on all 375 invitations</span><span class="n">25 fields</span></div>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Theme</th><th class="f">Field</th><th>Name</th><th>The field that actually holds it</th></tr></thead>
+    <tbody>
+      <tr><td class="grp" rowspan="7">Text copies of parent links</td><td class="f">f2954</td><td>Event ID</td><td class="f">f2258 Event <span class="pill inv">372 set</span></td></tr>
+      <tr><td class="f">f2955</td><td>Inviting Registration ID</td><td class="f">f2260 <span class="pill inv">324 set</span></td></tr>
+      <tr><td class="f">f2956</td><td>Inviter Contact ID</td><td class="f">f2257 <span class="pill inv">323 set</span></td></tr>
+      <tr><td class="f">f2957</td><td>Guest Contact ID</td><td class="f">f2259 <span class="pill inv">375 set</span></td></tr>
+      <tr><td class="f">f2959</td><td>Guest First Name</td><td class="f">f2259//firstname</td></tr>
+      <tr><td class="f">f2960</td><td>Guest Last Name</td><td class="f">f2259//lastname</td></tr>
+      <tr><td class="f">f2961</td><td>Guest Email</td><td class="f">f2259//email</td></tr>
+
+      <tr><td class="grp" rowspan="2">Conversion flags</td><td class="f">f2298</td><td>Registered for Advanced Course</td><td>&mdash; nothing writes it</td></tr>
+      <tr><td class="f">f2300</td><td>Registered for Seminar</td><td>&mdash; nothing writes it</td></tr>
+
+      <tr><td class="grp" rowspan="3">Discount countdown</td><td class="f">f3163</td><td>LF Guest Discount End</td><td class="f">contact f2663 <span class="pill inv">7 set</span></td></tr>
+      <tr><td class="f">f3164</td><td>LF Guest Discount End (ms)</td><td class="f">contact f2664 <span class="pill inv">7 set</span></td></tr>
+      <tr><td class="f">f3165</td><td>LF Guest Discount End Extended (ms)</td><td class="f">contact f2697 <span class="pill inv">7 set</span></td></tr>
+
+      <tr><td class="grp" rowspan="5">Potential &amp; classification</td><td class="f">f3211</td><td>LF Potential</td><td>&mdash;</td></tr>
+      <tr><td class="f">f3212</td><td>AC Potential</td><td>&mdash;</td></tr>
+      <tr><td class="f">f3213</td><td>AC Non-Potential Reason</td><td>&mdash;</td></tr>
+      <tr><td class="f">f3050</td><td>Non-Potential Reason</td><td>&mdash;</td></tr>
+      <tr><td class="f">f2967</td><td>Guest Verification Status</td><td>&mdash;</td></tr>
+
+      <tr><td class="grp" rowspan="2">SE exception</td><td class="f">f3051</td><td>SE Exception</td><td>&mdash;</td></tr>
+      <tr><td class="f">f3052</td><td>SE Exception Reason</td><td>&mdash;</td></tr>
+
+      <tr><td class="grp" rowspan="2">Send tracking</td><td class="f">f2962</td><td>Invitation Sent</td><td class="f">f2256 Date Invited <span class="pill inv">375 set</span></td></tr>
+      <tr><td class="f">f2963</td><td>Invitation Sent Date</td><td class="f">f2256 Date Invited</td></tr>
+
+      <tr><td class="grp" rowspan="2">Attendance / grad duplicates</td><td class="f">f2966</td><td>Attended After Cutoff</td><td class="f">f3210 Attended <span class="pill inv">207 set</span></td></tr>
+      <tr><td class="f">f2968</td><td>Guest Graduate Status</td><td class="f">f2337 <span class="pill inv">372 set</span></td></tr>
+
+      <tr><td class="grp" rowspan="2">Sales links</td><td class="f">f2471</td><td>LF Sales Page Link</td><td>&mdash;</td></tr>
+      <tr><td class="f">f2472</td><td>LF Checkout Pg Link</td><td>&mdash;</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+</div>
+
+<h3>Contacts</h3>
+
+<p><strong>29 custom fields are empty on all 667 contacts</strong>, including most of the journey layer the offer funnels are supposed to segment on.</p>
+
+<div class="wide">
+<div class="tbox">
+  <div class="cap"><span>Empty on all 667 contacts</span><span class="n">29 fields</span></div>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Theme</th><th class="f">Field</th><th>Name</th></tr></thead>
+    <tbody>
+      <tr><td class="grp" rowspan="5">Journey layer</td><td class="f">f3372</td><td>Date Purchased</td></tr>
+      <tr><td class="f">f3373</td><td>Price Paid</td></tr>
+      <tr><td class="f">f3362</td><td>Registered For Seminar</td></tr>
+      <tr><td class="f">f3363</td><td>Registered For Advanced Course</td></tr>
+      <tr><td class="f">f3374</td><td>Forum Registration ID</td></tr>
+
+      <tr><td class="grp">Graduation</td><td class="f">f3361</td><td>Attended Graduation</td></tr>
+
+      <tr><td class="grp" rowspan="2">Identity &amp; dedupe</td><td class="f">f3305</td><td>Master Record ID</td></tr>
+      <tr><td class="f">f2879</td><td>LISA Participant ID</td></tr>
+
+      <tr><td class="grp" rowspan="6">Revenue rollups</td><td class="f">f2825</td><td>Contact Total Spend</td></tr>
+      <tr><td class="f">f2831</td><td>Contact Total Booked Spend</td></tr>
+      <tr><td class="f">f2837</td><td>Contact Total Refunds</td></tr>
+      <tr><td class="f">f2850</td><td>Last Purchase Date</td></tr>
+      <tr><td class="f">f2856</td><td>Last Revenue Rollup</td></tr>
+      <tr><td class="f">f2842</td><td>Paid Registration Count</td></tr>
+
+      <tr><td class="grp" rowspan="4">Subscriptions</td><td class="f">f2631</td><td>Last Canceled Subscription</td></tr>
+      <tr><td class="f">f2633</td><td>Last Canceled Subscription ID</td></tr>
+      <tr><td class="f">f2632</td><td>Cancellation Confirmed</td></tr>
+      <tr><td class="f">f2634</td><td>Remove Access</td></tr>
+
+      <tr><td class="grp" rowspan="11">Miscellaneous</td><td class="f">f3364</td><td>Response Notifications</td></tr>
+      <tr><td class="f">f3041</td><td>SMS: Check: Promotions</td></tr>
+      <tr><td class="f">f2770</td><td>Leadership Access</td></tr>
+      <tr><td class="f">f2588</td><td>Pipeline: Wisdom Unlimited Vacation Course</td></tr>
+      <tr><td class="f">f2473</td><td>Forum Discount Start Date</td></tr>
+      <tr><td class="f">f2457</td><td>Checkout Count</td></tr>
+      <tr><td class="f">f2285</td><td>Temp Invitation ID</td></tr>
+      <tr><td class="f">f2606</td><td>How did you hear about us</td></tr>
+      <tr><td class="f">f2607</td><td>Friend&rsquo;s name</td></tr>
+      <tr><td class="f">f2880</td><td>Preferred Name</td></tr>
+      <tr><td class="f">f2635</td><td>Number of Active Subscriptions</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+</div>
+
+<p>Also empty on all 667: the native fields <code>website</code>, <code>fax</code>, <code>birthday</code>, <code>priority</code>, and <code>mrcUnpaid</code>.</p>
+
+<p><code>f2285</code> Temp Invitation ID deserves a note. It is empty on every contact, and the existing post-purchase automation posts a payload targeting it &mdash; an inert write today that will start colliding the day anything populates the field.</p>
+
+<h2><span class="num">SECTION 02</span>The same thing in two places</h2>
+
+<p class="lede">Two kinds. First, fields whose values are byte-for-byte identical across every record &mdash; provable duplicates. Second, fields that mean the same thing but have drifted apart, which is the more expensive problem.</p>
+
+<h3>Provably identical</h3>
+
+<p>These were found by hashing each field&rsquo;s complete value vector across the whole record set and grouping on the hash. Identical hash means identical value on every single record.</p>
+
+<div class="wide">
+<div class="tbox">
+  <div class="cap"><span>Byte-for-byte identical across every record</span><span class="n">14 pairs / groups</span></div>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Object</th><th class="f">Fields</th><th>Names</th><th class="n">Records set</th></tr></thead>
+    <tbody>
+      <tr><td class="grp" rowspan="6">Registration</td><td class="f">f2801 = f3314</td><td>Attended Day 1 <span class="pill reg">=</span> STARTED COURSE</td><td class="n">113</td></tr>
+      <tr><td class="f">f2579 = f2585</td><td>Information Form Completed <span class="pill reg">=</span> Agreed to Registration Policies</td><td class="n">130</td></tr>
+      <tr><td class="f">f2272 = f3308</td><td># Invitations <span class="pill reg">=</span> # Guests</td><td class="n">70</td></tr>
+      <tr><td class="f">f2863 = f2869</td><td>Cash Collected <span class="pill reg">=</span> Net Revenue</td><td class="n">29</td></tr>
+      <tr><td class="f">f2584 = f2586</td><td>Agreed to Privacy Policy <span class="pill reg">=</span> Agreed to Terms of Use</td><td class="n">3</td></tr>
+      <tr><td class="f">f3193&hellip;f3202</td><td>Six session checkboxes, all identical</td><td class="n">1</td></tr>
+
+      <tr><td class="grp" rowspan="4">Event</td><td class="f">f2236 = f2689</td><td># Registrants <span class="pill reg">=</span> Participants Day One</td><td class="n">13</td></tr>
+      <tr><td class="f">f2305 = f2342</td><td># Graduate Seminar Registrations <span class="pill reg">=</span> # Grad Seminar Registrations</td><td class="n">3</td></tr>
+      <tr><td class="f">f2301 = f2467 = f2468 = f2690</td><td># Guest Registrations into Forum <span class="pill reg">=</span> # Invitations That Registered <span class="pill reg">=</span> # Registered Non-Grad <span class="pill reg">=</span> Well Being Out</td><td class="n">1</td></tr>
+      <tr><td class="f">f3104, f3121&ndash;f3126, f3167, f3239&ndash;f3242</td><td>Twelve course-supervisor toggles, all identical</td><td class="n">1</td></tr>
+
+      <tr><td class="grp" rowspan="2">Contact</td><td class="f">f3315 = f3316</td><td>Tuesday Night Invite Link <span class="pill reg">=</span> New-Era Invite Link</td><td class="n">41</td></tr>
+      <tr><td class="f">mriInvoiceTotal = mrcAmount</td><td>Last Total Invoice Amount <span class="pill reg">=</span> Last Charge Amount</td><td class="n">65</td></tr>
+
+      <tr><td class="grp" rowspan="2">Invitation</td><td class="f">ip_addy = ip_addy_display</td><td>IP Address, twice</td><td class="n">323</td></tr>
+      <tr><td class="f">page_105_visits = page_105_uvisits</td><td>Guest Signup Form visits <span class="pill reg">=</span> unique visits</td><td class="n">2</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+</div>
+
+<p><code>f2690</code> &ldquo;Well Being Out&rdquo; returning the same number as three guest-conversion rollups is not a coincidence of small numbers to shrug at &mdash; it is a rollup pointed at the wrong thing. And the twelve supervisor toggles being identical is expected: event 218 is the only one of 180 that has ever run a New Era course, so they were all switched on together.</p>
+
+<h3>Same concept, drifted apart</h3>
+
+<p>These are the expensive ones. Two fields mean the same thing, both are partly populated, and they disagree &mdash; so any report depends on which one the author happened to pick.</p>
+
+<h4>A. Graduation attendance lives in four places and three of them disagree</h4>
+
+<div class="wide">
+<figure>
+<div class="scroll">
+<svg viewBox="0 0 1000 250" role="img" aria-label="Graduation attendance is recorded in four fields across two objects. On the invitation, f3210 Attended has 207 records and f2964 Attended Final Session has 183, a strict subset. On the contact, f2666 Attended Tuesday Evening has 214 records while f3361 Attended Graduation has none.">
+<defs>
+  <marker id="ag-n" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-n" d="M0,0 L7,3.5 L0,7 z"/></marker>
+  <marker id="ag-a" viewBox="0 0 7 7" refX="6.2" refY="3.5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-a" d="M0,0 L7,3.5 L0,7 z"/></marker>
+</defs>
+
+<rect class="bx" x="26" y="86" width="176" height="70" rx="4"/>
+<text class="t-hd" x="114" y="112" text-anchor="middle">A guest attends</text>
+<text class="t-mn" x="114" y="132" text-anchor="middle">Tuesday graduation</text>
+<text class="t-mn" x="114" y="146" text-anchor="middle">event 218</text>
+
+<text class="t-day" x="300" y="34">ON THE INVITATION</text>
+<rect class="bx-inv" x="300" y="48" width="272" height="58" rx="4"/>
+<text class="t-sm f-inv" x="316" y="70" font-weight="600">f3210 Attended</text>
+<text class="t-mn" x="316" y="89">207 of 375 &mdash; the field that is maintained</text>
+
+<rect class="bx-off" x="300" y="118" width="272" height="58" rx="4"/>
+<text class="t-sm f-alert" x="316" y="140" font-weight="600">f2964 Attended Final Session</text>
+<text class="t-mn" x="316" y="159">183 of 375 &mdash; a strict subset, 24 behind</text>
+
+<text class="t-day" x="660" y="34">ON THE CONTACT</text>
+<rect class="bx-con" x="660" y="48" width="314" height="58" rx="4"/>
+<text class="t-sm f-con" x="676" y="70" font-weight="600">f2666 Attended Tuesday Evening</text>
+<text class="t-mn" x="676" y="89">214 of 667 &mdash; the old field, and it has the data</text>
+
+<rect class="bx-off" x="660" y="118" width="314" height="58" rx="4"/>
+<text class="t-sm f-alert" x="676" y="140" font-weight="600">f3361 Attended Graduation</text>
+<text class="t-mn" x="676" y="159">0 of 667 &mdash; the new field, never written</text>
+
+<line class="e" x1="202" y1="106" x2="296" y2="77" marker-end="url(#ag-n)"/>
+<line class="e-off" x1="202" y1="136" x2="296" y2="147" marker-end="url(#ag-a)"/>
+<line class="e" x1="572" y1="77" x2="656" y2="77" marker-end="url(#ag-n)"/>
+<line class="e-off" x1="572" y1="147" x2="656" y2="147" marker-end="url(#ag-a)"/>
+
+<text class="t-mn f-alert" x="500" y="212" text-anchor="middle">automation 97 &ldquo;Attended Graduation Checked on Contact Record&rdquo; &mdash; 0 records attached</text>
+<text class="t-mn" x="500" y="230" text-anchor="middle">the automation named for writing f3361 has never run</text>
+</svg>
+</div>
+<figcaption><b>The data exists; it is in the older field.</b> <code>f2964</code> is a strict subset of <code>f3210</code> &mdash; 183 records carry both, 24 carry only <code>f3210</code>, and none carry only <code>f2964</code>. On the contact, the field the offer funnels are meant to read (<code>f3361</code>) is empty while the retired one (<code>f2666</code>) holds 214 records.</figcaption>
+</figure>
+</div>
+
+<div class="note">
+<span class="h">This corrects the Forum Cycle map</span>
+<p>That map states graduation attendance &ldquo;never reaches the contact,&rdquo; reading <code>f3361</code> = 0 of 667. That is only half true. <strong><code>f2666</code> Attended Tuesday Evening is set on 214 of 667 contacts.</strong> The attendance is captured &mdash; it just lands in the field the funnels do not read. Repointing the funnels at <code>f2666</code>, or backfilling <code>f3361</code> from it, is a much smaller job than building the capture.</p>
+</div>
+
+<h4>B. Two definitions of &ldquo;Forum graduate&rdquo; with zero overlap</h4>
+
+<div class="wide">
+<div class="tbox">
+  <div class="cap"><span>Contact grad status &mdash; 667 contacts</span><span class="n">no contact carries both</span></div>
+  <div class="scroll">
+  <table>
+    <thead><tr><th class="f">Field</th><th>Name</th><th class="n">Set</th><th>Overlap with the other</th></tr></thead>
+    <tbody>
+      <tr><td class="f">f3360</td><td>Completed Forum (check)</td><td class="n">102</td><td class="zero">0 contacts</td></tr>
+      <tr><td class="f">f2881</td><td>Landmark Forum Graduate Status = Graduate (drop)</td><td class="n">61</td><td class="zero">0 contacts</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+</div>
+
+<p>163 contacts are marked as Forum graduates, by two fields, and not one contact is marked by both. <code>f3360</code>&rsquo;s 102 is exactly the event 218 completer count &mdash; it was backfilled from that one cohort. <code>f2881</code>&rsquo;s 61 are everyone else. Whichever field a funnel reads, it misses the other group entirely.</p>
+
+<h4>C. Everything else that is stored twice</h4>
+
+<div class="wide">
+<div class="tbox">
+  <div class="cap"><span>Overlapping fields, by concept</span></div>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Concept</th><th class="f">Fields</th><th>Reading</th></tr></thead>
+    <tbody>
+      <tr><td>Guest grad status<br><span class="pill inv">invitation</span></td><td class="f">f2337 / f2292 / f2968</td><td>372 set / 111 set / 0 set &mdash; three fields, one question</td></tr>
+      <tr><td>Event start date<br><span class="pill reg">event</span></td><td class="f">f2233 / f2988 / f2720 / f3263</td><td><code>1786723200</code> &middot; &ldquo;Fri, Aug 14&rdquo; &middot; &ldquo;2026-08-14T16:00:00Z&rdquo; &middot; empty on all 180</td></tr>
+      <tr><td>Graduation date<br><span class="pill reg">event</span></td><td class="f">f2986 / f2987 / f3258</td><td>&ldquo;Tues, Aug 18, 2026&rdquo; &middot; &ldquo;Tues, Aug 18, 2026&rdquo; &middot; <code>1787072400</code>. <code>f3258</code>&rsquo;s own description says it supersedes <code>f2986</code>.</td></tr>
+      <tr><td># Invitations<br><span class="pill reg">event</span></td><td class="f">f2266 / f2703</td><td><strong>372 vs 323.</strong> Identical field descriptions, different numbers.</td></tr>
+      <tr><td>Guest discount countdown</td><td class="f">contact f2663/f2664/f2697<br>invitation f3163/f3164/f3165<br>event f3259/f3260</td><td>7 set &middot; 0 set &middot; 0 set &mdash; the generation documented as &ldquo;retired&rdquo; is the only one with data</td></tr>
+      <tr><td>Event leader<br><span class="pill reg">event</span></td><td class="f">f2397 / f3023</td><td>parent link to contact 473 &middot; text &ldquo;Erin Snyder&rdquo;</td></tr>
+      <tr><td>Preferred name</td><td class="f">reg f3279 / contact f2880 / f2620 / f2792</td><td>7 &middot; 0 &middot; 25 &middot; 118 &mdash; four fields, two objects</td></tr>
+      <tr><td>SMS consent<br><span class="pill con">contact</span></td><td class="f">f2752 / f3022</td><td>126 set (drop) &middot; 1 set (check)</td></tr>
+      <tr><td>Purchase date<br><span class="pill con">contact</span></td><td class="f">f2474 / f2110 / f3372 / f2850</td><td>191 &middot; 183 &middot; 0 &middot; 0</td></tr>
+      <tr><td>Zoom meeting ids</td><td class="f">event f3034 &rarr; reg f2811<br>event f3038 &rarr; reg f3039</td><td>one value copied onto all 133 registrations, twice over</td></tr>
+      <tr><td>Registration confirmation page</td><td class="f">page_112 / 113 / 116 / 117 / 118</td><td>five slots for one job &mdash; see Section 04</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+</div>
+
+<p><strong>Nine registration fields hold exactly one distinct value across all 133 event-218 records</strong> &mdash; they are event-level or account-level constants copied onto every row: <code>f2458</code> Course, <code>f2830</code> Course Type, <code>f2841</code> Product ID, <code>f2854</code> Gross Price (always <code>495.00</code>), <code>f2796</code> Zoom Provision Status, <code>f2811</code>, <code>f3039</code>, <code>f2875</code> Financial Sync Status, and <code>f3254</code> Advanced Course Sales Page URL, which is the same static marketing link stored 133 times.</p>
+
+<h2><span class="num">SECTION 03</span>Automations with nobody in them</h2>
+
+<p class="lede">29 of 99 automations have zero records attached. Sixteen more are scratch copies named <code>Test:NNN</code>.</p>
+
+<div class="wide">
+<div class="tbox">
+  <div class="cap"><span>Zero records attached</span><span class="n">29 of 99 automations</span></div>
+  <div class="scroll">
+  <table>
+    <thead><tr><th class="n">ID</th><th>Name</th><th>Scoped to</th></tr></thead>
+    <tbody>
+      <tr><td class="n">13</td><td>REG : Course Reg : Advanced for Participant <span class="pill dead">LIVE</span></td><td>Contact</td></tr>
+      <tr><td class="n">14</td><td>REG : Course Reg : Seminar for Participant <span class="pill dead">LIVE</span></td><td>Contact</td></tr>
+      <tr><td class="n">16</td><td>REG : Course Reg : Seminar Guest from Invite <span class="pill dead">LIVE</span></td><td>Contact</td></tr>
+      <tr><td class="n">28</td><td>REG : Purchase Window : Expire After 365 Days <span class="pill dead">LIVE</span></td><td>Contact</td></tr>
+      <tr><td class="n">35</td><td>PORTAL : Profile : Unsubscribe <span class="pill dead">LIVE</span></td><td>Contact</td></tr>
+      <tr><td class="n">37</td><td>PORTAL : My Account : Cancel Subscription <span class="pill dead">LIVE</span></td><td>Contact</td></tr>
+      <tr><td class="n">42</td><td>LF Guest Discount Deadline Trigger</td><td>Contact</td></tr>
+      <tr><td class="n">99</td><td>Membership Enabled</td><td>Contact</td></tr>
+      <tr><td class="n">20</td><td>INV : Guest : Invite Your Friends <span class="pill dead">LIVE</span></td><td>Registration</td></tr>
+      <tr><td class="n">21</td><td>EVENT : Capacity : Lower Remaining <span class="pill dead">LIVE</span></td><td>Registration</td></tr>
+      <tr><td class="n">25</td><td>REG : Confirm : Registration Confirmation <span class="pill dead">LIVE</span></td><td>Registration</td></tr>
+      <tr><td class="n">34</td><td>LEGAL : E-Sign : SignRequest on Form Submit <span class="pill dead">LIVE</span></td><td>Registration</td></tr>
+      <tr><td class="n">65</td><td>REG: Check &ldquo;Information Completed&rdquo;</td><td>Registration</td></tr>
+      <tr><td class="n">87</td><td>Dashboard: Minor / SE &amp; Reason</td><td>Registration</td></tr>
+      <tr><td class="n">95</td><td>TESTING Copy of REG : PILOT During Course <span class="pill dead">LIVE</span></td><td>Registration</td></tr>
+      <tr><td class="n">98</td><td>Classification: Previous Grad &gt; Reviewer</td><td>Registration</td></tr>
+      <tr><td class="n">101</td><td>NCNS AUTOMATION DONT DELETE</td><td>Registration</td></tr>
+      <tr><td class="n">106</td><td>AC: SET DATES</td><td>Registration</td></tr>
+      <tr><td class="n">112</td><td>Remove Portal Access When Leaving</td><td>Registration</td></tr>
+      <tr><td class="n">44</td><td>DISC : Guest Checkout : Discount Deadline Trigger <span class="pill dead">LIVE</span></td><td>Invitation</td></tr>
+      <tr><td class="n">53</td><td>DISC : Guest Checkout : Discount Email Sequence <span class="pill dead">LIVE</span></td><td>Invitation</td></tr>
+      <tr><td class="n">97</td><td>Attended Graduation Checked on Contact Record</td><td>Invitation</td></tr>
+      <tr><td class="n">110</td><td>DISC: Participants: Advanced Course Offer Tue&ndash;Sat <span class="pill dead">LIVE</span></td><td>Invitation</td></tr>
+      <tr><td class="n">19</td><td>REG : Fulfillment : Forum Participants <span class="pill dead">LIVE</span></td><td>Event</td></tr>
+      <tr><td class="n">24</td><td>REG : Checkout : Update Event Start Date <span class="pill dead">LIVE</span></td><td>Event</td></tr>
+      <tr><td class="n">56</td><td>EVT : Maintenance : Calendar UTC Stamps <span class="pill dead">LIVE</span></td><td>Event</td></tr>
+      <tr><td class="n">69</td><td>Create Zoom Event</td><td>Event</td></tr>
+      <tr><td class="n">89</td><td>Copy of DASHBOARD: Show/Hide Assignments</td><td>Event</td></tr>
+      <tr><td class="n">92</td><td>Update &ldquo;Staff Access&rdquo; for ETM</td><td>Event Team</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+</div>
+
+<p><strong>Sixteen automations are named <code>Test:NNN</code></strong> &mdash; <code>Test:265</code> to <code>Test:272</code> on registrations and <code>Test:250</code> to <code>Test:260</code> on invitations. Between all sixteen they hold six attached records. They were created on 18 Aug within a few minutes of each other.</p>
+
+<div class="note">
+<span class="h">Three automations are duplicated and both copies are running</span>
+<p><strong>The offer funnels have live &ldquo;CAM EDIT&rdquo; twins.</strong> 108 <em>LF: Non-Grad Guest: Forum Offer Tue&ndash;Sat</em> holds 143 invitations while 115 <em>CAM EDIT: Non-Grad Forum Offer Tue&ndash;Sat</em> holds 144. 109 <em>LF: Grad: Graduate Course Offer</em> holds 35 while 114 <em>CAM EDIT: Grad: Graduate Course Offer</em> holds 63. Both members of each pair have records in them right now.</p>
+<p><strong>Two automations share a name.</strong> 20 <em>INV : Guest : Invite Your Friends</em> (registration-scoped) has zero attached; 80 <em>INV : Guest : Invite Your Friends</em> (invitation-scoped) has 321. The registration-scoped one is the dead twin.</p>
+<p><strong>Automation 110 is scoped to the wrong object.</strong> It is the Participants Advanced Course offer, but it is scoped to Invitations &mdash; and participants hold registrations, not invitations. It has zero records attached.</p>
+</div>
+
+<h4>Running, but barely</h4>
+
+<p>Not zero, but low enough to be worth confirming they are wired the way you think: 43 <em>DISC : Guest Checkout : Guest Discount Tue-Sat [LIVE] &mdash; TO DELETE</em> (1 record, and the name says the rest) &middot; 61 <em>REG : Reconcile Duplicate Registration (Pilot)</em> (1) &middot; 33 <em>LM &mdash; NPS Scoring</em> (1) &middot; 111 <em>Update Grad Status &amp; mirror Invite link</em> (2) &middot; 36 <em>PORTAL : Profile : Publish Profile</em> (3) &middot; 49 <em>LM &mdash; NPS Submitted</em> (3) &middot; 78 <em>Update Meeting Status</em> (3) &middot; 79 <em>MTTG: Create Unique Participant Join Links</em> (3) &middot; 83 <em>DASHBOARD: Show/Hide Assignments</em> (3) &middot; 96 <em>DISC : Cohort : Open Offer Timer</em> (3) &middot; 84 <em>REG: Purchase: Split Payments [LIVE]</em> (4) &middot; 63 <em>REG : Set Forum Start Date + Reschedule Split Payment</em> (5).</p>
+
+<p><strong>Four automations could not be measured.</strong> 7 <em>Untitled Automation 10/07/2025</em> and 66 <em>REG: Link Payment To Registration</em> are scoped to Invoices, which does not expose the subscription field through the API. 29, 30 and 31 (Surveys app) and 39 (My Account notification) are scoped to object types the API does not expose at all.</p>
+
+<h2><span class="num">SECTION 04</span>Pages nobody visited</h2>
+
+<p class="lede">One site exists and it has traffic. The dead weight is in landing pages and, much more so, in the per-registration portal page slots.</p>
+
+<h3>Sites</h3>
+
+<p>There is exactly one site: <strong>Landmark Portal</strong> at <code>landmark-portal.com</code> &mdash; 1,516 visits, 879 unique, 174 members, 133 active, 41 disabled, 297 logins, 41 conversions. <strong>No site has zero traffic</strong>, because there is only the one.</p>
+
+<h3>Landing pages &mdash; 65 total</h3>
+
+<div class="wide">
+<div class="tbox">
+  <div class="cap"><span>Zero or near-zero visits</span><span class="n">18 of 65 pages under 6 visits</span></div>
+  <div class="scroll">
+  <table>
+    <thead><tr><th class="n">ID</th><th>Name</th><th class="f">URL</th><th class="n">Visits</th></tr></thead>
+    <tbody>
+      <tr><td class="n">127</td><td>Full Price: Checkout : Advanced Course (Support Version)</td><td class="f">/ac-registration</td><td class="n zero">0</td></tr>
+      <tr><td class="n">92</td><td>(DUPLICATE) REG : Checkout : Step 01 &mdash; html codes express payment</td><td class="f">&mdash; no domain</td><td class="n zero">0</td></tr>
+      <tr><td class="n">101</td><td>Copy of LMF : Journey : Forum Journey (WIP)</td><td class="f">&mdash; no domain</td><td class="n zero">0</td></tr>
+      <tr><td class="n">125</td><td>404 Page Temporary</td><td class="f">&mdash; no domain</td><td class="n zero">0</td></tr>
+      <tr><td class="n">81</td><td>Copy of REG : Checkout : Step 02 Post-Purchase Choose Forum</td><td class="f">&mdash; no domain</td><td class="n">1</td></tr>
+      <tr><td class="n">90</td><td>Copy of REG : Checkout : Step 03 Registration Complete</td><td class="f">&mdash; no domain</td><td class="n">1</td></tr>
+      <tr><td class="n">103</td><td>Copy of REG : Checkout : Step 02 Post-Purchase Choose Forum (1)</td><td class="f">&mdash; no domain</td><td class="n">1</td></tr>
+      <tr><td class="n">71</td><td>(Un-branded starter template) My Account : Cancelled Confirmation</td><td class="f">/cancel-confirmation</td><td class="n">2</td></tr>
+      <tr><td class="n">133</td><td>Full Price : Guest Checkout : Landmark Forum (WIP) (1)</td><td class="f">/forum-registration</td><td class="n">2</td></tr>
+      <tr><td class="n">91</td><td>CHECKOUT HTML CODES (CHA TEST)</td><td class="f">mytemporarydomain.com/test</td><td class="n">3</td></tr>
+      <tr><td class="n">131</td><td>DISC + Full Price: Guests Checkout : Landmark Forum (LIVE)</td><td class="f">/forum-guest-discount</td><td class="n">3</td></tr>
+      <tr><td class="n">70</td><td>(Un-branded starter template) My Account : Cancellation Survey</td><td class="f">/cancellation-survey</td><td class="n">4</td></tr>
+      <tr><td class="n">107</td><td>During Forum: Assignments Day 1</td><td class="f">mytemporarydomain.com/day-1-assignments</td><td class="n">4</td></tr>
+      <tr><td class="n">132</td><td>Copy of DISC + Full Price : Guest Checkout : Landmark Forum (WIP)</td><td class="f">/lskgnmslkngfs</td><td class="n">4</td></tr>
+      <tr><td class="n">72</td><td>(Un-branded starter template) My Account : Cancellation Form</td><td class="f">/cancellation-form</td><td class="n">5</td></tr>
+      <tr><td class="n">106</td><td>(CHA TEMP) REG : Checkout : Step 01 Forum Checkout</td><td class="f">/cha-test</td><td class="n">5</td></tr>
+      <tr><td class="n">124</td><td>TESTING COPY of DISC : Checkout : Advanced Course (WIP)</td><td class="f">/adv-course-testing-reg</td><td class="n">5</td></tr>
+      <tr><td class="n">129</td><td>DISC: Checkout : Advanced Course (Support Version)</td><td class="f">/ac-support-register</td><td class="n">5</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+</div>
+
+<p>Page 127 is the one to look at first: it is published on a real URL, <code>lm.landmarkworldwide.com/ac-registration</code>, and has never been visited. Page 132 is live on the slug <code>/lskgnmslkngfs</code>. Ten of the 65 pages are named &ldquo;Copy of&rdquo;, &ldquo;TEST&rdquo;, &ldquo;TEMP&rdquo; or &ldquo;DUPLICATE&rdquo;.</p>
+
+<h3>Per-registration portal pages &mdash; the real dead weight</h3>
+
+<p>Every registration gets its own instance of eighteen page templates. Across the 133 event-218 registrations, <strong>seven of those eighteen have never been visited once</strong>, despite being published on almost every record.</p>
+
+<div class="wide">
+<div class="tbox">
+  <div class="cap"><span>Per-registration page slots &mdash; 133 event-218 registrations</span><span class="n">total visits across all 133</span></div>
+  <div class="scroll">
+  <table>
+    <thead><tr><th class="f">Slot</th><th>Page</th><th class="n">Published on</th><th class="n">Total visits</th><th class="n">Regs with a visit</th></tr></thead>
+    <tbody>
+      <tr><td class="f">page_124</td><td>Forum Dates</td><td class="n">132</td><td class="n zero">0</td><td class="n zero">0</td></tr>
+      <tr><td class="f">page_121</td><td>Post Event</td><td class="n">133</td><td class="n zero">0</td><td class="n zero">0</td></tr>
+      <tr><td class="f">page_120</td><td>Pre-Event Page</td><td class="n">132</td><td class="n zero">0</td><td class="n zero">0</td></tr>
+      <tr><td class="f">page_123</td><td>Advance Course &mdash; Choose Your Dates</td><td class="n">132</td><td class="n zero">0</td><td class="n zero">0</td></tr>
+      <tr><td class="f">page_125</td><td>During Event</td><td class="n">133</td><td class="n zero">0</td><td class="n zero">0</td></tr>
+      <tr><td class="f">page_115</td><td>Bring A Buddy</td><td class="n">133</td><td class="n zero">0</td><td class="n zero">0</td></tr>
+      <tr><td class="f">page_113</td><td>REG : Registration Complete (Pilot)</td><td class="n">58</td><td class="n zero">0</td><td class="n zero">0</td></tr>
+      <tr><td class="f">page_118</td><td>REG : Registration Confirmation (Pilot)</td><td class="n">58</td><td class="n">1</td><td class="n">1</td></tr>
+      <tr><td class="f">page_117</td><td>Registration Completed</td><td class="n">133</td><td class="n">4</td><td class="n">1</td></tr>
+      <tr><td class="f">page_116</td><td>Registration Complete</td><td class="n">58</td><td class="n">4</td><td class="n">1</td></tr>
+      <tr><td class="f">page_107</td><td>Participant Advanced / Seminar Signup</td><td class="n">75</td><td class="n">5</td><td class="n">3</td></tr>
+      <tr><td class="f">page_112</td><td>Registration Confirmation</td><td class="n">133</td><td class="n">6</td><td class="n">3</td></tr>
+      <tr><td class="f">page_114</td><td>Student Portal</td><td class="n">130</td><td class="n">7</td><td class="n">2</td></tr>
+      <tr><td class="f">page_103</td><td>CS: Participant Status and Toggle</td><td class="n">133</td><td class="n">9</td><td class="n">5</td></tr>
+      <tr><td class="f">page_122</td><td>Forum Journey</td><td class="n">133</td><td class="n ok">226</td><td class="n">69</td></tr>
+      <tr><td class="f">page_119</td><td>Available Seminars</td><td class="n">133</td><td class="n ok">272</td><td class="n">87</td></tr>
+      <tr><td class="f">page_104</td><td>Invite your friends</td><td class="n">133</td><td class="n ok">663</td><td class="n">80</td></tr>
+      <tr><td class="f">page_126</td><td>Portal Home Page</td><td class="n">133</td><td class="n ok">694</td><td class="n">102</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+</div>
+
+<p><strong>Pre-Event, During Event and Post Event all read zero while Portal Home Page reads 694.</strong> That is the portal working as designed &mdash; one URL that swaps its view by phase &mdash; which means those three template slots are being provisioned and published on every registration for nothing. Same story for <code>page_114</code> Student Portal, superseded by <code>page_126</code>, and for the four separate confirmation/complete slots that between them collected 15 visits.</p>
+
+<p>On the event object, <code>page_128</code> &ldquo;Tuesday Graduation Registration&rdquo; has never been provisioned on any of 180 events. The job it was built for was done by static landing page 115, which carried <strong>388 visits and 87 conversions</strong>.</p>
+
+<h2><span class="num">WORTH KNOWING</span>Two things that change how you read the earlier map</h2>
+
+<ol>
+  <li><strong>Graduation attendance is being captured.</strong> <code>f2666</code> on the contact holds 214 records. The Forum Cycle map treats this as missing because it reads <code>f3361</code>, which is empty. Fix the pointer, not the pipeline.</li>
+  <li><strong>The <code>f2674</code> override check covers less than you would want.</strong> The map proposes comparing registration <code>f2674</code> Email against the contact&rsquo;s email to detect cookie overrides. <code>f2674</code> is populated on only <strong>22 of 133</strong> event-218 registrations, so that check can see about one registration in six. It is still worth shipping &mdash; it caught the 20 Aug incident &mdash; but it needs <code>f2674</code> written on every registration to be a real safety net.</li>
+</ol>
+
+<div class="note method">
+<span class="h">What this audit did not cover</span>
+<p><strong>Contacts:</strong> roughly 110 fields were censused. Free-text NPS responses (<code>f2604</code>, <code>f2605</code>, <code>f2608</code>&ndash;<code>f2614</code>, <code>f2618</code>, <code>f2619</code>) were checked as a group &mdash; 4 of 667 contacts have any of them set. Social links and <code>address2</code> were checked as a group &mdash; 52 of 667. Attribution fields (<code>n_campaign</code>, <code>l_lead_source</code> and siblings) were not checked.</p>
+<p><strong>Not measurable through the API:</strong> <code>related_data</code> mirror fields, <code>subscription</code> fields as list output, invoice-scoped automation membership, and object types 217 and 230.</p>
+<p><strong>Nothing was written.</strong> Every call in this audit was a read.</p>
+</div>
+
+<footer>
+  Ontraport account 270197 &middot; all figures read live 21 Aug 2026<br>
+  Census scope: 133 registrations on event 218 (224 registrations total) &middot; 180 events &middot; 375 invitations &middot; 667 contacts &middot; 99 automations &middot; 65 landing pages &middot; 1 site<br>
+  Companion documents: The Forum Cycle &middot; REGISTRATION-ARCHITECTURE.md &middot; AC-SEM-REGISTRATION-PIPELINE.md
+</footer>
+
+</main>
+</div>
