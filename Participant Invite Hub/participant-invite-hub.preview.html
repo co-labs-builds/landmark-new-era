@@ -1,0 +1,1821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invite Your Guests to Your Graduation | The Landmark Forum</title>
+<link rel="stylesheet" href="https://use.typekit.net/gwi7lul.css">
+<style>
+/* Tuesday Graduation - every rule is scoped to .tg-page so nothing here
+   touches Ontraport's own page, and Ontraport's styles lose to these. */
+html { scroll-behavior: smooth; }
+
+/* Ontraport's page CSS restyles plain elements; these put back the browser
+   defaults the design was built on. First and low in specificity, so every
+   design rule below still wins. */
+.tg-page { font-size: 16px; }
+.tg-page b, .tg-page strong { font-weight: bolder; }
+.tg-page h1, .tg-page h2, .tg-page h3, .tg-page h4, .tg-page h5, .tg-page h6 { line-height: inherit; font-weight: bold; }
+.tg-page button, .tg-page input, .tg-page select, .tg-page textarea { line-height: normal; }
+.tg-page select.browser-default { height: auto; display: inline-block; }
+.tg-page nav { height: auto; line-height: inherit; color: inherit; background-color: transparent; box-shadow: none; }
+.tg-page nav ul li { float: none; padding: 0; }
+.tg-page nav a { color: inherit; }
+.tg-page nav ul a { display: inline; line-height: inherit; font-size: inherit; padding: 0; transition: none; }
+.tg-page nav ul a:hover { background-color: transparent; }
+.tg-page .modal-overlay { height: auto; width: auto; will-change: auto; }
+
+/* Messages that replace browser pop-ups */
+.tg-page .tg-error { display: none; margin: 12px 0 0; font-size: 14px; line-height: 1.5; color: var(--coral); text-align: center; }
+.tg-page .tg-error.is-on { display: block; }
+.tg-page #tgModalError { margin: 0 0 14px; }
+.tg-page .form-card.is-locked .tg-error { display: none; }
+
+@font-face {
+  font-family: 'Tiempos Headline';
+  src: url(https://res.cloudinary.com/mynd/raw/upload/v1789046316/TiemposHeadline-LightItalic_ctf3qk.woff2) format('woff2');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+.tg-page {
+  --primary: #0d2d31;
+  --green: #217a00;
+  --green-bright: #2ea203;
+  --coral: #f06449;
+  --coral-bright: #ff5f38;
+  --white: #ffffff;
+  --light-bg: #efede7;
+  --border: #e0e0e0;
+  --text: #2b2c33;
+  --gray: #757171;
+}
+
+.tg-page *,
+.tg-page *::before,
+.tg-page *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.tg-page { scroll-behavior: smooth; zoom: 0.95; }
+
+.tg-page {
+  font-family: objektiv-mk1, 'Helvetica Neue', Arial, sans-serif;
+  color: var(--text);
+  background: var(--white);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.tg-page .serif-it {
+  font-family: 'Tiempos Headline', Georgia, serif;
+  font-style: italic;
+  font-weight: 300;
+}
+
+.tg-page .eyebrow {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 3.5px;
+  text-transform: uppercase;
+  color: var(--green-bright);
+  margin-bottom: 16px;
+}
+.tg-page .hero .eyebrow { color: var(--coral-bright); font-size: 13.5px; }
+
+/* ===== NAV ===== */
+.tg-page .site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.tg-page .nav-logo img { height: 38px; width: auto; display: block; }
+.tg-page .nav-links {
+  display: flex;
+  gap: 32px;
+  list-style: none;
+}
+/* Ontraport's stylesheet puts a disc on every li, which beats the ul rule */
+.tg-page .nav-links li,
+.tg-page .next-steps li { list-style: none; }
+.tg-page .nav-links a {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--primary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.tg-page .nav-links a:hover { color: var(--green); }
+.tg-page .nav-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--green-bright);
+  color: var(--white);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-decoration: none;
+  line-height: 1;
+  /* uppercase has no descenders, so even padding reads top-heavy - the extra
+     top padding optically centres it (Kate, Sep 27) */
+  padding: 14px 22px 10px;
+  border-radius: 3px;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+.tg-page .nav-cta:hover { background: var(--white); color: var(--green-bright); box-shadow: inset 0 0 0 1px var(--green-bright); }
+
+/* ===== HERO ===== */
+.tg-page .hero {
+  position: relative;
+  min-height: 62vh;
+  display: flex;
+  align-items: flex-end;
+  background-image:
+    /* overlay lightened ~10 points across every stop (Kate, Sep 27) */
+    linear-gradient(to top, rgba(13,45,49,0.86) 0%, rgba(13,45,49,0.54) 42%, rgba(13,45,49,0.40) 70%, rgba(13,45,49,0.54) 100%),
+    url(https://res.cloudinary.com/mynd/image/upload/f_auto,q_auto/v1790592456/landmark/pages/tuesday-graduation/hero-graduates.jpg);
+  background-size: cover;
+  background-position: center 30%;
+}
+.tg-page .hero-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 90px 40px 70px;
+  text-align: center;
+  color: var(--white);
+}
+.tg-page .hero h1 {
+  font-size: clamp(30px, 4.8vw, 54px);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.5px;
+  max-width: 850px;
+  margin: 0 auto 22px;
+}
+.tg-page .hero h1 .serif-it { font-weight: 300; }
+.tg-page .hero-sub {
+  font-size: clamp(16px, 2vw, 19px);
+  line-height: 1.7;
+  max-width: 640px;
+  margin: 0 auto 34px;
+  opacity: 0.92;
+}
+.tg-page .hero-sub-2 {
+  font-size: clamp(15px, 1.8vw, 17.5px);
+  font-weight: 700;
+  margin-top: -18px;
+  opacity: 1;
+}
+.tg-page .hero-btn {
+  display: inline-block;
+  background: var(--green-bright);
+  color: var(--white);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-decoration: none;
+  padding: 21px 42px 15px;
+  border-radius: 3px;
+  transition: background 0.2s, transform 0.2s;
+}
+.tg-page .hero-btn:hover { background: var(--white); color: var(--green-bright); box-shadow: inset 0 0 0 1px var(--green-bright); transform: translateY(-2px); }
+
+/* ===== INVITE SECTION ===== */
+.tg-page .invite-section {
+  background: var(--white);
+  padding: 90px 40px;
+}
+.tg-page .invite-grid {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 60px;
+  align-items: start;
+}
+.tg-page .invite-intro h2 {
+  font-size: clamp(26px, 3.4vw, 38px);
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1.15;
+  margin-bottom: 18px;
+}
+.tg-page .invite-intro > p {
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--text);
+  margin-bottom: 14px;
+  max-width: 560px;
+}
+
+/* form card */
+.tg-page .form-card {
+  background: var(--light-bg);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  box-shadow: 0 8px 40px rgba(13,45,49,0.08);
+  padding: 40px 36px;
+}
+.tg-page .invite-intro { margin-bottom: 26px; }
+.tg-page .form-card label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin: 20px 0 7px;
+}
+.tg-page .form-card label:first-child { margin-top: 0; }
+.tg-page .form-card label.green-label { color: var(--green-bright); }
+.tg-page .form-card input,
+.tg-page .form-card select,
+.tg-page .form-card textarea {
+  width: 100%;
+  padding: 13px 15px;
+  font-size: 15px;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  background: var(--white);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.tg-page .form-card textarea {
+  /* the box grows with the message instead of scrolling (Kate, Sep 27) - the
+     JS below sets the height, so no inner scrollbar ever appears */
+  min-height: 180px;
+  height: auto;
+  overflow-y: hidden;
+  resize: vertical;
+  line-height: 1.6;
+}
+.tg-page .form-card select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23757171' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 18px;
+  padding-right: 42px;
+}
+.tg-page .form-card input:focus,
+.tg-page .form-card select:focus,
+.tg-page .form-card textarea:focus {
+  outline: none;
+  border-color: var(--green-bright);
+  box-shadow: 0 0 0 3px rgba(46,162,3,0.12);
+}
+.tg-page .field-note {
+  font-size: 13px;
+  color: var(--gray);
+  line-height: 1.6;
+  margin-top: 7px;
+}
+.tg-page .btn-send {
+  display: block;
+  width: 100%;
+  padding: 19px 17px 15px;
+  margin-top: 28px;
+  background: var(--green-bright);
+  color: var(--white);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.tg-page .btn-send:hover { background: var(--white); color: var(--green-bright); box-shadow: inset 0 0 0 1px var(--green-bright); }
+
+/* tips rail */
+.tg-page .side-rail { display: flex; flex-direction: column; gap: 24px; }
+.tg-page .event-card {
+  background: var(--light-bg);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  box-shadow: 0 8px 40px rgba(13,45,49,0.08);
+  padding: 28px 32px;
+  color: var(--text);
+}
+.tg-page .event-card .eyebrow { margin-bottom: 8px; }
+.tg-page .event-card h3 { font-size: 21px; font-weight: 700; color: var(--primary); margin-bottom: 14px; }
+.tg-page .event-row {
+  display: flex;
+  gap: 14px;
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 8px 0;
+  border-top: 1px solid rgba(13,45,49,0.1);
+}
+.tg-page .event-label {
+  flex: 0 0 110px;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--green-bright);
+  padding-top: 3px;
+}
+/* "Scholarships" needs a 110px label column; on phones that leaves the text too
+   narrow, so each label sits above its text instead. */
+@media (max-width: 480px) {
+  .tg-page .event-row { flex-direction: column; gap: 2px; }
+  .tg-page .event-label { flex-basis: auto; padding-top: 0; }
+}
+.tg-page .tips-card {
+  background: var(--light-bg);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  box-shadow: 0 8px 40px rgba(13,45,49,0.08);
+  padding: 36px 32px 22px;
+}
+.tg-page .tips-card h3 {
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 26px;
+}
+.tg-page .tip {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.tg-page .tip-num {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid var(--green-bright);
+  color: var(--green-bright);
+  font-size: 13px;
+  font-weight: 700;
+  /* centre the digit itself, not its line box - figures sit high in the em
+     box, so line-height centring leaves them riding the top (Kate, Sep 27) */
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* box-sizing is border-box, so this padding nudges the centred digit down
+     by half its value - measured, not guessed */
+  padding-top: 4px;
+  margin-top: -3px;
+}
+.tg-page .tip h4 {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--green-bright);
+  margin-bottom: 4px;
+}
+.tg-page .tip p {
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+/* ===== FAQ ===== */
+.tg-page .faq-section { background: var(--light-bg); padding: 90px 40px; }
+.tg-page .faq-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 60px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.tg-page .faq-left { flex: 0 0 300px; position: sticky; top: 110px; }
+.tg-page .faq-left .eyebrow { margin-left: 5px; margin-bottom: 10px; font-size: 11px; letter-spacing: 1.35px; white-space: nowrap; }
+.tg-page .faq-big {
+  font-family: objektiv-mk1, sans-serif;
+  font-size: 118px;
+  font-weight: 900;
+  color: var(--white);
+  line-height: 0.85;
+  margin-left: -7px;
+}
+.tg-page .faq-right { flex: 1 1 auto; }
+.tg-page .faq-item { border-bottom: 1px solid rgba(13,45,49,0.12); }
+.tg-page .faq-item:last-child { border-bottom: none; }
+.tg-page .faq-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary);
+  text-align: left;
+  transition: color 0.2s;
+}
+.tg-page .faq-trigger:hover { color: var(--green-bright); }
+.tg-page .faq-icon { flex: 0 0 auto; width: 20px; height: 20px; transition: transform 0.25s; }
+.tg-page .faq-icon svg { width: 100%; height: 100%; fill: none; stroke: var(--primary); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.tg-page .faq-trigger[aria-expanded="true"] { color: var(--green-bright); }
+.tg-page .faq-trigger[aria-expanded="true"] .faq-icon { transform: rotate(90deg); }
+.tg-page .faq-trigger[aria-expanded="true"] .faq-icon svg { stroke: var(--green-bright); }
+.tg-page .faq-panel { height: 0; overflow: hidden; transition: height 0.35s ease; }
+.tg-page .faq-panel-inner { padding: 0 40px 24px 0; font-size: 15px; color: var(--text); line-height: 1.7; }
+.tg-page .faq-example {
+  background: var(--white);
+  border-left: 3px solid var(--green-bright);
+  border-radius: 0 4px 4px 0;
+  padding: 16px 20px;
+  margin-top: 14px;
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+/* ===== CELEBRATION ===== */
+.tg-page .celebration {
+  position: relative;
+  background: var(--primary);
+  padding: 88px 40px 96px;
+  text-align: center;
+  color: var(--white);
+}
+.tg-page .celebration-inner {
+  position: relative;
+  z-index: 2;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.tg-page .celebration-intro {
+  font-size: clamp(19px, 2.6vw, 26px);
+  line-height: 1.55;
+  font-weight: 600;
+  margin-bottom: 44px;
+  color: var(--white);
+}
+.tg-page .that-line {
+  font-size: clamp(24px, 3.6vw, 40px);
+  font-weight: 700;
+  line-height: 1.35;
+  margin-bottom: 14px;
+}
+.tg-page .that-line .serif-it {
+  color: var(--green-bright);
+  font-weight: 300;
+  font-size: 1.06em;
+}
+.tg-page .celebration .hero-btn { margin-top: 46px; }
+.tg-page .celebration-closing {
+  font-size: clamp(12px, 1.35vw, 14px);
+  line-height: 1.75;
+  font-weight: 400;
+  color: rgba(255,255,255,0.72);
+  margin-top: 28px;
+  margin-bottom: 0;
+}
+
+/* scroll-in animation */
+.tg-page .anim {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.42s ease, transform 0.42s ease;
+}
+.tg-page .anim.in { opacity: 1; transform: translateY(0); }
+.tg-page .anim.d1 { transition-delay: 0.07s; }
+.tg-page .anim.d2 { transition-delay: 0.17s; }
+.tg-page .anim.d3 { transition-delay: 0.26s; }
+.tg-page .anim.d4 { transition-delay: 0.36s; }
+.tg-page .anim.d5 { transition-delay: 0.47s; }
+
+/* ===== MODAL ===== */
+.tg-page .modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(13,45,49,0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.tg-page .modal-overlay.open { display: flex; }
+.tg-page .modal-card {
+  position: relative;
+  background: var(--white);
+  border-radius: 6px;
+  max-width: 540px;
+  width: 100%;
+  padding: 44px 40px 36px;
+  text-align: center;
+  box-shadow: 0 24px 80px rgba(13,45,49,0.35);
+  max-height: 86vh;
+  overflow-y: auto;
+}
+.tg-page .modal-x {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--gray);
+  cursor: pointer;
+}
+.tg-page .modal-x:hover { color: var(--primary); }
+.tg-page .modal-title { font-size: 22px; font-weight: 700; color: var(--primary); margin-bottom: 10px; }
+.tg-page .modal-sub { font-size: 14.5px; color: var(--gray); line-height: 1.6; margin-bottom: 18px; }
+.tg-page .modal-msg {
+  background: var(--light-bg);
+  border-radius: 4px;
+  padding: 18px 20px;
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--text);
+  text-align: left;
+  margin-bottom: 24px;
+  white-space: pre-wrap;
+}
+.tg-page .modal-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.tg-page .btn-ghost {
+  padding: 14px 22px;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.tg-page .btn-ghost:hover { border-color: var(--primary); }
+.tg-page .btn-modal-send {
+  padding: 14px 26px;
+  background: var(--green-bright);
+  border: none;
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--white);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.tg-page .btn-modal-send:hover { background: var(--white); color: var(--green-bright); box-shadow: inset 0 0 0 1px var(--green-bright); }
+.tg-page .check-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--green-bright);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+  animation: checkPop 0.4s ease;
+}
+.tg-page .check-circle svg { width: 30px; height: 30px; fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+@keyframes checkPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  70% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ===== FOOTER ===== */
+.tg-page .site-footer {
+  background: var(--green-bright);
+  display: flex;
+  align-items: center;
+  padding: 20px 48px;
+  gap: 24px;
+}
+.tg-page .footer-logo-container { display: flex; align-items: center; flex-shrink: 0; }
+.tg-page .footer-logo-svg { height: 60px; width: auto; }
+.tg-page .footer-text { font-size: 13px; color: rgba(255,255,255,0.85); line-height: 1.65; text-align: left; }
+.tg-page .footer-text a { color: #fff; text-decoration: none; }
+.tg-page .footer-text a:hover { text-decoration: underline; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .tg-page .nav-links { display: none; }
+  .tg-page .invite-grid { grid-template-columns: 1fr; gap: 44px; }
+  .tg-page .faq-layout { flex-direction: column; gap: 28px; }
+  .tg-page .faq-left { position: static; flex: none; }
+  .tg-page .faq-big { font-size: 72px; }
+  .tg-page .hero { min-height: 58vh; }
+  .tg-page .hero-content { padding: 70px 24px 56px; }
+}
+@media (max-width: 600px) {
+  .tg-page .site-nav { padding: 12px 20px; }
+  .tg-page .invite-section,
+.tg-page .faq-section { padding: 64px 20px; }
+  .tg-page .celebration { padding: 64px 24px 72px; }
+  .tg-page .form-card { padding: 30px 22px; }
+  .tg-page .site-footer { flex-direction: column; text-align: center; padding: 24px 20px; gap: 12px; }
+  .tg-page .footer-text { text-align: center; }
+}
+
+
+/* Invite cutoff notice - no box, coral label (Kate, Sep 27) */
+.tg-page .cutoff {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  border: none;
+  background: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 0 0 22px;
+}
+.tg-page .cutoff .cutoff-mark {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--coral-bright);
+  white-space: nowrap;
+}
+.tg-page .cutoff p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--text);
+  text-wrap: pretty;
+}
+.tg-page .cutoff strong { color: var(--coral-bright); font-weight: 400; }
+.tg-page .cutoff-send { margin: 24px 0 20px; }
+/* Deadline as a quiet footnote under the CTA (Kate, Sep 27) - a warning band
+   above the button undercut the momentum right where it mattered. */
+.tg-page .deadline-note {
+  margin: 14px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--gray);
+  text-align: center;
+  text-wrap: pretty;
+}
+.tg-page .deadline-note strong { color: var(--primary); font-weight: 700; }
+@media (max-width: 600px) { .tg-page .cutoff { flex-direction: column; gap: 6px; } }
+
+/* Form lock - after the 4:30 cutoff, or when the page is opened without a
+   personal link, the fields step aside and one of the notices shows instead */
+.tg-page .form-lock { display: none; margin: 4px 0 0; }
+.tg-page .form-card.is-locked .form-lock.is-on { display: flex; }
+.tg-page .form-card.is-locked > label,
+.tg-page .form-card.is-locked > input,
+.tg-page .form-card.is-locked > select,
+.tg-page .form-card.is-locked > textarea,
+.tg-page .form-card.is-locked > .field-note,
+.tg-page .form-card.is-locked > .btn-send,
+.tg-page .form-card.is-locked > .deadline-note { display: none; }
+.tg-page .btn-modal-send:disabled { opacity: .6; cursor: default; }
+
+
+/* Orphan guard (Sep 9 2026) */
+@media (max-width: 600px) {
+  .tg-page .hero h1 br { display: none; }
+  .tg-page .hero h1,
+.tg-page .hero .eyebrow,
+.tg-page .intro-band h2 { text-wrap: balance; }
+  .tg-page .intro-band h2 br { display: none; }
+}
+
+.tg-page .hero-sub,
+.tg-page .intro-band p,
+.tg-page .celebration-closing,
+.tg-page .tip h4,
+.tg-page .faq-trigger span:first-child { text-wrap: balance; }
+.tg-page .tip p,
+.tg-page .faq-panel-inner,
+.tg-page .event-row span,
+.tg-page .card-note,
+.tg-page .modal-sub,
+.tg-page .field-note,
+.tg-page .invite-intro p { text-wrap: pretty; }
+/* text-wrap above also switches wrapping back on, which split labels like
+   SCHOLARSHIPS mid-word. Labels stay on one line and the column grows to fit. */
+.tg-page .event-row .event-label { white-space: nowrap; text-wrap: nowrap; flex: 0 0 auto; min-width: 110px; }
+@media (max-width: 600px) {
+  .tg-page .event-row { flex-direction: column; gap: 2px; }
+  .tg-page .event-row .event-label { min-width: 0; padding-top: 0; }
+}
+
+/* ===== YOUR GUESTS (after the invitation cutoff) ===== */
+.tg-page .guests-section[hidden], .tg-page [hidden] { display: none !important; }
+.tg-page .guests-section { background: var(--white); padding: 90px 40px; }
+.tg-page .guests-inner { max-width: 760px; margin: 0 auto; }
+.tg-page .guests-inner h2 {
+  font-size: clamp(28px, 3.6vw, 40px);
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1.15;
+  margin-bottom: 18px;
+}
+.tg-page .guests-inner h2 .serif-it { color: var(--green-bright); }
+.tg-page .guests-lead { font-size: 16px; line-height: 1.75; color: var(--text); margin-bottom: 26px; }
+.tg-page .guests-lead strong { font-weight: 700; color: var(--primary); }
+.tg-page .guests-sample {
+  background: var(--light-bg);
+  border-left: 3px solid var(--green-bright);
+  border-radius: 0 4px 4px 0;
+  padding: 18px 22px;
+  margin-bottom: 30px;
+}
+.tg-page .guests-sample-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--green-bright);
+  margin-bottom: 6px;
+}
+.tg-page .guests-sample p { font-size: 14.5px; line-height: 1.65; color: var(--primary); white-space: pre-line; margin: 0; }
+.tg-page .guests-list { display: flex; flex-direction: column; gap: 12px; }
+.tg-page .guest-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background: var(--light-bg);
+  border-radius: 4px;
+  box-shadow: 0 8px 40px rgba(13,45,49,0.06);
+  padding: 18px 22px;
+}
+.tg-page .guest-name { display: block; font-size: 17px; font-weight: 700; color: var(--primary); line-height: 1.3; }
+.tg-page .guest-date { display: block; font-size: 13px; color: var(--gray); margin-top: 3px; }
+.tg-page .btn-copy {
+  flex: 0 0 auto;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--green-bright);
+  background: var(--white);
+  border: none;
+  box-shadow: inset 0 0 0 1px var(--green-bright);
+  border-radius: 3px;
+  padding: 13px 18px 11px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.tg-page .btn-copy:hover, .tg-page .btn-copy.is-copied { background: var(--green-bright); color: var(--white); }
+.tg-page .guests-empty p { font-size: 16px; line-height: 1.75; color: var(--text); }
+.tg-page .guests-join { margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--border); }
+.tg-page .guests-join p { font-size: 14px; color: var(--gray); margin-bottom: 12px; }
+.tg-page .btn-join {
+  display: inline-block;
+  padding: 17px 30px 13px;
+  background: var(--green-bright);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: 3px;
+}
+.tg-page .btn-join:hover { background: var(--white); color: var(--green-bright); box-shadow: inset 0 0 0 1px var(--green-bright); }
+@media (max-width: 600px) {
+  .tg-page .guests-section { padding: 60px 20px; }
+  .tg-page .guest-row { flex-direction: column; align-items: stretch; }
+  .tg-page .btn-copy { width: 100%; }
+}
+/* the dynamic block's rows stay invisible until the script moves them in */
+.guest-row { display: none; }
+.object-record-block:has(.guest-row) { display: none !important; }
+.tg-page .guests-list .guest-row { display: flex; }
+.tg-page .guest-url { display: none; }
+.tg-page .guest-pending {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--gray);
+  padding: 13px 4px 11px;
+}
+@media (max-width: 600px) { .tg-page .guest-pending { text-align: center; } }
+.tg-copy-buffer { position: fixed; top: -1000px; left: 0; opacity: 0; }
+
+</style>
+
+</head>
+<body>
+<div class="tg-page">
+
+<!-- ===== NAV ===== -->
+<nav class="site-nav">
+  <a class="nav-logo" href="#top"><img src="https://res.cloudinary.com/mynd/image/upload/v1790592457/landmark/pages/tuesday-graduation/wordmark-green.png" alt="Landmark"></a>
+  <ul class="nav-links">
+    <li><a href="#invite">Invite Your Guests</a></li>
+    <li><a href="#faq">FAQ</a></li>
+    <li><a href="#why">Why Tuesday Matters</a></li>
+  </ul>
+  <a class="nav-cta" href="#invite">Invite a Guest</a>
+</nav>
+
+<!-- ===== HERO ===== -->
+<header class="hero" id="top">
+  <div class="hero-content hero-open">
+    <span class="eyebrow anim">Tuesday Night&ensp;&ensp;Your Graduation</span>
+    <h1 class="anim d1">Celebrate with the people <br>who <span class="serif-it">matter most.</span></h1>
+    <p class="hero-sub anim d2"><span id="gradGreeting">Cameron, </span>Tuesday night is your chance to celebrate your graduation with the people you care about &mdash; and acknowledge them for the difference they&rsquo;ve made in your life.</p>
+    <p class="hero-sub hero-sub-2 anim d2">For guests who have not yet attended the Forum, a limited number of donor-sponsored full scholarships will be available <span style="white-space:nowrap;">during the evening.</span></p>
+    <a class="hero-btn anim d3" href="#invite">Invite Your Guests</a>
+  </div>
+  <!-- shown instead of the content above once invitations close -->
+  <div class="hero-content hero-closed" hidden>
+    <span class="eyebrow">Invitations Closed</span>
+    <h1>Invitations are <br>now <span class="serif-it">closed.</span></h1>
+    <p class="hero-sub"><span class="tg-first-name">Cameron, </span>thank you for bringing the people who matter to you. Your guests are listed below &mdash; send each one their invitation so they have their personal Zoom link in hand for tonight.</p>
+    <a class="hero-btn" href="#guests">See Your Guests</a>
+  </div>
+</header>
+
+<!-- ===== INVITE ===== -->
+<section class="invite-section" id="invite">
+  <div class="invite-grid">
+    <div class="form-card">
+      <div class="invite-intro">
+        <span class="eyebrow">Get Started</span>
+        <h2>Invite your guests</h2>
+        <p><strong>Fill out the form below to invite your guests</strong>, and we&rsquo;ll make sure they receive the Zoom link, event details, and reminders leading up to the evening.</p>
+      </div>
+
+        <label for="fname">Your Guest's First Name</label>
+        <input class="browser-default" type="text" id="fname" placeholder="" autocomplete="off">
+
+        <label for="lname">Your Guest's Last Name</label>
+        <input class="browser-default" type="text" id="lname" placeholder="" autocomplete="off">
+
+        <label for="email">Your Guest's Email Address</label>
+        <input class="browser-default" type="email" id="email" placeholder="" autocomplete="off">
+
+        <label for="forum-exp" class="green-label">Has this person ever done The Landmark Forum?*</label>
+        <select class="browser-default" id="forum-exp">
+          <option value="" disabled selected>Select&hellip;</option>
+          <option value="no">No</option>
+          <option value="yes">Yes</option>
+        </select>
+
+        <label for="personal-msg" class="green-label">Edit Your Personal Message to Your Guest</label>
+        <textarea class="browser-default" id="personal-msg">Hi there! Thank you for joining me Tuesday for my Forum graduation! It&rsquo;s been a remarkable weekend, and I&rsquo;ve found myself thinking about you and the difference you&rsquo;ve made in my life. Tuesday evening, I get to acknowledge some of the people who&rsquo;ve made a difference for me &mdash; and you&rsquo;re definitely one of them. Having you there means a lot, and I&rsquo;m looking forward to celebrating with you. You&rsquo;ll find all the details below.</textarea>
+        <p class="field-note">This message will appear in the invitation email your guest receives. Please edit or personalize it however you&rsquo;d like.</p>
+
+
+        <button type="button" class="btn-send" data-tg="send">Send an Invitation</button>
+        <p class="tg-error" id="tgFormError" role="alert"></p>
+        <p class="deadline-note">Guest invitations close <strong>Tues, Oct 6th, 2026 @ <span class="tg-cutoff-show">4:30pm</span> Central</strong></p>
+
+        <div class="cutoff form-lock" id="lockClosed">
+          <span class="cutoff-mark">Invitations Closed</span>
+          <p>Guest invitations closed at <strong><span class="tg-cutoff-show">4:30pm</span> Central</strong> so we can send every Zoom link and set up the breakout rooms. Guests you&rsquo;ve already invited have everything they need &mdash; we look forward to celebrating with you tonight.</p>
+        </div>
+        <div class="cutoff form-lock" id="lockNoLink">
+          <span class="cutoff-mark">Personal Link Needed</span>
+          <p>This page works from the personal link in your graduation emails, so that everyone you invite joins you in your breakout room. <strong>Please open it from one of those emails</strong> to invite your guests.</p>
+        </div>
+    </div>
+
+    <aside class="side-rail">
+      <div class="event-card">
+        <span class="eyebrow">Event Details</span>
+        <h3>Your Forum Graduation Night</h3>
+        <div class="event-row"><span class="event-label">Date</span><span>Tues, Oct 6th, 2026</span></div>
+        <div class="event-row"><span class="event-label">Time</span><span>6:00pm &ndash; 8:00pm Central</span></div>
+        <div class="event-row"><span class="event-label">Where</span><span>On Zoom &mdash; each guest receives their own link by email</span></div>
+        <div class="event-row"><span class="event-label">Arrival</span><span>Please ask your guests to join at <span id="tgArrivalShow">5:45pm</span> Central, before the evening begins</span></div>
+        <div class="event-row"><span class="event-label">Scholarships</span><span>A limited number of donor-sponsored full scholarships to The Landmark Forum will be available to guests who have not yet attended the Forum</span></div>
+      </div>
+      <div class="tips-card">
+      <span class="eyebrow">How to Invite</span>
+      <h3>Three tips before you hit send</h3>
+      <div class="tip">
+        <div class="tip-num">1</div>
+        <div>
+          <h4>Celebrate Together</h4>
+          <p>Let them know Tuesday night is a celebration of your accomplishments and a chance to acknowledge the people who matter most &mdash; and that you&rsquo;d really love them there.</p>
+        </div>
+      </div>
+      <div class="tip">
+        <div class="tip-num">2</div>
+        <div>
+          <h4>Keep It Simple</h4>
+          <p>You don&rsquo;t need to explain what The Forum is. Simply share that it made a difference for you and that you think it could make a difference for them too.</p>
+        </div>
+      </div>
+      <div class="tip">
+        <div class="tip-num">3</div>
+        <div>
+          <h4>Let Them Be Inspired</h4>
+          <p>Just invite them and let them experience the inspiration of Tuesday evening for themselves.</p>
+        </div>
+      </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ===== YOUR GUESTS (shown after the invitation cutoff) ===== -->
+<section class="guests-section" id="guests" hidden>
+  <div class="guests-inner">
+    <span class="eyebrow">Your Guests</span>
+    <h2>Everyone you <span class="serif-it">invited.</span></h2>
+    <p class="guests-lead">Tap <strong>Copy Invitation</strong> next to a name to copy a ready-to-send message with their personal Zoom link, then paste it into a text or email to them.</p>
+
+    <div class="guests-sample">
+      <span class="guests-sample-label">What gets copied</span>
+      <p id="tgSampleMessage"></p>
+    </div>
+
+    <div class="guests-list" id="tgGuestList"></div>
+
+    <div class="guests-empty" id="tgGuestEmpty" hidden>
+      <p>You didn&rsquo;t invite any guests this time, and that&rsquo;s perfectly fine. We look forward to celebrating with you tonight.</p>
+    </div>
+
+    <div class="guests-join" id="tgJoinWrap" hidden>
+      <p>Your own join link for tonight:</p>
+      <a class="btn-join" id="tgJoinLink" href="#guests" target="_blank" rel="noopener">Join the Graduation &rarr;</a>
+    </div>
+  </div>
+
+  <!-- Merged by Ontraport from this Registration; read by the footer script.
+       Text only (merge fields do not resolve inside attributes). -->
+  <div hidden>
+    <span id="tgStartTime">6:00pm</span>
+    <span id="tgGradDate">Tues, Oct 6th, 2026</span>
+    <span id="tgCutoff">4:30pm</span>
+    <span id="tgTimeZone">Central</span>
+    <span id="tgJoinUrl">https://us06web.zoom.us/w/96815535595?tk=PARTICIPANT</span>
+  </div>
+</section>
+
+<!-- ===== FAQ ===== -->
+<section class="faq-section" id="faq">
+  <div class="faq-layout">
+    <div class="faq-left">
+      <span class="eyebrow">Frequently Asked Questions</span>
+      <div class="faq-big">FAQ</div>
+    </div>
+    <div class="faq-right">
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>How do I invite someone who hasn&rsquo;t done The Landmark Forum?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">Keep it personal and simple &mdash; share what the weekend has meant to you, tell them why they matter to you, and let them know it&rsquo;s easy to join on Zoom. You don&rsquo;t need to explain what The Forum is. Here&rsquo;s an example:
+            <div class="faq-example">Hi [Name]! I&rsquo;ve been thinking about you a lot this weekend and how much I appreciate who you are in my life. I&rsquo;ve been doing this powerful program that has totally upleveled my leadership and has been rocket fuel for my life &mdash; a lot of things you&rsquo;ve always encouraged in me. This Tuesday is my graduation, where I get to appreciate and acknowledge important people in my life &ndash; which you SO are. It&rsquo;s on Zoom, so it&rsquo;s easy to join if it works for you. You&rsquo;ve made such an impact on me and I&rsquo;m so grateful for you. It would mean a lot to have you there.</div></div></div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>How do I invite someone who&rsquo;s already a Landmark graduate?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">When you&rsquo;re inviting people who have already done The Landmark Forum, it&rsquo;s important to share with them that Tuesday night is different. Graduate guests are welcome at your graduation, and most graduates don&rsquo;t know that yet. Let them know this evening starts at 6:00pm Central, not 7:00 PM, and runs until about 8:30 PM. It&rsquo;s your graduation night, and they&rsquo;re invited. Here&rsquo;s an example message:
+            <div class="faq-example">Hi [Name]! I&rsquo;ve been thinking about you a lot this weekend. As I&rsquo;ve gone through The Landmark Forum, I can&rsquo;t help but feel so grateful for you encouraging me to take on this program. You&rsquo;ve had such an impact on my life in ways you probably don&rsquo;t even realize, and so much of this experience has connected back to you. On Tuesday I&rsquo;ll be having my graduation, where I get to appreciate and acknowledge the important people in my life &mdash; and I would love to have you there. Graduate guests are invited to this evening, and it starts at 6:00pm Central instead of 7:00 PM &mdash; it&rsquo;s on Zoom, so it&rsquo;s easy to join. I appreciate you for who you are in my life, and it would mean a lot to have you there.</div></div></div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>Do I need to send an invitation to guests joining me in person?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">Yes &mdash; please send a separate invitation for each guest, even if they&rsquo;ll be attending from the same location as you or sharing a screen together somewhere else. Every guest receives their own welcome and details, and knowing exactly who&rsquo;s coming lets us place everyone in a breakout with you.</div></div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>Is there a limit to how many people I can invite to my graduation?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">There is no limit &mdash; invite as many people as you&rsquo;d like. The more people who attend your graduation, the more powerful the evening. There&rsquo;s something special about having people from every part of your life there together &mdash; celebrating you, hearing what they mean to you, and experiencing the inspiration of the evening for themselves. Fill out the form once for each guest so everyone gets their own invitation and details.</div></div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>How do guests join the graduation on Tuesday?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">Once you send an invitation through the form above, we make sure your guest receives the Zoom link, event details, and reminders leading up to the evening. To join, all they have to do is click the personalized Zoom link emailed to them.</div></div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>Is Tuesday night a sales or registration event?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">No. Tuesday night is a graduation &mdash; an evening of celebration, acknowledgment and inspiration. Nobody is pitched. Your guests will have the opportunity to get a glimpse of The Forum and choose for themselves whether it&rsquo;s something they&rsquo;d like to do. At the end of the evening, a limited number of donor-sponsored full scholarships to The Landmark Forum are made available to guests who have never done the Forum.</div></div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>Is there a scholarship available for my guests?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">Yes. A limited number of donor-sponsored full scholarships to The Landmark Forum will be made available to guests who join us that evening. There&rsquo;s no pitch &mdash; they&rsquo;ll get a glimpse of The Forum and choose for themselves whether it&rsquo;s something they&rsquo;d like to do.</div></div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>Will I be with my guests during the evening?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">Yes. Everyone you invite is placed in a breakout with you, so you experience the evening together.</div></div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>How do I know who I&rsquo;ve invited to Tuesday evening?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">Each time you invite someone, you&rsquo;ll get a confirmation email with their name and their personalized Zoom link. You&rsquo;ll also receive an email Tuesday evening around <strong>5:00 PM Central</strong> with each of your guests&rsquo; join links, in case anyone is unable to find their confirmation email.</div></div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>What if my guests can only attend part of the evening?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">We recommend encouraging your guests to be there for the whole evening &mdash; but they&rsquo;re completely welcome to join for whatever part works for them.<br><br>Please note the scholarship opportunity will be made available at the end of the night.</div></div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>How late can I invite my guests to join me?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">Guest invitations close <strong>Tues, Oct 6th, 2026 @ <span class="tg-cutoff-show">4:30pm</span> Central</strong>. We use the time before the evening to set up the breakout rooms and make sure everyone has what they need before we start. Sending invitations earlier is better &mdash; it gives your guests time to plan the evening.</div></div>
+        </div>
+        </div>
+  </div>
+</section>
+
+<!-- ===== MORE THAN A CELEBRATION ===== -->
+<section class="celebration" id="why">
+  <div class="celebration-inner">
+    <span class="eyebrow anim">More Than a Celebration</span>
+    <p class="celebration-intro anim d1">At a time when many people feel<br><span class="serif-it">overwhelmed or disconnected,</span><br>Tuesday is a reminder &mdash;</p>
+    <p class="that-line anim d2">That transformation is <span class="serif-it">possible.</span></p>
+    <p class="that-line anim d3">That life is theirs to <span class="serif-it">create.</span></p>
+    <p class="that-line anim d4">That who they are <span class="serif-it">makes a difference.</span></p>
+    <a class="hero-btn anim d5" href="#invite">Invite Your Guests</a>
+    <p class="celebration-closing anim d5">Bring the people you care about. Pack the house.<br>You never know whose life could shift in one evening.</p>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="site-footer">
+  <div class="footer-logo-container">
+    <img class="footer-logo-svg" src="https://res.cloudinary.com/mynd/image/upload/v1785948239/lm-d1a-footer-logo_y9es88.png" alt="Landmark">
+  </div>
+  <div class="footer-text">
+    Copyright &copy; 2026. Landmark Worldwide, All Rights Reserved<br>
+    <a href="mailto:info@landmarkworldwide.com">info@landmarkworldwide.com</a> &middot; <a href="tel:+18008889590">+1 (800) 888-9590</a> &middot; <a href="#">Terms, Privacy, &amp; Disclaimers</a>
+  </div>
+</footer>
+</div>
+
+<!-- The modal is moved to <body> by the footer script so no Ontraport
+     container can clip it; it keeps .tg-page so its styles still apply. -->
+<div class="tg-page tg-portal">
+<!-- ===== INVITE MODAL ===== -->
+<div class="modal-overlay" id="inviteModal">
+  <div class="modal-card">
+    <button type="button" class="modal-x" data-tg="close" aria-label="Close">&times;</button>
+    <div id="modalPreview">
+      <span class="eyebrow">Ready to Send</span>
+      <h3 class="modal-title">You&rsquo;re inviting <span id="mGuestName">your guest</span></h3>
+      <p class="modal-sub">Here&rsquo;s your personal message as it will appear in their invitation email:</p>
+      <div class="modal-msg" id="mMsgPreview"></div>
+      <p class="tg-error" id="tgModalError" role="alert"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" data-tg="close">Back to Edit</button>
+        <button type="button" id="modalSendBtn" class="btn-modal-send" data-tg="confirm">Looks Good &rarr; Send</button>
+      </div>
+    </div>
+    <div id="modalSuccess" style="display:none;">
+      <div class="check-circle"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <h3 class="modal-title">You&rsquo;ve invited <span id="mGuestName2">your guest</span>!</h3>
+      <p class="modal-sub">We&rsquo;ll send their invitation with the Zoom link and all the details &mdash; and keep them posted leading up to Tuesday.</p>
+      <button type="button" class="btn-modal-send" data-tg="close">Invite Another</button>
+    </div>
+  </div>
+</div>
+</div>
+<div id="simDyn"><div class="opt-row object-record-block"><div class="opt-custom-html"><div class="guest-row"><div><span class="guest-name">[Block//Guest//First Name] [Block//Guest//Last Name]</span><span class="guest-date">Invited [Block//Date Invited %M j%+0]</span></div><span class="guest-url">[Block//(Invited) Guest Zoom URL]</span></div></div></div></div><script>
+setTimeout(function(){var d=[["Jeremy","Test","Oct 1",""],["Randall","Cunningham","Oct 1","https://landmarkworldwide.zoom.us/w/96815535595?tk=A"],["Tracy","Cutter","Oct 1","https://landmarkworldwide.zoom.us/w/96815535595?tk=B"]];
+var host=document.getElementById('simDyn'),t=host.firstChild;d.forEach(function(r){var c=t.cloneNode(true);c.querySelector('.guest-name').textContent=r[0]+' '+r[1];c.querySelector('.guest-date').textContent='Invited '+r[2];c.querySelector('.guest-url').textContent=r[3];host.appendChild(c)});t.parentNode.removeChild(t);},1500);
+</script>
+<script>
+(function () {
+  /* Everything is scoped to the design wrapper. The design sits inside an
+     Ontraport form block (the same build as /impact): the visitor types into
+     the design's inputs, which have no name and are never posted, and on send
+     the values are copied into Ontraport's own hidden fields and Ontraport's
+     own submit button is clicked. Ontraport then validates, adds its spam
+     check and posts exactly as it would for any form it built. */
+  var ROOT = document.querySelector('.tg-page:not(.tg-portal)');
+  if (!ROOT) return;
+  var FORM = ROOT.closest('form');          // null when previewing the file on its own
+  var PORTAL = document.querySelector('.tg-portal');
+  // Look up IDs only inside our own design and modal - an old custom HTML
+  // element left on the page can reuse the same IDs (it did: #inviteModal).
+  var byId = function (id) {
+    var sel = '#' + id;
+    return ROOT.querySelector(sel) || (PORTAL && PORTAL.querySelector(sel));
+  };
+
+// Previewing the file on its own (a local file or localhost) is the only
+  // place the page may show success without an Ontraport form behind it.
+  function isLocalPreview() {
+    return /^(file:|https?:\/\/(localhost|127\.0\.0\.1)[:/])/.test(document.URL);
+  }
+
+  /* ---- messages, shown in the design rather than a browser pop-up ---- */
+  function say(id, msg) {
+    var el = byId(id);
+    if (!el) return;
+    el.textContent = msg || '';
+    el.classList.toggle('is-on', !!msg);
+  }
+
+  /* ---- settings ---- */
+  var TG = {
+    // Invitations close at the event's own Invitation Cutoff Time on its
+    // graduation date, in its time zone (all merged into the page). With no
+    // cutoff time set they close at the graduation start time. This is only
+    // the fallback for a page whose date or time zone cannot be read.
+    closesAt: '2026-10-06T16:30:00-05:00',
+    // The Ontraport field name ('f1234' ...) behind each design input. Each of
+    // these fields must be in the form block - the page hides them.
+    fields: {
+      firstName: 'f2259//firstname',  // Guest contact - first name
+      lastName: 'f2259//lastname',    // Guest contact - last name
+      email: 'f2259//email',          // Guest contact - email (creates or matches the contact)
+      doneForum: 'f2337',             // Is guest a grad of The Landmark Forum? (Yes / No / I'm not sure)
+      message: 'f2581'                // Personal Message to Guest
+    },
+    // This page is a dynamic template on the participant's own Registration
+    // (/invite/ plus its Unique ID). These HIDDEN fields in the Ontraport form block
+    // carry the links, merged from that record - the script never touches them:
+    //   f2260//unique_id = this Registration's Unique ID   Participant's Registration
+    //   f2257//email     = this Registration's Contact email  Participant (the inviter)
+    //   f2258//unique_id = this Registration's Event Unique ID  Event
+    // The form won't send if either unique-ID link is missing.
+    linkFields: ['f2260//unique_id', 'f2258//unique_id'],
+    // Fields that are in the form block but always get a fixed value. The
+    // submit button's hidden-field list doesn't offer dropdowns, so these sit
+    // below the HTML block as normal fields; the page hides them and sets them
+    // here.
+    //   f2694 Invitation Type = 260 (LF: Tues. Grad) - what participant invites have always used
+    //   f3406 Guest Type      = 511 (Participant Guest) - routes the guest to Zoom line 1
+    fixedFields: { 'f2694': '260', 'f3406': '511' },
+    // What the design's Yes / No mean in the "done The Forum" field - the
+    // dropdown option labels (or codes). If it's the same field as
+    // registration (f2881), use 'Graduate' / 'Non-Graduate'.
+    forumAnswers: { yes: 'Yes', no: 'No' },
+    // Set the form's "after submit" redirect in Ontraport to this page's own
+    // address plus ?sent=1 - the page then shows its "You've invited" message.
+    // If the form's after-submit setting jumps to this page's #inviteModal instead
+    // (the old page's setting), that counts as success too.
+    successHash: 'inviteModal',
+    formAnchor: 'invite',
+    returnParam: 'sent'
+  };
+
+  /* ---- storage (a private window can refuse it, so every use is guarded) ---- */
+  function store(key, value) {
+    try {
+      if (value === null) sessionStorage.removeItem(key);
+      else sessionStorage.setItem(key, value);
+    } catch (e) {}
+  }
+  function recall(key) {
+    try { return sessionStorage.getItem(key) || ''; } catch (e) { return ''; }
+  }
+
+  // Read a query parameter from the page address (the same way /impact does).
+  function param(key) {
+    var m = document.URL.match(new RegExp('[?&]' + key + '=([^&#]*)'));
+    if (!m) return '';
+    try { return decodeURIComponent(m[1].replace(/\+/g, ' ')).trim(); } catch (e) { return ''; }
+  }
+
+  // Hero greeting: the template merges the participant's first name from
+  // their Registration's Contact. If it didn't resolve, the greeting drops out and the
+  // sentence starts at "Tuesday night".
+  (function () {
+    var els = [byId('gradGreeting')].concat([].slice.call(ROOT.querySelectorAll('.tg-first-name')));
+    els.forEach(function (el) {
+      if (!el) return;
+      var resolved = el.textContent.replace(/,\s*$/, '').trim();
+      if (!resolved || resolved.indexOf('[') !== -1) el.parentNode.removeChild(el);
+    });
+  })();
+
+  /* ---- Ontraport fields ---- */
+  function opField(name) {
+    if (!FORM || !name) return null;
+    var els = FORM.querySelectorAll('[name="' + name + '"]');
+    for (var i = 0; i < els.length; i++) { if (!ROOT.contains(els[i])) return els[i]; }
+    return null;
+  }
+  function opWrap(el) {
+    return el ? (el.closest('[opt-type="input-v3"]') || el.closest('.opt-element') || el) : null;
+  }
+  // Returns false when a value can't be placed - a dropdown with no matching
+  // option - so the page can stop rather than let Ontraport reject the form.
+  function setOp(name, value) {
+    var f = opField(name);
+    if (!f) return false;
+    if (f.type === 'checkbox') {
+      f.checked = !!value && value !== 'no';
+      return true;
+    }
+    if (f.tagName === 'SELECT' && value) {
+      // Ontraport dropdowns store codes; match on the code or the visible label.
+      var want = String(value).toLowerCase(), hit = '';
+      for (var i = 0; i < f.options.length; i++) {
+        var o = f.options[i];
+        if (o.value.toLowerCase() === want || o.text.trim().toLowerCase() === want) { hit = o.value; break; }
+      }
+      if (!hit) return false;
+      value = hit;
+    }
+    f.value = value;
+    return true;
+  }
+  // Each Ontraport element sits in its own row; hide the row, not just the
+  // element, or the empty rows leave gaps.
+  function hideRow(el) {
+    if (!el) return;
+    var row = el.closest('.sub-row');
+    (row && !row.contains(ROOT) ? row : el).style.display = 'none';
+  }
+
+  var NATIVE_SUBMIT = FORM && FORM.querySelector('[opt-type="submit-button-v3"]');
+  var missing = [];
+  if (FORM) {
+    Object.keys(TG.fields).forEach(function (k) {
+      var f = opField(TG.fields[k]);
+      if (f) hideRow(opWrap(f)); else missing.push(k);
+    });
+    Object.keys(TG.fixedFields).forEach(function (name) {
+      var f = opField(name);
+      if (f) hideRow(opWrap(f)); else missing.push(name);
+    });
+    if (NATIVE_SUBMIT) hideRow(opWrap(NATIVE_SUBMIT)); else missing.push('submit button');
+  }
+
+  /* ---- match on the typed email, never the browser cookie ----
+     Ontraport copies the browser's contact_id cookie into the form, and the
+     form processor then updates THAT contact whatever email was typed. Here
+     the visitor is usually the participant, arriving from their own email,
+     typing in someone else - so without this every guest would be written onto
+     the participant. The name is removed (not just blanked) so Ontraport's own script,
+     which refills fields by name, can't put the cookie back. (From /impact.) */
+  function dropCookieIdentity() {
+    if (!FORM) return;
+    ['contact_id', 'visiting_contact_id', 'unique_id'].forEach(function (n) {
+      FORM.querySelectorAll('[name="' + n + '"]').forEach(function (f) {
+        if (ROOT.contains(f)) return;
+        f.value = '';
+        f.removeAttribute('name');
+        f.setAttribute('data-tg-dropped', n);
+      });
+    });
+  }
+  dropCookieIdentity();
+
+  /* ---- the modal lives on <body>, so no Ontraport container can clip it ---- */
+  if (PORTAL) document.querySelector('body').appendChild(PORTAL);
+
+  /* ---- the personal message ---- */
+  // The guest-first-name token is assembled here rather than written into the
+  // HTML, so Ontraport can never resolve it server side - the markup carries a
+  // neutral placeholder and the bracketed token only ever exists in the browser.
+  var GUEST_TOKEN = '[' + 'Guest First Name' + ']';
+  var MSG_BOX = byId('personal-msg');
+  // The markup opens with a plain 'Hi there!' so the Ontraport editor shows
+  // readable text; the page swaps in the name token that follows the guest's
+  // first name as it is typed. (Older markup used a {{GUEST_FIRST_NAME}} slot.)
+  MSG_BOX.value = MSG_BOX.value.replace('{{GUEST_FIRST_NAME}}', GUEST_TOKEN).replace(/^Hi there!/, 'Hi ' + GUEST_TOKEN + '!');
+  var DEFAULT_MSG = MSG_BOX.value;
+
+  // Grow the message box to fit its content rather than scrolling inside it.
+  function autoGrow(el) {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = (el.scrollHeight + 2) + 'px';
+  }
+  MSG_BOX.addEventListener('input', function () { autoGrow(this); });
+  window.addEventListener('load', function () { autoGrow(MSG_BOX); });
+  window.addEventListener('resize', function () { autoGrow(MSG_BOX); });
+  // the brand font loads after first paint and reflows the text, so measure
+  // again once it is ready, and again for a late webfont
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () { autoGrow(MSG_BOX); });
+  }
+  [150, 600, 1500].forEach(function (t) { setTimeout(function () { autoGrow(MSG_BOX); }, t); });
+  autoGrow(MSG_BOX);
+
+  // Live guest-name substitution (Kate, Sep 27 2026). As the participant types
+  // their guest's first name it replaces the token in the greeting, and the
+  // token comes back if they clear the field. Only ever the FIRST LINE, and
+  // only while it is still exactly the greeting we last wrote - replacing the
+  // name everywhere mangled the body when a one-letter name was cleared.
+  //
+  // The message carries no sign-off: the guest's invitation email adds the
+  // sender's name itself, so no token can resolve to the guest's name.
+  function greetingFor(name) { return 'Hi ' + (name || GUEST_TOKEN) + '!'; }
+  var lastGreeting = greetingFor('');
+  var greetingIsOurs = true;
+
+  byId('fname').addEventListener('input', function () {
+    var next = greetingFor(this.value.trim());
+    if (next === lastGreeting) return;
+    var box = MSG_BOX;
+    if (greetingIsOurs && box.value.indexOf(lastGreeting) === 0) {
+      var start = box.selectionStart, end = box.selectionEnd;
+      var delta = next.length - lastGreeting.length;
+      box.value = next + box.value.slice(lastGreeting.length);
+      if (document.activeElement === box) {
+        box.setSelectionRange(Math.max(0, start + delta), Math.max(0, end + delta));
+      }
+      autoGrow(box);
+    } else {
+      // they rewrote the greeting themselves - leave the message alone from here
+      greetingIsOurs = false;
+    }
+    lastGreeting = next;
+  });
+
+  // The message exactly as it will be saved. Any token still in it becomes the
+  // guest's name, so no bracketed text is ever mailed.
+  function finalMessage(fname) {
+    return MSG_BOX.value.trim().split(GUEST_TOKEN).join(fname);
+  }
+
+  /* ---- cutoff and personal-link lock ----
+     After the cutoff - or on a page opened without a personal link - the
+     fields give way to a notice. Checked on load, every 30 seconds for a tab
+     left open, and again at every send. */
+  var ZONES = { eastern: 'America/New_York', central: 'America/Chicago', mountain: 'America/Denver',
+    arizona: 'America/Phoenix', pacific: 'America/Los_Angeles', alaska: 'America/Anchorage', hawaii: 'Pacific/Honolulu' };
+  var MONTHS = 'janfebmaraprmayjunjulaugsepoctnovdec';
+  function parseClock(text) {
+    var m = String(text).match(/(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m/i);
+    if (!m) return null;
+    return ((Number(m[1]) % 12) + (m[3].toLowerCase() === 'p' ? 12 : 0)) * 60 + Number(m[2] || 0);
+  }
+  function eventCutoff() {
+    var d = readMerged('tgGradDate').match(/([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})/);
+    var mins = parseClock(readMerged('tgCutoff'));
+    if (mins === null) mins = parseClock(readMerged('tgStartTime'));
+    var tzName = readMerged('tgTimeZone').toLowerCase(), zone = '';
+    Object.keys(ZONES).forEach(function (k) { if (tzName.indexOf(k) !== -1) zone = ZONES[k]; });
+    if (!d || mins === null || !zone) return NaN;
+    var mo = MONTHS.indexOf(d[1].toLowerCase()) / 3;
+    if (mo < 0 || mo % 1) return NaN;
+    var wall = Date.UTC(Number(d[3]), mo, Number(d[2]), Math.floor(mins / 60), mins % 60);
+    try {
+      // what the zone's clock reads at that instant, to find its UTC offset
+      var parts = {};
+      new Intl.DateTimeFormat('en-US', { timeZone: zone, hourCycle: 'h23', year: 'numeric', month: 'numeric',
+        day: 'numeric', hour: 'numeric', minute: 'numeric' }).formatToParts(new Date(wall))
+        .forEach(function (p) { parts[p.type] = Number(p.value); });
+      var seen = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour % 24, parts.minute);
+      return wall - (seen - wall);
+    } catch (e) { return NaN; }
+  }
+  var CUTOFF = null;
+  function cutoffAt() {
+    if (CUTOFF === null) {
+      CUTOFF = eventCutoff();
+      if (isNaN(CUTOFF)) CUTOFF = TG.closesAt ? Date.parse(TG.closesAt) : NaN;
+    }
+    return CUTOFF;
+  }
+  function isClosed() {
+    var t = cutoffAt();
+    return !isNaN(t) && Date.now() >= t;
+  }
+  // Every guest sent from here must link back to the participant's
+  // Registration. If the template's hidden link fields didn't merge, lock.
+  // Both link fields must hold a real Ontraport unique ID (like 907U7PV) - not
+  // blank, not an unmerged token, and not a merge-field label or a stray value.
+  function linkMissing() {
+    if (!FORM) return false;
+    return TG.linkFields.some(function (name) {
+      var f = opField(name);
+      return !f || !/^[A-Za-z0-9]{5,12}$/.test(String(f.value || '').trim());
+    });
+  }
+
+  /* ---- after the cutoff: the invite form gives way to the participant's guests ----
+     The guests come from an Ontraport dynamic block listing this Registration's
+     Invitations. Each item is a .guest-row holding .guest-name, .guest-date and a
+     hidden .guest-url (merges only resolve in text, so the link sits in a span).
+     The rows are moved into #tgGuestList; rows whose link has not been
+     provisioned yet are dropped, and each kept row gets a Copy Invitation button.
+     ?preview=closed shows this state before the cutoff, for testing. */
+  function readMerged(id) {
+    var el = byId(id);
+    var v = el ? String(el.textContent || '').trim() : '';
+    return (!v || v.charAt(0) === '[') ? '' : v;   // blank, or the token did not merge
+  }
+  function arrivalTime(start) {
+    var m = String(start).match(/(\d{1,2}):(\d{2})\s*([ap])\.?m/i);
+    if (!m) return '';
+    var mins = ((Number(m[1]) % 12) + (m[3].toLowerCase() === 'p' ? 12 : 0)) * 60 + Number(m[2]) - 15;
+    var h = Math.floor(mins / 60), mm = mins % 60, ap = h >= 12 ? 'pm' : 'am';
+    h = h % 12 || 12;
+    return h + ':' + (mm < 10 ? '0' : '') + mm + ap;
+  }
+  // Written in the participant's voice, since they paste it to their guest.
+  function inviteMessage(url) {
+    var start = readMerged('tgStartTime'), tz = readMerged('tgTimeZone');
+    var arrive = arrivalTime(start);
+    var nl = String.fromCharCode(10);
+    var msg = "Here's your personal link for my Landmark Forum graduation celebration tonight" +
+      (start ? ' at ' + start + (tz ? ' ' + tz : '') : '') + '. ' +
+      (arrive ? 'Please join by ' + arrive + (tz ? ' ' + tz : '') + ' so we have a few minutes together before it begins. ' : '') +
+      'See you there!';
+    return msg + nl + nl + url;
+  }
+  // Ontraport loads the dynamic block's records after the page, filling a copy
+  // of the item template per Invitation. The source rows are only read, never
+  // moved or removed, or Ontraport has nothing left to fill.
+  function readGuests() {
+    var list = [], seen = {};
+    var txt = function (row, sel) { var el = row.querySelector(sel); return el ? String(el.textContent || '').trim() : ''; };
+    document.querySelectorAll('.guest-row').forEach(function (row) {
+      if (byId('tgGuestList').contains(row)) return;
+      var name = txt(row, '.guest-name'), date = txt(row, '.guest-date'), u = txt(row, '.guest-url');
+      if (!name || name.indexOf('[') !== -1) return;   // the unfilled template
+      if (u.indexOf('[') !== -1 || !/^https?:\/\//.test(u)) return;   // no Zoom link yet: not listed
+      var key = name + '|' + date + '|' + u;
+      if (seen[key]) return;
+      seen[key] = 1;
+      list.push({ name: name, date: date.indexOf('[') !== -1 ? '' : date, u: u });
+    });
+    return list;
+  }
+  function copyText(text, done) {
+    var fallback = function () {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.className = 'tg-copy-buffer';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      done(ok);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(function () { done(true); }, fallback);
+    } else {
+      fallback();
+    }
+  }
+  var GUESTS_SIG = null, LOAD_WAIT_OVER = false;
+  setTimeout(function () { LOAD_WAIT_OVER = true; if (GUESTS_SIG !== null) { GUESTS_SIG = null; buildGuests(); } }, 6000);
+  function buildGuests() {
+    var list = readGuests();
+    var sig = JSON.stringify(list);
+    if (sig === GUESTS_SIG) return;
+    GUESTS_SIG = sig;
+    var wrap = byId('tgGuestList');
+    while (wrap.firstChild) wrap.removeChild(wrap.firstChild);
+    byId('tgSampleMessage').textContent = inviteMessage('(their personal Zoom link)');
+    // the empty message waits until the records have had time to load
+    var none = !list.length;
+    byId('tgGuestEmpty').hidden = !(none && LOAD_WAIT_OVER);
+    ROOT.querySelector('.guests-sample').hidden = none;
+    ROOT.querySelector('.guests-lead').hidden = none;
+    list.forEach(function (g) {
+      var row = document.createElement('div');
+      row.className = 'guest-row';
+      var who = document.createElement('div');
+      var nm = document.createElement('span');
+      nm.className = 'guest-name';
+      nm.textContent = g.name;
+      var dt = document.createElement('span');
+      dt.className = 'guest-date';
+      dt.textContent = g.date;
+      who.appendChild(nm);
+      who.appendChild(dt);
+      row.appendChild(who);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-copy';
+      btn.textContent = 'Copy Invitation';
+      btn.setAttribute('aria-label', 'Copy the invitation message for ' + g.name);
+      btn.addEventListener('click', function () {
+        copyText(inviteMessage(g.u), function (ok) {
+          btn.textContent = ok ? 'Copied' : 'Copy failed - try again';
+          btn.classList.toggle('is-copied', ok);
+          setTimeout(function () { btn.textContent = 'Copy Invitation'; btn.classList.remove('is-copied'); }, 2500);
+        });
+      });
+      row.appendChild(btn);
+      wrap.appendChild(row);
+    });
+    var join = readMerged('tgJoinUrl');
+    if (/^https?:\/\//.test(join)) {
+      byId('tgJoinLink').setAttribute('href', join);
+      byId('tgJoinWrap').hidden = false;
+    }
+  }
+  // rebuild whenever Ontraport fills in (or pages) the dynamic block
+  var GUEST_TIMER = null;
+  function watchGuests() {
+    if (watchGuests.on || !window.MutationObserver) return;
+    watchGuests.on = true;
+    new MutationObserver(function (muts) {
+      var ours = muts.every(function (m) { return byId('tgGuestList').contains(m.target); });
+      if (ours) return;
+      clearTimeout(GUEST_TIMER);
+      GUEST_TIMER = setTimeout(buildGuests, 250);
+    }).observe(document.body, { childList: true, subtree: true, characterData: true });
+  }
+  function fillTimes() {
+    // no cutoff time on the event means invitations close at the start time
+    var arr = byId('tgArrivalShow');
+    if (!readMerged('tgCutoff')) {
+      ROOT.querySelectorAll('.tg-cutoff-show').forEach(function (el) { el.textContent = readMerged('tgStartTime'); });
+    }
+    var a = arrivalTime(readMerged('tgStartTime'));
+    if (arr && a) arr.textContent = a;
+  }
+  fillTimes();
+  function applyState(closed) {
+    var guests = byId('guests'), invite = ROOT.querySelector('#invite');
+    if (!guests) return;
+    guests.hidden = !closed;
+    if (invite) invite.hidden = closed;
+    var heroOpen = ROOT.querySelector('.hero-open'), heroClosed = ROOT.querySelector('.hero-closed');
+    if (heroOpen && heroClosed) { heroOpen.hidden = closed; heroClosed.hidden = !closed; }
+    if (!closed) return;
+    buildGuests();
+    watchGuests();
+    // every "Invite Your Guests" link now points at the guest list
+    ROOT.querySelectorAll('a[href="#invite"]').forEach(function (a) {
+      a.setAttribute('href', '#guests');
+      a.textContent = 'See Your Guests';
+    });
+  }
+
+  function applyLock() {
+    var closed = isClosed() || param('preview') === 'closed';
+    var noLink = !closed && linkMissing();
+    byId('lockClosed').classList.toggle('is-on', closed);
+    byId('lockNoLink').classList.toggle('is-on', noLink);
+    ROOT.querySelector('.form-card').classList.toggle('is-locked', closed || noLink);
+    if ((closed || noLink) && byId('modalSuccess').style.display === 'none') {
+      byId('inviteModal').classList.remove('open');
+    }
+    applyState(closed);
+    return closed || noLink;
+  }
+  applyLock();
+  setInterval(applyLock, 30000);
+
+  /* ---- values ---- */
+  function values() {
+    var fname = byId('fname').value.trim();
+    return {
+      firstName: fname,
+      lastName: byId('lname').value.trim(),
+      email: byId('email').value.trim(),
+      doneForum: byId('forum-exp').value,          // 'yes' / 'no' - matched to the field's labels
+      message: finalMessage(fname)
+    };
+  }
+  function problem(v) {
+    if (!v.firstName || !v.lastName || !v.email) return 'Please fill out all fields before sending.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.email)) return 'Please check your guest’s email address.';
+    if (!v.doneForum) return 'Please select whether this person has done The Landmark Forum.';
+    return '';
+  }
+
+  /* ---- step 1: check, then show the preview ---- */
+  function sendInvite() {
+    if (applyLock()) return;
+    var v = values(), bad = problem(v);
+    say('tgFormError', bad);
+    if (bad) return;
+    say('tgModalError', '');
+    byId('mGuestName').textContent = v.firstName;
+    byId('mMsgPreview').textContent = v.message;
+    byId('modalPreview').style.display = '';
+    byId('modalSuccess').style.display = 'none';
+    byId('inviteModal').classList.add('open');
+  }
+
+  /* ---- step 2: hand it to Ontraport ---- */
+  var sending = false;
+  var SEND_BTN = byId('modalSendBtn');
+  var SEND_LABEL = SEND_BTN.textContent;
+
+  function showSuccess(name) {
+    byId('mGuestName2').textContent = name;
+    byId('modalPreview').style.display = 'none';
+    byId('modalSuccess').style.display = '';
+    byId('inviteModal').classList.add('open');
+  }
+  function resetSend() {
+    sending = false;
+    SEND_BTN.disabled = false;
+    SEND_BTN.textContent = SEND_LABEL;
+  }
+
+  function confirmSend() {
+    if (sending || applyLock()) return;
+    var v = values(), bad = problem(v);
+    say('tgModalError', bad);
+    if (bad) return;
+    var name = (v.firstName + ' ' + v.lastName).trim();
+
+    if (!FORM) {
+      if (!isLocalPreview()) {
+        say('tgModalError', 'This page isn\u2019t connected to its form yet, so the invitation can\u2019t be sent. Please let the Landmark team know.');
+        return;
+      }
+      // preview - the file opened on its own, with no Ontraport form around it
+      showSuccess(name);
+      return;
+    }
+    if (missing.length) {
+      say('tgModalError', 'This page isn’t connected to its form yet, so the invitation can’t be sent. Please let the Landmark team know.');
+      return;
+    }
+
+    var unplaced = Object.keys(TG.fields).filter(function (k) {
+      var value = v[k];
+      // the dropdown takes its own labels; a checkbox takes the plain yes/no
+      var f = opField(TG.fields[k]);
+      if (k === 'doneForum' && f && f.type !== 'checkbox') value = TG.forumAnswers[value] || value;
+      return !setOp(TG.fields[k], value);
+    }).concat(Object.keys(TG.fixedFields).filter(function (k) {
+      // keep this a one-letter key: Ontraport reads a bracketed word as a merge
+      // tag and blanks it when the page is saved
+      return !setOp(k, TG.fixedFields[k]);
+    }));
+    if (unplaced.length) {
+      say('tgModalError', 'This page isn’t matched to its form yet, so the invitation can’t be sent. Please let the Landmark team know.');
+      return;
+    }
+    dropCookieIdentity();
+    store('tg_guest_pending', Date.now() + '|' + name);
+
+    if (currentHash() === TG.successHash) {
+      var hop = document.createElement('a');
+      hop.href = '#' + TG.formAnchor;
+      hop.click();
+    }
+
+    sending = true;
+    SEND_BTN.disabled = true;
+    SEND_BTN.textContent = 'Sending…';
+    // Post into a hidden frame so the participant never leaves their own page,
+    // whatever the form's after-submit setting is (this is a dynamic template:
+    // every participant has a different address, so the form can't redirect back).
+    FORM.target = sendFrame();
+    NATIVE_SUBMIT.click();
+
+    // If nothing has come back in 25 seconds, Ontraport's own validation
+    // stopped the form, so hand the button back.
+    setTimeout(function () {
+      if (!sending) return;
+      resetSend();
+      store('tg_guest_pending', null);
+      say('tgModalError', 'We couldn’t send that invitation. Please check the details and try again.');
+    }, 25000);
+  }
+
+  // Ontraport's answer lands in this frame. Once it loads, reload this page
+  // with ?sent=1: the pending invite shows as sent, and the reload gives
+  // Ontraport's form fresh anti-spam tokens for the next guest.
+  var SEND_FRAME = null;
+  function sendFrame() {
+    if (!SEND_FRAME) {
+      SEND_FRAME = document.createElement('iframe');
+      SEND_FRAME.name = 'tgSendFrame';
+      SEND_FRAME.title = 'Invitation send';
+      SEND_FRAME.setAttribute('aria-hidden', 'true');
+      SEND_FRAME.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden;';
+      document.body.appendChild(SEND_FRAME);
+      SEND_FRAME.addEventListener('load', function () {
+        if (!sending) return;
+        location.replace(returnUrl());
+      });
+    }
+    return SEND_FRAME.name;
+  }
+  function returnUrl() {
+    var url = document.URL.split('#')[0];
+    var q = url.indexOf('?');
+    var base = q < 0 ? url : url.slice(0, q);
+    var keep = q < 0 ? [] : url.slice(q + 1).split('&').filter(function (p) {
+      return p && p.split('=')[0] !== TG.returnParam;
+    });
+    keep.push(TG.returnParam + '=1');
+    return base + '?' + keep.join('&');
+  }
+
+  // A click that reaches Ontraport's button any other way still gets the same
+  // checks - capture phase, so this runs before Ontraport's own handler.
+  if (FORM) {
+    FORM.addEventListener('click', function (e) {
+      if (!e.target.closest('[opt-type="submit-button-v3"]') || sending) return;
+      e.preventDefault();
+      e.stopPropagation();
+    }, true);
+  }
+
+  // Enter in a design field opens the preview instead of submitting the form.
+  ROOT.querySelectorAll('.form-card input').forEach(function (el) {
+    el.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      e.stopPropagation();
+      sendInvite();
+    });
+  });
+
+  function closeModal() {
+    if (sending) return;
+    var wasSuccess = byId('modalSuccess').style.display !== 'none';
+    byId('inviteModal').classList.remove('open');
+    if (wasSuccess) {
+      byId('fname').value = '';
+      byId('lname').value = '';
+      byId('email').value = '';
+      byId('forum-exp').selectedIndex = 0;
+      MSG_BOX.value = DEFAULT_MSG;
+      autoGrow(MSG_BOX);
+      lastGreeting = greetingFor('');
+      greetingIsOurs = true;
+      applyLock();
+    }
+  }
+
+  /* ---- back from Ontraport ----
+     Success is either a reload with ?sent=1, or a jump to #inviteModal. A
+     hash jump does not reload the page, so it is caught by hashchange below. */
+  function currentHash() {
+    var i = document.URL.indexOf('#');
+    return i < 0 ? '' : document.URL.slice(i + 1);
+  }
+  function completePending() {
+    var pending = recall('tg_guest_pending');
+    store('tg_guest_pending', null);
+    if (!pending) return false;
+    var at = parseInt(pending, 10), name = pending.slice(pending.indexOf('|') + 1);
+    if (Date.now() - at > 10 * 60 * 1000) return false;
+    resetSend();
+    showSuccess(name);
+    return true;
+  }
+  if (param(TG.returnParam) === '1' || currentHash() === TG.successHash) completePending();
+  else store('tg_guest_pending', null);
+  window.addEventListener('hashchange', function () {
+    if (sending && currentHash() === TG.successHash) completePending();
+  });
+
+  /* ---- FAQ ---- */
+  function toggleFaq(btn) {
+    var panel = btn.nextElementSibling;
+    var expanded = btn.getAttribute('aria-expanded') === 'true';
+    ROOT.querySelectorAll('.faq-trigger').forEach(function (b) {
+      b.setAttribute('aria-expanded', 'false');
+      b.nextElementSibling.style.height = '0';
+    });
+    if (!expanded) {
+      btn.setAttribute('aria-expanded', 'true');
+      panel.style.height = panel.scrollHeight + 'px';
+    }
+  }
+
+  /* ---- scroll-in animations ---- */
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.18 });
+    ROOT.querySelectorAll('.anim').forEach(function (el) { io.observe(el); });
+  } else {
+    ROOT.querySelectorAll('.anim').forEach(function (el) { el.classList.add('in'); });
+  }
+
+
+  /* ---- buttons (bound here - the markup carries no inline handlers) ---- */
+  function bindButtons(scope) {
+    if (!scope) return;
+    scope.querySelectorAll('[data-tg]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var action = el.getAttribute('data-tg');
+        if (action === 'faq') toggleFaq(el);
+        else if (action === 'send') sendInvite();
+        else if (action === 'confirm') confirmSend();
+        else if (action === 'close') closeModal();
+      });
+    });
+  }
+  bindButtons(ROOT);
+  bindButtons(PORTAL);
+  // a click on the dimmed backdrop, outside the card, closes the modal
+  byId('inviteModal').addEventListener('click', function (e) {
+    if (e.target === this) closeModal();
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,817 @@
+<link rel="stylesheet" href="https://use.typekit.net/gwi7lul.css">
+<style>
+/* Tuesday Graduation - every rule is scoped to .tg-page so nothing here
+   touches Ontraport's own page, and Ontraport's styles lose to these. */
+html { scroll-behavior: smooth; }
+
+/* Ontraport's page CSS restyles plain elements; these put back the browser
+   defaults the design was built on. First and low in specificity, so every
+   design rule below still wins. */
+.tg-page { font-size: 16px; }
+.tg-page b, .tg-page strong { font-weight: bolder; }
+.tg-page h1, .tg-page h2, .tg-page h3, .tg-page h4, .tg-page h5, .tg-page h6 { line-height: inherit; font-weight: bold; }
+.tg-page button, .tg-page input, .tg-page select, .tg-page textarea { line-height: normal; }
+.tg-page select.browser-default { height: auto; display: inline-block; }
+.tg-page nav { height: auto; line-height: inherit; color: inherit; background-color: transparent; box-shadow: none; }
+.tg-page nav ul li { float: none; padding: 0; }
+.tg-page nav a { color: inherit; }
+.tg-page nav ul a { display: inline; line-height: inherit; font-size: inherit; padding: 0; transition: none; }
+.tg-page nav ul a:hover { background-color: transparent; }
+.tg-page .modal-overlay { height: auto; width: auto; will-change: auto; }
+
+/* Messages that replace browser pop-ups */
+.tg-page .tg-error { display: none; margin: 12px 0 0; font-size: 14px; line-height: 1.5; color: var(--coral); text-align: center; }
+.tg-page .tg-error.is-on { display: block; }
+.tg-page #tgModalError { margin: 0 0 14px; }
+.tg-page .form-card.is-locked .tg-error { display: none; }
+
+@font-face {
+  font-family: 'Tiempos Headline';
+  src: url(https://res.cloudinary.com/mynd/raw/upload/v1789046316/TiemposHeadline-LightItalic_ctf3qk.woff2) format('woff2');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+.tg-page {
+  --primary: #0d2d31;
+  --green: #217a00;
+  --green-bright: #2ea203;
+  --coral: #f06449;
+  --coral-bright: #ff5f38;
+  --white: #ffffff;
+  --light-bg: #efede7;
+  --border: #e0e0e0;
+  --text: #2b2c33;
+  --gray: #757171;
+}
+
+.tg-page *,
+.tg-page *::before,
+.tg-page *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.tg-page { scroll-behavior: smooth; zoom: 0.95; }
+
+.tg-page {
+  font-family: objektiv-mk1, 'Helvetica Neue', Arial, sans-serif;
+  color: var(--text);
+  background: var(--white);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.tg-page .serif-it {
+  font-family: 'Tiempos Headline', Georgia, serif;
+  font-style: italic;
+  font-weight: 300;
+}
+
+.tg-page .eyebrow {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 3.5px;
+  text-transform: uppercase;
+  color: var(--green-bright);
+  margin-bottom: 16px;
+}
+.tg-page .hero .eyebrow { color: var(--coral-bright); font-size: 13.5px; }
+
+/* ===== NAV ===== */
+.tg-page .site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.tg-page .nav-logo img { height: 38px; width: auto; display: block; }
+.tg-page .nav-links {
+  display: flex;
+  gap: 32px;
+  list-style: none;
+}
+/* Ontraport's stylesheet puts a disc on every li, which beats the ul rule */
+.tg-page .nav-links li,
+.tg-page .next-steps li { list-style: none; }
+.tg-page .nav-links a {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--primary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.tg-page .nav-links a:hover { color: var(--green); }
+.tg-page .nav-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--green-bright);
+  color: var(--white);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-decoration: none;
+  line-height: 1;
+  /* uppercase has no descenders, so even padding reads top-heavy - the extra
+     top padding optically centres it (Kate, Sep 27) */
+  padding: 14px 22px 10px;
+  border-radius: 3px;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+.tg-page .nav-cta:hover { background: var(--white); color: var(--green-bright); box-shadow: inset 0 0 0 1px var(--green-bright); }
+
+/* ===== HERO ===== */
+.tg-page .hero {
+  position: relative;
+  min-height: 62vh;
+  display: flex;
+  align-items: flex-end;
+  background-image:
+    /* overlay lightened ~10 points across every stop (Kate, Sep 27) */
+    linear-gradient(to top, rgba(13,45,49,0.86) 0%, rgba(13,45,49,0.54) 42%, rgba(13,45,49,0.40) 70%, rgba(13,45,49,0.54) 100%),
+    url(https://res.cloudinary.com/mynd/image/upload/f_auto,q_auto/v1790592456/landmark/pages/tuesday-graduation/hero-graduates.jpg);
+  background-size: cover;
+  background-position: center 30%;
+}
+.tg-page .hero-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 90px 40px 70px;
+  text-align: center;
+  color: var(--white);
+}
+.tg-page .hero h1 {
+  font-size: clamp(30px, 4.8vw, 54px);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.5px;
+  max-width: 850px;
+  margin: 0 auto 22px;
+}
+.tg-page .hero h1 .serif-it { font-weight: 300; }
+.tg-page .hero-sub {
+  font-size: clamp(16px, 2vw, 19px);
+  line-height: 1.7;
+  max-width: 640px;
+  margin: 0 auto 34px;
+  opacity: 0.92;
+}
+.tg-page .hero-sub-2 {
+  font-size: clamp(15px, 1.8vw, 17.5px);
+  font-weight: 700;
+  margin-top: -18px;
+  opacity: 1;
+}
+.tg-page .hero-btn {
+  display: inline-block;
+  background: var(--green-bright);
+  color: var(--white);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-decoration: none;
+  padding: 21px 42px 15px;
+  border-radius: 3px;
+  transition: background 0.2s, transform 0.2s;
+}
+.tg-page .hero-btn:hover { background: var(--white); color: var(--green-bright); box-shadow: inset 0 0 0 1px var(--green-bright); transform: translateY(-2px); }
+
+/* ===== INVITE SECTION ===== */
+.tg-page .invite-section {
+  background: var(--white);
+  padding: 90px 40px;
+}
+.tg-page .invite-grid {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 60px;
+  align-items: start;
+}
+.tg-page .invite-intro h2 {
+  font-size: clamp(26px, 3.4vw, 38px);
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1.15;
+  margin-bottom: 18px;
+}
+.tg-page .invite-intro > p {
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--text);
+  margin-bottom: 14px;
+  max-width: 560px;
+}
+
+/* form card */
+.tg-page .form-card {
+  background: var(--light-bg);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  box-shadow: 0 8px 40px rgba(13,45,49,0.08);
+  padding: 40px 36px;
+}
+.tg-page .invite-intro { margin-bottom: 26px; }
+.tg-page .form-card label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin: 20px 0 7px;
+}
+.tg-page .form-card label:first-child { margin-top: 0; }
+.tg-page .form-card label.green-label { color: var(--green-bright); }
+.tg-page .form-card input,
+.tg-page .form-card select,
+.tg-page .form-card textarea {
+  width: 100%;
+  padding: 13px 15px;
+  font-size: 15px;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  background: var(--white);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.tg-page .form-card textarea {
+  /* the box grows with the message instead of scrolling (Kate, Sep 27) - the
+     JS below sets the height, so no inner scrollbar ever appears */
+  min-height: 180px;
+  height: auto;
+  overflow-y: hidden;
+  resize: vertical;
+  line-height: 1.6;
+}
+.tg-page .form-card select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23757171' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 18px;
+  padding-right: 42px;
+}
+.tg-page .form-card input:focus,
+.tg-page .form-card select:focus,
+.tg-page .form-card textarea:focus {
+  outline: none;
+  border-color: var(--green-bright);
+  box-shadow: 0 0 0 3px rgba(46,162,3,0.12);
+}
+.tg-page .field-note {
+  font-size: 13px;
+  color: var(--gray);
+  line-height: 1.6;
+  margin-top: 7px;
+}
+.tg-page .btn-send {
+  display: block;
+  width: 100%;
+  padding: 19px 17px 15px;
+  margin-top: 28px;
+  background: var(--green-bright);
+  color: var(--white);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.tg-page .btn-send:hover { background: var(--white); color: var(--green-bright); box-shadow: inset 0 0 0 1px var(--green-bright); }
+
+/* tips rail */
+.tg-page .side-rail { display: flex; flex-direction: column; gap: 24px; }
+.tg-page .event-card {
+  background: var(--light-bg);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  box-shadow: 0 8px 40px rgba(13,45,49,0.08);
+  padding: 28px 32px;
+  color: var(--text);
+}
+.tg-page .event-card .eyebrow { margin-bottom: 8px; }
+.tg-page .event-card h3 { font-size: 21px; font-weight: 700; color: var(--primary); margin-bottom: 14px; }
+.tg-page .event-row {
+  display: flex;
+  gap: 14px;
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 8px 0;
+  border-top: 1px solid rgba(13,45,49,0.1);
+}
+.tg-page .event-label {
+  flex: 0 0 110px;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--green-bright);
+  padding-top: 3px;
+}
+/* "Scholarships" needs a 110px label column; on phones that leaves the text too
+   narrow, so each label sits above its text instead. */
+@media (max-width: 480px) {
+  .tg-page .event-row { flex-direction: column; gap: 2px; }
+  .tg-page .event-label { flex-basis: auto; padding-top: 0; }
+}
+.tg-page .tips-card {
+  background: var(--light-bg);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  box-shadow: 0 8px 40px rgba(13,45,49,0.08);
+  padding: 36px 32px 22px;
+}
+.tg-page .tips-card h3 {
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 26px;
+}
+.tg-page .tip {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.tg-page .tip-num {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid var(--green-bright);
+  color: var(--green-bright);
+  font-size: 13px;
+  font-weight: 700;
+  /* centre the digit itself, not its line box - figures sit high in the em
+     box, so line-height centring leaves them riding the top (Kate, Sep 27) */
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* box-sizing is border-box, so this padding nudges the centred digit down
+     by half its value - measured, not guessed */
+  padding-top: 4px;
+  margin-top: -3px;
+}
+.tg-page .tip h4 {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--green-bright);
+  margin-bottom: 4px;
+}
+.tg-page .tip p {
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+/* ===== FAQ ===== */
+.tg-page .faq-section { background: var(--light-bg); padding: 90px 40px; }
+.tg-page .faq-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 60px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.tg-page .faq-left { flex: 0 0 300px; position: sticky; top: 110px; }
+.tg-page .faq-left .eyebrow { margin-left: 5px; margin-bottom: 10px; font-size: 11px; letter-spacing: 1.35px; white-space: nowrap; }
+.tg-page .faq-big {
+  font-family: objektiv-mk1, sans-serif;
+  font-size: 118px;
+  font-weight: 900;
+  color: var(--white);
+  line-height: 0.85;
+  margin-left: -7px;
+}
+.tg-page .faq-right { flex: 1 1 auto; }
+.tg-page .faq-item { border-bottom: 1px solid rgba(13,45,49,0.12); }
+.tg-page .faq-item:last-child { border-bottom: none; }
+.tg-page .faq-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary);
+  text-align: left;
+  transition: color 0.2s;
+}
+.tg-page .faq-trigger:hover { color: var(--green-bright); }
+.tg-page .faq-icon { flex: 0 0 auto; width: 20px; height: 20px; transition: transform 0.25s; }
+.tg-page .faq-icon svg { width: 100%; height: 100%; fill: none; stroke: var(--primary); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.tg-page .faq-trigger[aria-expanded="true"] { color: var(--green-bright); }
+.tg-page .faq-trigger[aria-expanded="true"] .faq-icon { transform: rotate(90deg); }
+.tg-page .faq-trigger[aria-expanded="true"] .faq-icon svg { stroke: var(--green-bright); }
+.tg-page .faq-panel { height: 0; overflow: hidden; transition: height 0.35s ease; }
+.tg-page .faq-panel-inner { padding: 0 40px 24px 0; font-size: 15px; color: var(--text); line-height: 1.7; }
+.tg-page .faq-example {
+  background: var(--white);
+  border-left: 3px solid var(--green-bright);
+  border-radius: 0 4px 4px 0;
+  padding: 16px 20px;
+  margin-top: 14px;
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+/* ===== CELEBRATION ===== */
+.tg-page .celebration {
+  position: relative;
+  background: var(--primary);
+  padding: 88px 40px 96px;
+  text-align: center;
+  color: var(--white);
+}
+.tg-page .celebration-inner {
+  position: relative;
+  z-index: 2;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.tg-page .celebration-intro {
+  font-size: clamp(19px, 2.6vw, 26px);
+  line-height: 1.55;
+  font-weight: 600;
+  margin-bottom: 44px;
+  color: var(--white);
+}
+.tg-page .that-line {
+  font-size: clamp(24px, 3.6vw, 40px);
+  font-weight: 700;
+  line-height: 1.35;
+  margin-bottom: 14px;
+}
+.tg-page .that-line .serif-it {
+  color: var(--green-bright);
+  font-weight: 300;
+  font-size: 1.06em;
+}
+.tg-page .celebration .hero-btn { margin-top: 46px; }
+.tg-page .celebration-closing {
+  font-size: clamp(12px, 1.35vw, 14px);
+  line-height: 1.75;
+  font-weight: 400;
+  color: rgba(255,255,255,0.72);
+  margin-top: 28px;
+  margin-bottom: 0;
+}
+
+/* scroll-in animation */
+.tg-page .anim {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.42s ease, transform 0.42s ease;
+}
+.tg-page .anim.in { opacity: 1; transform: translateY(0); }
+.tg-page .anim.d1 { transition-delay: 0.07s; }
+.tg-page .anim.d2 { transition-delay: 0.17s; }
+.tg-page .anim.d3 { transition-delay: 0.26s; }
+.tg-page .anim.d4 { transition-delay: 0.36s; }
+.tg-page .anim.d5 { transition-delay: 0.47s; }
+
+/* ===== MODAL ===== */
+.tg-page .modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(13,45,49,0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.tg-page .modal-overlay.open { display: flex; }
+.tg-page .modal-card {
+  position: relative;
+  background: var(--white);
+  border-radius: 6px;
+  max-width: 540px;
+  width: 100%;
+  padding: 44px 40px 36px;
+  text-align: center;
+  box-shadow: 0 24px 80px rgba(13,45,49,0.35);
+  max-height: 86vh;
+  overflow-y: auto;
+}
+.tg-page .modal-x {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--gray);
+  cursor: pointer;
+}
+.tg-page .modal-x:hover { color: var(--primary); }
+.tg-page .modal-title { font-size: 22px; font-weight: 700; color: var(--primary); margin-bottom: 10px; }
+.tg-page .modal-sub { font-size: 14.5px; color: var(--gray); line-height: 1.6; margin-bottom: 18px; }
+.tg-page .modal-msg {
+  background: var(--light-bg);
+  border-radius: 4px;
+  padding: 18px 20px;
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--text);
+  text-align: left;
+  margin-bottom: 24px;
+  white-space: pre-wrap;
+}
+.tg-page .modal-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.tg-page .btn-ghost {
+  padding: 14px 22px;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.tg-page .btn-ghost:hover { border-color: var(--primary); }
+.tg-page .btn-modal-send {
+  padding: 14px 26px;
+  background: var(--green-bright);
+  border: none;
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--white);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.tg-page .btn-modal-send:hover { background: var(--white); color: var(--green-bright); box-shadow: inset 0 0 0 1px var(--green-bright); }
+.tg-page .check-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--green-bright);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+  animation: checkPop 0.4s ease;
+}
+.tg-page .check-circle svg { width: 30px; height: 30px; fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+@keyframes checkPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  70% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ===== FOOTER ===== */
+.tg-page .site-footer {
+  background: var(--green-bright);
+  display: flex;
+  align-items: center;
+  padding: 20px 48px;
+  gap: 24px;
+}
+.tg-page .footer-logo-container { display: flex; align-items: center; flex-shrink: 0; }
+.tg-page .footer-logo-svg { height: 60px; width: auto; }
+.tg-page .footer-text { font-size: 13px; color: rgba(255,255,255,0.85); line-height: 1.65; text-align: left; }
+.tg-page .footer-text a { color: #fff; text-decoration: none; }
+.tg-page .footer-text a:hover { text-decoration: underline; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .tg-page .nav-links { display: none; }
+  .tg-page .invite-grid { grid-template-columns: 1fr; gap: 44px; }
+  .tg-page .faq-layout { flex-direction: column; gap: 28px; }
+  .tg-page .faq-left { position: static; flex: none; }
+  .tg-page .faq-big { font-size: 72px; }
+  .tg-page .hero { min-height: 58vh; }
+  .tg-page .hero-content { padding: 70px 24px 56px; }
+}
+@media (max-width: 600px) {
+  .tg-page .site-nav { padding: 12px 20px; }
+  .tg-page .invite-section,
+.tg-page .faq-section { padding: 64px 20px; }
+  .tg-page .celebration { padding: 64px 24px 72px; }
+  .tg-page .form-card { padding: 30px 22px; }
+  .tg-page .site-footer { flex-direction: column; text-align: center; padding: 24px 20px; gap: 12px; }
+  .tg-page .footer-text { text-align: center; }
+}
+
+
+/* Invite cutoff notice - no box, coral label (Kate, Sep 27) */
+.tg-page .cutoff {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  border: none;
+  background: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 0 0 22px;
+}
+.tg-page .cutoff .cutoff-mark {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--coral-bright);
+  white-space: nowrap;
+}
+.tg-page .cutoff p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--text);
+  text-wrap: pretty;
+}
+.tg-page .cutoff strong { color: var(--coral-bright); font-weight: 400; }
+.tg-page .cutoff-send { margin: 24px 0 20px; }
+/* Deadline as a quiet footnote under the CTA (Kate, Sep 27) - a warning band
+   above the button undercut the momentum right where it mattered. */
+.tg-page .deadline-note {
+  margin: 14px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--gray);
+  text-align: center;
+  text-wrap: pretty;
+}
+.tg-page .deadline-note strong { color: var(--primary); font-weight: 700; }
+@media (max-width: 600px) { .tg-page .cutoff { flex-direction: column; gap: 6px; } }
+
+/* Form lock - after the 4:30 cutoff, or when the page is opened without a
+   personal link, the fields step aside and one of the notices shows instead */
+.tg-page .form-lock { display: none; margin: 4px 0 0; }
+.tg-page .form-card.is-locked .form-lock.is-on { display: flex; }
+.tg-page .form-card.is-locked > label,
+.tg-page .form-card.is-locked > input,
+.tg-page .form-card.is-locked > select,
+.tg-page .form-card.is-locked > textarea,
+.tg-page .form-card.is-locked > .field-note,
+.tg-page .form-card.is-locked > .btn-send,
+.tg-page .form-card.is-locked > .deadline-note { display: none; }
+.tg-page .btn-modal-send:disabled { opacity: .6; cursor: default; }
+
+
+/* Orphan guard (Sep 9 2026) */
+@media (max-width: 600px) {
+  .tg-page .hero h1 br { display: none; }
+  .tg-page .hero h1,
+.tg-page .hero .eyebrow,
+.tg-page .intro-band h2 { text-wrap: balance; }
+  .tg-page .intro-band h2 br { display: none; }
+}
+
+.tg-page .hero-sub,
+.tg-page .intro-band p,
+.tg-page .celebration-closing,
+.tg-page .tip h4,
+.tg-page .faq-trigger span:first-child { text-wrap: balance; }
+.tg-page .tip p,
+.tg-page .faq-panel-inner,
+.tg-page .event-row span,
+.tg-page .card-note,
+.tg-page .modal-sub,
+.tg-page .field-note,
+.tg-page .invite-intro p { text-wrap: pretty; }
+/* text-wrap above also switches wrapping back on, which split labels like
+   SCHOLARSHIPS mid-word. Labels stay on one line and the column grows to fit. */
+.tg-page .event-row .event-label { white-space: nowrap; text-wrap: nowrap; flex: 0 0 auto; min-width: 110px; }
+@media (max-width: 600px) {
+  .tg-page .event-row { flex-direction: column; gap: 2px; }
+  .tg-page .event-row .event-label { min-width: 0; padding-top: 0; }
+}
+
+/* ===== YOUR GUESTS (after the invitation cutoff) ===== */
+.tg-page .guests-section[hidden], .tg-page [hidden] { display: none !important; }
+.tg-page .guests-section { background: var(--white); padding: 90px 40px; }
+.tg-page .guests-inner { max-width: 760px; margin: 0 auto; }
+.tg-page .guests-inner h2 {
+  font-size: clamp(28px, 3.6vw, 40px);
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1.15;
+  margin-bottom: 18px;
+}
+.tg-page .guests-inner h2 .serif-it { color: var(--green-bright); }
+.tg-page .guests-lead { font-size: 16px; line-height: 1.75; color: var(--text); margin-bottom: 26px; }
+.tg-page .guests-lead strong { font-weight: 700; color: var(--primary); }
+.tg-page .guests-sample {
+  background: var(--light-bg);
+  border-left: 3px solid var(--green-bright);
+  border-radius: 0 4px 4px 0;
+  padding: 18px 22px;
+  margin-bottom: 30px;
+}
+.tg-page .guests-sample-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--green-bright);
+  margin-bottom: 6px;
+}
+.tg-page .guests-sample p { font-size: 14.5px; line-height: 1.65; color: var(--primary); white-space: pre-line; margin: 0; }
+.tg-page .guests-list { display: flex; flex-direction: column; gap: 12px; }
+.tg-page .guest-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background: var(--light-bg);
+  border-radius: 4px;
+  box-shadow: 0 8px 40px rgba(13,45,49,0.06);
+  padding: 18px 22px;
+}
+.tg-page .guest-name { display: block; font-size: 17px; font-weight: 700; color: var(--primary); line-height: 1.3; }
+.tg-page .guest-date { display: block; font-size: 13px; color: var(--gray); margin-top: 3px; }
+.tg-page .btn-copy {
+  flex: 0 0 auto;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--green-bright);
+  background: var(--white);
+  border: none;
+  box-shadow: inset 0 0 0 1px var(--green-bright);
+  border-radius: 3px;
+  padding: 13px 18px 11px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.tg-page .btn-copy:hover, .tg-page .btn-copy.is-copied { background: var(--green-bright); color: var(--white); }
+.tg-page .guests-empty p { font-size: 16px; line-height: 1.75; color: var(--text); }
+.tg-page .guests-join { margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--border); }
+.tg-page .guests-join p { font-size: 14px; color: var(--gray); margin-bottom: 12px; }
+.tg-page .btn-join {
+  display: inline-block;
+  padding: 17px 30px 13px;
+  background: var(--green-bright);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: 3px;
+}
+.tg-page .btn-join:hover { background: var(--white); color: var(--green-bright); box-shadow: inset 0 0 0 1px var(--green-bright); }
+@media (max-width: 600px) {
+  .tg-page .guests-section { padding: 60px 20px; }
+  .tg-page .guest-row { flex-direction: column; align-items: stretch; }
+  .tg-page .btn-copy { width: 100%; }
+}
+/* the dynamic block's rows stay invisible until the script moves them in */
+.guest-row { display: none; }
+.object-record-block:has(.guest-row) { display: none !important; }
+.tg-page .guests-list .guest-row { display: flex; }
+.tg-page .guest-url { display: none; }
+.tg-page .guest-pending {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--gray);
+  padding: 13px 4px 11px;
+}
+@media (max-width: 600px) { .tg-page .guest-pending { text-align: center; } }
+.tg-copy-buffer { position: fixed; top: -1000px; left: 0; opacity: 0; }
+
+</style>

@@ -1,0 +1,260 @@
+<div class="tg-page">
+
+<!-- ===== NAV ===== -->
+<nav class="site-nav">
+  <a class="nav-logo" href="#top"><img src="https://res.cloudinary.com/mynd/image/upload/v1790592457/landmark/pages/tuesday-graduation/wordmark-green.png" alt="Landmark"></a>
+  <ul class="nav-links">
+    <li><a href="#invite">Invite Your Guests</a></li>
+    <li><a href="#faq">FAQ</a></li>
+    <li><a href="#why">Why Tuesday Matters</a></li>
+  </ul>
+  <a class="nav-cta" href="#invite">Invite a Guest</a>
+</nav>
+
+<!-- ===== HERO ===== -->
+<header class="hero" id="top">
+  <div class="hero-content hero-open">
+    <span class="eyebrow anim">Tuesday Night&ensp;&ensp;Your Graduation</span>
+    <h1 class="anim d1">Celebrate with the people <br>who <span class="serif-it">matter most.</span></h1>
+    <p class="hero-sub anim d2"><span id="gradGreeting">[Page//Contact//First Name], </span>Tuesday night is your chance to celebrate your graduation with the people you care about &mdash; and acknowledge them for the difference they&rsquo;ve made in your life.</p>
+    <p class="hero-sub hero-sub-2 anim d2">For guests who have not yet attended the Forum, a limited number of donor-sponsored full scholarships will be available <span style="white-space:nowrap;">during the evening.</span></p>
+    <a class="hero-btn anim d3" href="#invite">Invite Your Guests</a>
+  </div>
+  <!-- shown instead of the content above once invitations close -->
+  <div class="hero-content hero-closed" hidden>
+    <span class="eyebrow">Invitations Closed</span>
+    <h1>Invitations are <br>now <span class="serif-it">closed.</span></h1>
+    <p class="hero-sub"><span class="tg-first-name">[Page//Contact//First Name], </span>thank you for bringing the people who matter to you. Your guests are listed below &mdash; send each one their invitation so they have their personal Zoom link in hand for tonight.</p>
+    <a class="hero-btn" href="#guests">See Your Guests</a>
+  </div>
+</header>
+
+<!-- ===== INVITE ===== -->
+<section class="invite-section" id="invite">
+  <div class="invite-grid">
+    <div class="form-card">
+      <div class="invite-intro">
+        <span class="eyebrow">Get Started</span>
+        <h2>Invite your guests</h2>
+        <p><strong>Fill out the form below to invite your guests</strong>, and we&rsquo;ll make sure they receive the Zoom link, event details, and reminders leading up to the evening.</p>
+      </div>
+
+        <label for="fname">Your Guest's First Name</label>
+        <input class="browser-default" type="text" id="fname" placeholder="" autocomplete="off">
+
+        <label for="lname">Your Guest's Last Name</label>
+        <input class="browser-default" type="text" id="lname" placeholder="" autocomplete="off">
+
+        <label for="email">Your Guest's Email Address</label>
+        <input class="browser-default" type="email" id="email" placeholder="" autocomplete="off">
+
+        <label for="forum-exp" class="green-label">Has this person ever done The Landmark Forum?*</label>
+        <select class="browser-default" id="forum-exp">
+          <option value="" disabled selected>Select&hellip;</option>
+          <option value="no">No</option>
+          <option value="yes">Yes</option>
+        </select>
+
+        <label for="personal-msg" class="green-label">Edit Your Personal Message to Your Guest</label>
+        <textarea class="browser-default" id="personal-msg">Hi there! Thank you for joining me Tuesday for my Forum graduation! It&rsquo;s been a remarkable weekend, and I&rsquo;ve found myself thinking about you and the difference you&rsquo;ve made in my life. Tuesday evening, I get to acknowledge some of the people who&rsquo;ve made a difference for me &mdash; and you&rsquo;re definitely one of them. Having you there means a lot, and I&rsquo;m looking forward to celebrating with you. You&rsquo;ll find all the details below.</textarea>
+        <p class="field-note">This message will appear in the invitation email your guest receives. Please edit or personalize it however you&rsquo;d like.</p>
+
+
+        <button type="button" class="btn-send" data-tg="send">Send an Invitation</button>
+        <p class="tg-error" id="tgFormError" role="alert"></p>
+        <p class="deadline-note">Guest invitations close <strong>[Page//Graduation Day and Date] @ <span class="tg-cutoff-show">[Page//Event//Invitation Cutoff Time]</span> [Page//Event Time Zone]</strong></p>
+
+        <div class="cutoff form-lock" id="lockClosed">
+          <span class="cutoff-mark">Invitations Closed</span>
+          <p>Guest invitations closed at <strong><span class="tg-cutoff-show">[Page//Event//Invitation Cutoff Time]</span> [Page//Event Time Zone]</strong> so we can send every Zoom link and set up the breakout rooms. Guests you&rsquo;ve already invited have everything they need &mdash; we look forward to celebrating with you tonight.</p>
+        </div>
+        <div class="cutoff form-lock" id="lockNoLink">
+          <span class="cutoff-mark">Personal Link Needed</span>
+          <p>This page works from the personal link in your graduation emails, so that everyone you invite joins you in your breakout room. <strong>Please open it from one of those emails</strong> to invite your guests.</p>
+        </div>
+    </div>
+
+    <aside class="side-rail">
+      <div class="event-card">
+        <span class="eyebrow">Event Details</span>
+        <h3>Your Forum Graduation Night</h3>
+        <div class="event-row"><span class="event-label">Date</span><span>[Page//Graduation Day and Date]</span></div>
+        <div class="event-row"><span class="event-label">Time</span><span>[Page//Graduation Start Time] &ndash; [Page//Graduation End Time] [Page//Event Time Zone]</span></div>
+        <div class="event-row"><span class="event-label">Where</span><span>On Zoom &mdash; each guest receives their own link by email</span></div>
+        <div class="event-row"><span class="event-label">Arrival</span><span>Please ask your guests to join at <span id="tgArrivalShow">5:45pm</span> [Page//Event Time Zone], before the evening begins</span></div>
+        <div class="event-row"><span class="event-label">Scholarships</span><span>A limited number of donor-sponsored full scholarships to The Landmark Forum will be available to guests who have not yet attended the Forum</span></div>
+      </div>
+      <div class="tips-card">
+      <span class="eyebrow">How to Invite</span>
+      <h3>Three tips before you hit send</h3>
+      <div class="tip">
+        <div class="tip-num">1</div>
+        <div>
+          <h4>Celebrate Together</h4>
+          <p>Let them know Tuesday night is a celebration of your accomplishments and a chance to acknowledge the people who matter most &mdash; and that you&rsquo;d really love them there.</p>
+        </div>
+      </div>
+      <div class="tip">
+        <div class="tip-num">2</div>
+        <div>
+          <h4>Keep It Simple</h4>
+          <p>You don&rsquo;t need to explain what The Forum is. Simply share that it made a difference for you and that you think it could make a difference for them too.</p>
+        </div>
+      </div>
+      <div class="tip">
+        <div class="tip-num">3</div>
+        <div>
+          <h4>Let Them Be Inspired</h4>
+          <p>Just invite them and let them experience the inspiration of Tuesday evening for themselves.</p>
+        </div>
+      </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ===== YOUR GUESTS (shown after the invitation cutoff) ===== -->
+<section class="guests-section" id="guests" hidden>
+  <div class="guests-inner">
+    <span class="eyebrow">Your Guests</span>
+    <h2>Everyone you <span class="serif-it">invited.</span></h2>
+    <p class="guests-lead">Tap <strong>Copy Invitation</strong> next to a name to copy a ready-to-send message with their personal Zoom link, then paste it into a text or email to them.</p>
+
+    <div class="guests-sample">
+      <span class="guests-sample-label">What gets copied</span>
+      <p id="tgSampleMessage"></p>
+    </div>
+
+    <div class="guests-list" id="tgGuestList"></div>
+
+    <div class="guests-empty" id="tgGuestEmpty" hidden>
+      <p>You didn&rsquo;t invite any guests this time, and that&rsquo;s perfectly fine. We look forward to celebrating with you tonight.</p>
+    </div>
+
+    <div class="guests-join" id="tgJoinWrap" hidden>
+      <p>Your own join link for tonight:</p>
+      <a class="btn-join" id="tgJoinLink" href="#guests" target="_blank" rel="noopener">Join the Graduation &rarr;</a>
+    </div>
+  </div>
+
+  <!-- Merged by Ontraport from this Registration; read by the footer script.
+       Text only (merge fields do not resolve inside attributes). -->
+  <div hidden>
+    <span id="tgStartTime">[Page//Graduation Start Time]</span>
+    <span id="tgGradDate">[Page//Graduation Day and Date]</span>
+    <span id="tgCutoff">[Page//Event//Invitation Cutoff Time]</span>
+    <span id="tgTimeZone">[Page//Event Time Zone]</span>
+    <span id="tgJoinUrl">[Page//Grad Zoom Join URL]</span>
+  </div>
+</section>
+
+<!-- ===== FAQ ===== -->
+<section class="faq-section" id="faq">
+  <div class="faq-layout">
+    <div class="faq-left">
+      <span class="eyebrow">Frequently Asked Questions</span>
+      <div class="faq-big">FAQ</div>
+    </div>
+    <div class="faq-right">
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>How do I invite someone who hasn&rsquo;t done The Landmark Forum?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">Keep it personal and simple &mdash; share what the weekend has meant to you, tell them why they matter to you, and let them know it&rsquo;s easy to join on Zoom. You don&rsquo;t need to explain what The Forum is. Here&rsquo;s an example:
+            <div class="faq-example">Hi [Name]! I&rsquo;ve been thinking about you a lot this weekend and how much I appreciate who you are in my life. I&rsquo;ve been doing this powerful program that has totally upleveled my leadership and has been rocket fuel for my life &mdash; a lot of things you&rsquo;ve always encouraged in me. This Tuesday is my graduation, where I get to appreciate and acknowledge important people in my life &ndash; which you SO are. It&rsquo;s on Zoom, so it&rsquo;s easy to join if it works for you. You&rsquo;ve made such an impact on me and I&rsquo;m so grateful for you. It would mean a lot to have you there.</div></div></div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>How do I invite someone who&rsquo;s already a Landmark graduate?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">When you&rsquo;re inviting people who have already done The Landmark Forum, it&rsquo;s important to share with them that Tuesday night is different. Graduate guests are welcome at your graduation, and most graduates don&rsquo;t know that yet. Let them know this evening starts at [Page//Graduation Start Time] [Page//Event Time Zone], not 7:00 PM, and runs until about 8:30 PM. It&rsquo;s your graduation night, and they&rsquo;re invited. Here&rsquo;s an example message:
+            <div class="faq-example">Hi [Name]! I&rsquo;ve been thinking about you a lot this weekend. As I&rsquo;ve gone through The Landmark Forum, I can&rsquo;t help but feel so grateful for you encouraging me to take on this program. You&rsquo;ve had such an impact on my life in ways you probably don&rsquo;t even realize, and so much of this experience has connected back to you. On Tuesday I&rsquo;ll be having my graduation, where I get to appreciate and acknowledge the important people in my life &mdash; and I would love to have you there. Graduate guests are invited to this evening, and it starts at [Page//Graduation Start Time] [Page//Event Time Zone] instead of 7:00 PM &mdash; it&rsquo;s on Zoom, so it&rsquo;s easy to join. I appreciate you for who you are in my life, and it would mean a lot to have you there.</div></div></div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>Do I need to send an invitation to guests joining me in person?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">Yes &mdash; please send a separate invitation for each guest, even if they&rsquo;ll be attending from the same location as you or sharing a screen together somewhere else. Every guest receives their own welcome and details, and knowing exactly who&rsquo;s coming lets us place everyone in a breakout with you.</div></div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>Is there a limit to how many people I can invite to my graduation?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">There is no limit &mdash; invite as many people as you&rsquo;d like. The more people who attend your graduation, the more powerful the evening. There&rsquo;s something special about having people from every part of your life there together &mdash; celebrating you, hearing what they mean to you, and experiencing the inspiration of the evening for themselves. Fill out the form once for each guest so everyone gets their own invitation and details.</div></div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>How do guests join the graduation on Tuesday?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">Once you send an invitation through the form above, we make sure your guest receives the Zoom link, event details, and reminders leading up to the evening. To join, all they have to do is click the personalized Zoom link emailed to them.</div></div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>Is Tuesday night a sales or registration event?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">No. Tuesday night is a graduation &mdash; an evening of celebration, acknowledgment and inspiration. Nobody is pitched. Your guests will have the opportunity to get a glimpse of The Forum and choose for themselves whether it&rsquo;s something they&rsquo;d like to do. At the end of the evening, a limited number of donor-sponsored full scholarships to The Landmark Forum are made available to guests who have never done the Forum.</div></div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>Is there a scholarship available for my guests?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">Yes. A limited number of donor-sponsored full scholarships to The Landmark Forum will be made available to guests who join us that evening. There&rsquo;s no pitch &mdash; they&rsquo;ll get a glimpse of The Forum and choose for themselves whether it&rsquo;s something they&rsquo;d like to do.</div></div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>Will I be with my guests during the evening?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">Yes. Everyone you invite is placed in a breakout with you, so you experience the evening together.</div></div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>How do I know who I&rsquo;ve invited to Tuesday evening?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">Each time you invite someone, you&rsquo;ll get a confirmation email with their name and their personalized Zoom link. You&rsquo;ll also receive an email Tuesday evening around <strong>5:00 PM [Page//Event Time Zone]</strong> with each of your guests&rsquo; join links, in case anyone is unable to find their confirmation email.</div></div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>What if my guests can only attend part of the evening?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">We recommend encouraging your guests to be there for the whole evening &mdash; but they&rsquo;re completely welcome to join for whatever part works for them.<br><br>Please note the scholarship opportunity will be made available at the end of the night.</div></div>
+        </div>
+        <div class="faq-item">
+          <button type="button" class="faq-trigger" aria-expanded="false" data-tg="faq"><span>How late can I invite my guests to join me?</span><span class="faq-icon"><svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></span></button>
+          <div class="faq-panel"><div class="faq-panel-inner">Guest invitations close <strong>[Page//Graduation Day and Date] @ <span class="tg-cutoff-show">[Page//Event//Invitation Cutoff Time]</span> [Page//Event Time Zone]</strong>. We use the time before the evening to set up the breakout rooms and make sure everyone has what they need before we start. Sending invitations earlier is better &mdash; it gives your guests time to plan the evening.</div></div>
+        </div>
+        </div>
+  </div>
+</section>
+
+<!-- ===== MORE THAN A CELEBRATION ===== -->
+<section class="celebration" id="why">
+  <div class="celebration-inner">
+    <span class="eyebrow anim">More Than a Celebration</span>
+    <p class="celebration-intro anim d1">At a time when many people feel<br><span class="serif-it">overwhelmed or disconnected,</span><br>Tuesday is a reminder &mdash;</p>
+    <p class="that-line anim d2">That transformation is <span class="serif-it">possible.</span></p>
+    <p class="that-line anim d3">That life is theirs to <span class="serif-it">create.</span></p>
+    <p class="that-line anim d4">That who they are <span class="serif-it">makes a difference.</span></p>
+    <a class="hero-btn anim d5" href="#invite">Invite Your Guests</a>
+    <p class="celebration-closing anim d5">Bring the people you care about. Pack the house.<br>You never know whose life could shift in one evening.</p>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="site-footer">
+  <div class="footer-logo-container">
+    <img class="footer-logo-svg" src="https://res.cloudinary.com/mynd/image/upload/v1785948239/lm-d1a-footer-logo_y9es88.png" alt="Landmark">
+  </div>
+  <div class="footer-text">
+    Copyright &copy; 2026. Landmark Worldwide, All Rights Reserved<br>
+    <a href="mailto:info@landmarkworldwide.com">info@landmarkworldwide.com</a> &middot; <a href="tel:+18008889590">+1 (800) 888-9590</a> &middot; <a href="#">Terms, Privacy, &amp; Disclaimers</a>
+  </div>
+</footer>
+</div>
+
+<!-- The modal is moved to <body> by the footer script so no Ontraport
+     container can clip it; it keeps .tg-page so its styles still apply. -->
+<div class="tg-page tg-portal">
+<!-- ===== INVITE MODAL ===== -->
+<div class="modal-overlay" id="inviteModal">
+  <div class="modal-card">
+    <button type="button" class="modal-x" data-tg="close" aria-label="Close">&times;</button>
+    <div id="modalPreview">
+      <span class="eyebrow">Ready to Send</span>
+      <h3 class="modal-title">You&rsquo;re inviting <span id="mGuestName">your guest</span></h3>
+      <p class="modal-sub">Here&rsquo;s your personal message as it will appear in their invitation email:</p>
+      <div class="modal-msg" id="mMsgPreview"></div>
+      <p class="tg-error" id="tgModalError" role="alert"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" data-tg="close">Back to Edit</button>
+        <button type="button" id="modalSendBtn" class="btn-modal-send" data-tg="confirm">Looks Good &rarr; Send</button>
+      </div>
+    </div>
+    <div id="modalSuccess" style="display:none;">
+      <div class="check-circle"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <h3 class="modal-title">You&rsquo;ve invited <span id="mGuestName2">your guest</span>!</h3>
+      <p class="modal-sub">We&rsquo;ll send their invitation with the Zoom link and all the details &mdash; and keep them posted leading up to Tuesday.</p>
+      <button type="button" class="btn-modal-send" data-tg="close">Invite Another</button>
+    </div>
+  </div>
+</div>
+</div>

@@ -1,0 +1,728 @@
+<script>
+(function () {
+  /* Everything is scoped to the design wrapper. The design sits inside an
+     Ontraport form block (the same build as /impact): the visitor types into
+     the design's inputs, which have no name and are never posted, and on send
+     the values are copied into Ontraport's own hidden fields and Ontraport's
+     own submit button is clicked. Ontraport then validates, adds its spam
+     check and posts exactly as it would for any form it built. */
+  var ROOT = document.querySelector('.tg-page:not(.tg-portal)');
+  if (!ROOT) return;
+  var FORM = ROOT.closest('form');          // null when previewing the file on its own
+  var PORTAL = document.querySelector('.tg-portal');
+  // Look up IDs only inside our own design and modal - an old custom HTML
+  // element left on the page can reuse the same IDs (it did: #inviteModal).
+  var byId = function (id) {
+    var sel = '#' + id;
+    return ROOT.querySelector(sel) || (PORTAL && PORTAL.querySelector(sel));
+  };
+
+// Previewing the file on its own (a local file or localhost) is the only
+  // place the page may show success without an Ontraport form behind it.
+  function isLocalPreview() {
+    return /^(file:|https?:\/\/(localhost|127\.0\.0\.1)[:/])/.test(document.URL);
+  }
+
+  /* ---- messages, shown in the design rather than a browser pop-up ---- */
+  function say(id, msg) {
+    var el = byId(id);
+    if (!el) return;
+    el.textContent = msg || '';
+    el.classList.toggle('is-on', !!msg);
+  }
+
+  /* ---- settings ---- */
+  var TG = {
+    // Invitations close at the event's own Invitation Cutoff Time on its
+    // graduation date, in its time zone (all merged into the page). With no
+    // cutoff time set they close at the graduation start time. This is only
+    // the fallback for a page whose date or time zone cannot be read.
+    closesAt: '2026-10-06T16:30:00-05:00',
+    // The Ontraport field name ('f1234' ...) behind each design input. Each of
+    // these fields must be in the form block - the page hides them.
+    fields: {
+      firstName: 'f2259//firstname',  // Guest contact - first name
+      lastName: 'f2259//lastname',    // Guest contact - last name
+      email: 'f2259//email',          // Guest contact - email (creates or matches the contact)
+      doneForum: 'f2337',             // Is guest a grad of The Landmark Forum? (Yes / No / I'm not sure)
+      message: 'f2581'                // Personal Message to Guest
+    },
+    // This page is a dynamic template on the participant's own Registration
+    // (/invite/ plus its Unique ID). These HIDDEN fields in the Ontraport form block
+    // carry the links, merged from that record - the script never touches them:
+    //   f2260//unique_id = this Registration's Unique ID   Participant's Registration
+    //   f2257//email     = this Registration's Contact email  Participant (the inviter)
+    //   f2258//unique_id = this Registration's Event Unique ID  Event
+    // The form won't send if either unique-ID link is missing.
+    linkFields: ['f2260//unique_id', 'f2258//unique_id'],
+    // Fields that are in the form block but always get a fixed value. The
+    // submit button's hidden-field list doesn't offer dropdowns, so these sit
+    // below the HTML block as normal fields; the page hides them and sets them
+    // here.
+    //   f2694 Invitation Type = 260 (LF: Tues. Grad) - what participant invites have always used
+    //   f3406 Guest Type      = 511 (Participant Guest) - routes the guest to Zoom line 1
+    fixedFields: { 'f2694': '260', 'f3406': '511' },
+    // What the design's Yes / No mean in the "done The Forum" field - the
+    // dropdown option labels (or codes). If it's the same field as
+    // registration (f2881), use 'Graduate' / 'Non-Graduate'.
+    forumAnswers: { yes: 'Yes', no: 'No' },
+    // Set the form's "after submit" redirect in Ontraport to this page's own
+    // address plus ?sent=1 - the page then shows its "You've invited" message.
+    // If the form's after-submit setting jumps to this page's #inviteModal instead
+    // (the old page's setting), that counts as success too.
+    successHash: 'inviteModal',
+    formAnchor: 'invite',
+    returnParam: 'sent'
+  };
+
+  /* ---- storage (a private window can refuse it, so every use is guarded) ---- */
+  function store(key, value) {
+    try {
+      if (value === null) sessionStorage.removeItem(key);
+      else sessionStorage.setItem(key, value);
+    } catch (e) {}
+  }
+  function recall(key) {
+    try { return sessionStorage.getItem(key) || ''; } catch (e) { return ''; }
+  }
+
+  // Read a query parameter from the page address (the same way /impact does).
+  function param(key) {
+    var m = document.URL.match(new RegExp('[?&]' + key + '=([^&#]*)'));
+    if (!m) return '';
+    try { return decodeURIComponent(m[1].replace(/\+/g, ' ')).trim(); } catch (e) { return ''; }
+  }
+
+  // Hero greeting: the template merges the participant's first name from
+  // their Registration's Contact. If it didn't resolve, the greeting drops out and the
+  // sentence starts at "Tuesday night".
+  (function () {
+    var els = [byId('gradGreeting')].concat([].slice.call(ROOT.querySelectorAll('.tg-first-name')));
+    els.forEach(function (el) {
+      if (!el) return;
+      var resolved = el.textContent.replace(/,\s*$/, '').trim();
+      if (!resolved || resolved.indexOf('[') !== -1) el.parentNode.removeChild(el);
+    });
+  })();
+
+  /* ---- Ontraport fields ---- */
+  function opField(name) {
+    if (!FORM || !name) return null;
+    var els = FORM.querySelectorAll('[name="' + name + '"]');
+    for (var i = 0; i < els.length; i++) { if (!ROOT.contains(els[i])) return els[i]; }
+    return null;
+  }
+  function opWrap(el) {
+    return el ? (el.closest('[opt-type="input-v3"]') || el.closest('.opt-element') || el) : null;
+  }
+  // Returns false when a value can't be placed - a dropdown with no matching
+  // option - so the page can stop rather than let Ontraport reject the form.
+  function setOp(name, value) {
+    var f = opField(name);
+    if (!f) return false;
+    if (f.type === 'checkbox') {
+      f.checked = !!value && value !== 'no';
+      return true;
+    }
+    if (f.tagName === 'SELECT' && value) {
+      // Ontraport dropdowns store codes; match on the code or the visible label.
+      var want = String(value).toLowerCase(), hit = '';
+      for (var i = 0; i < f.options.length; i++) {
+        var o = f.options[i];
+        if (o.value.toLowerCase() === want || o.text.trim().toLowerCase() === want) { hit = o.value; break; }
+      }
+      if (!hit) return false;
+      value = hit;
+    }
+    f.value = value;
+    return true;
+  }
+  // Each Ontraport element sits in its own row; hide the row, not just the
+  // element, or the empty rows leave gaps.
+  function hideRow(el) {
+    if (!el) return;
+    var row = el.closest('.sub-row');
+    (row && !row.contains(ROOT) ? row : el).style.display = 'none';
+  }
+
+  var NATIVE_SUBMIT = FORM && FORM.querySelector('[opt-type="submit-button-v3"]');
+  var missing = [];
+  if (FORM) {
+    Object.keys(TG.fields).forEach(function (k) {
+      var f = opField(TG.fields[k]);
+      if (f) hideRow(opWrap(f)); else missing.push(k);
+    });
+    Object.keys(TG.fixedFields).forEach(function (name) {
+      var f = opField(name);
+      if (f) hideRow(opWrap(f)); else missing.push(name);
+    });
+    if (NATIVE_SUBMIT) hideRow(opWrap(NATIVE_SUBMIT)); else missing.push('submit button');
+  }
+
+  /* ---- match on the typed email, never the browser cookie ----
+     Ontraport copies the browser's contact_id cookie into the form, and the
+     form processor then updates THAT contact whatever email was typed. Here
+     the visitor is usually the participant, arriving from their own email,
+     typing in someone else - so without this every guest would be written onto
+     the participant. The name is removed (not just blanked) so Ontraport's own script,
+     which refills fields by name, can't put the cookie back. (From /impact.) */
+  function dropCookieIdentity() {
+    if (!FORM) return;
+    ['contact_id', 'visiting_contact_id', 'unique_id'].forEach(function (n) {
+      FORM.querySelectorAll('[name="' + n + '"]').forEach(function (f) {
+        if (ROOT.contains(f)) return;
+        f.value = '';
+        f.removeAttribute('name');
+        f.setAttribute('data-tg-dropped', n);
+      });
+    });
+  }
+  dropCookieIdentity();
+
+  /* ---- the modal lives on <body>, so no Ontraport container can clip it ---- */
+  if (PORTAL) document.querySelector('body').appendChild(PORTAL);
+
+  /* ---- the personal message ---- */
+  // The guest-first-name token is assembled here rather than written into the
+  // HTML, so Ontraport can never resolve it server side - the markup carries a
+  // neutral placeholder and the bracketed token only ever exists in the browser.
+  var GUEST_TOKEN = '[' + 'Guest First Name' + ']';
+  var MSG_BOX = byId('personal-msg');
+  // The markup opens with a plain 'Hi there!' so the Ontraport editor shows
+  // readable text; the page swaps in the name token that follows the guest's
+  // first name as it is typed. (Older markup used a {{GUEST_FIRST_NAME}} slot.)
+  MSG_BOX.value = MSG_BOX.value.replace('{{GUEST_FIRST_NAME}}', GUEST_TOKEN).replace(/^Hi there!/, 'Hi ' + GUEST_TOKEN + '!');
+  var DEFAULT_MSG = MSG_BOX.value;
+
+  // Grow the message box to fit its content rather than scrolling inside it.
+  function autoGrow(el) {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = (el.scrollHeight + 2) + 'px';
+  }
+  MSG_BOX.addEventListener('input', function () { autoGrow(this); });
+  window.addEventListener('load', function () { autoGrow(MSG_BOX); });
+  window.addEventListener('resize', function () { autoGrow(MSG_BOX); });
+  // the brand font loads after first paint and reflows the text, so measure
+  // again once it is ready, and again for a late webfont
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () { autoGrow(MSG_BOX); });
+  }
+  [150, 600, 1500].forEach(function (t) { setTimeout(function () { autoGrow(MSG_BOX); }, t); });
+  autoGrow(MSG_BOX);
+
+  // Live guest-name substitution (Kate, Sep 27 2026). As the participant types
+  // their guest's first name it replaces the token in the greeting, and the
+  // token comes back if they clear the field. Only ever the FIRST LINE, and
+  // only while it is still exactly the greeting we last wrote - replacing the
+  // name everywhere mangled the body when a one-letter name was cleared.
+  //
+  // The message carries no sign-off: the guest's invitation email adds the
+  // sender's name itself, so no token can resolve to the guest's name.
+  function greetingFor(name) { return 'Hi ' + (name || GUEST_TOKEN) + '!'; }
+  var lastGreeting = greetingFor('');
+  var greetingIsOurs = true;
+
+  byId('fname').addEventListener('input', function () {
+    var next = greetingFor(this.value.trim());
+    if (next === lastGreeting) return;
+    var box = MSG_BOX;
+    if (greetingIsOurs && box.value.indexOf(lastGreeting) === 0) {
+      var start = box.selectionStart, end = box.selectionEnd;
+      var delta = next.length - lastGreeting.length;
+      box.value = next + box.value.slice(lastGreeting.length);
+      if (document.activeElement === box) {
+        box.setSelectionRange(Math.max(0, start + delta), Math.max(0, end + delta));
+      }
+      autoGrow(box);
+    } else {
+      // they rewrote the greeting themselves - leave the message alone from here
+      greetingIsOurs = false;
+    }
+    lastGreeting = next;
+  });
+
+  // The message exactly as it will be saved. Any token still in it becomes the
+  // guest's name, so no bracketed text is ever mailed.
+  function finalMessage(fname) {
+    return MSG_BOX.value.trim().split(GUEST_TOKEN).join(fname);
+  }
+
+  /* ---- cutoff and personal-link lock ----
+     After the cutoff - or on a page opened without a personal link - the
+     fields give way to a notice. Checked on load, every 30 seconds for a tab
+     left open, and again at every send. */
+  var ZONES = { eastern: 'America/New_York', central: 'America/Chicago', mountain: 'America/Denver',
+    arizona: 'America/Phoenix', pacific: 'America/Los_Angeles', alaska: 'America/Anchorage', hawaii: 'Pacific/Honolulu' };
+  var MONTHS = 'janfebmaraprmayjunjulaugsepoctnovdec';
+  function parseClock(text) {
+    var m = String(text).match(/(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m/i);
+    if (!m) return null;
+    return ((Number(m[1]) % 12) + (m[3].toLowerCase() === 'p' ? 12 : 0)) * 60 + Number(m[2] || 0);
+  }
+  function eventCutoff() {
+    var d = readMerged('tgGradDate').match(/([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})/);
+    var mins = parseClock(readMerged('tgCutoff'));
+    if (mins === null) mins = parseClock(readMerged('tgStartTime'));
+    var tzName = readMerged('tgTimeZone').toLowerCase(), zone = '';
+    Object.keys(ZONES).forEach(function (k) { if (tzName.indexOf(k) !== -1) zone = ZONES[k]; });
+    if (!d || mins === null || !zone) return NaN;
+    var mo = MONTHS.indexOf(d[1].toLowerCase()) / 3;
+    if (mo < 0 || mo % 1) return NaN;
+    var wall = Date.UTC(Number(d[3]), mo, Number(d[2]), Math.floor(mins / 60), mins % 60);
+    try {
+      // what the zone's clock reads at that instant, to find its UTC offset
+      var parts = {};
+      new Intl.DateTimeFormat('en-US', { timeZone: zone, hourCycle: 'h23', year: 'numeric', month: 'numeric',
+        day: 'numeric', hour: 'numeric', minute: 'numeric' }).formatToParts(new Date(wall))
+        .forEach(function (p) { parts[p.type] = Number(p.value); });
+      var seen = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour % 24, parts.minute);
+      return wall - (seen - wall);
+    } catch (e) { return NaN; }
+  }
+  var CUTOFF = null;
+  function cutoffAt() {
+    if (CUTOFF === null) {
+      CUTOFF = eventCutoff();
+      if (isNaN(CUTOFF)) CUTOFF = TG.closesAt ? Date.parse(TG.closesAt) : NaN;
+    }
+    return CUTOFF;
+  }
+  function isClosed() {
+    var t = cutoffAt();
+    return !isNaN(t) && Date.now() >= t;
+  }
+  // Every guest sent from here must link back to the participant's
+  // Registration. If the template's hidden link fields didn't merge, lock.
+  // Both link fields must hold a real Ontraport unique ID (like 907U7PV) - not
+  // blank, not an unmerged token, and not a merge-field label or a stray value.
+  function linkMissing() {
+    if (!FORM) return false;
+    return TG.linkFields.some(function (name) {
+      var f = opField(name);
+      return !f || !/^[A-Za-z0-9]{5,12}$/.test(String(f.value || '').trim());
+    });
+  }
+
+  /* ---- after the cutoff: the invite form gives way to the participant's guests ----
+     The guests come from an Ontraport dynamic block listing this Registration's
+     Invitations. Each item is a .guest-row holding .guest-name, .guest-date and a
+     hidden .guest-url (merges only resolve in text, so the link sits in a span).
+     The rows are moved into #tgGuestList; rows whose link has not been
+     provisioned yet are dropped, and each kept row gets a Copy Invitation button.
+     ?preview=closed shows this state before the cutoff, for testing. */
+  function readMerged(id) {
+    var el = byId(id);
+    var v = el ? String(el.textContent || '').trim() : '';
+    return (!v || v.charAt(0) === '[') ? '' : v;   // blank, or the token did not merge
+  }
+  function arrivalTime(start) {
+    var m = String(start).match(/(\d{1,2}):(\d{2})\s*([ap])\.?m/i);
+    if (!m) return '';
+    var mins = ((Number(m[1]) % 12) + (m[3].toLowerCase() === 'p' ? 12 : 0)) * 60 + Number(m[2]) - 15;
+    var h = Math.floor(mins / 60), mm = mins % 60, ap = h >= 12 ? 'pm' : 'am';
+    h = h % 12 || 12;
+    return h + ':' + (mm < 10 ? '0' : '') + mm + ap;
+  }
+  // Written in the participant's voice, since they paste it to their guest.
+  function inviteMessage(url) {
+    var start = readMerged('tgStartTime'), tz = readMerged('tgTimeZone');
+    var arrive = arrivalTime(start);
+    var nl = String.fromCharCode(10);
+    var msg = "Here's your personal link for my Landmark Forum graduation celebration tonight" +
+      (start ? ' at ' + start + (tz ? ' ' + tz : '') : '') + '. ' +
+      (arrive ? 'Please join by ' + arrive + (tz ? ' ' + tz : '') + ' so we have a few minutes together before it begins. ' : '') +
+      'See you there!';
+    return msg + nl + nl + url;
+  }
+  // Ontraport loads the dynamic block's records after the page, filling a copy
+  // of the item template per Invitation. The source rows are only read, never
+  // moved or removed, or Ontraport has nothing left to fill.
+  function readGuests() {
+    var list = [], seen = {};
+    var txt = function (row, sel) { var el = row.querySelector(sel); return el ? String(el.textContent || '').trim() : ''; };
+    document.querySelectorAll('.guest-row').forEach(function (row) {
+      if (byId('tgGuestList').contains(row)) return;
+      var name = txt(row, '.guest-name'), date = txt(row, '.guest-date'), u = txt(row, '.guest-url');
+      if (!name || name.indexOf('[') !== -1) return;   // the unfilled template
+      if (u.indexOf('[') !== -1 || !/^https?:\/\//.test(u)) return;   // no Zoom link yet: not listed
+      var key = name + '|' + date + '|' + u;
+      if (seen[key]) return;
+      seen[key] = 1;
+      list.push({ name: name, date: date.indexOf('[') !== -1 ? '' : date, u: u });
+    });
+    return list;
+  }
+  function copyText(text, done) {
+    var fallback = function () {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.className = 'tg-copy-buffer';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      done(ok);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(function () { done(true); }, fallback);
+    } else {
+      fallback();
+    }
+  }
+  var GUESTS_SIG = null, LOAD_WAIT_OVER = false;
+  setTimeout(function () { LOAD_WAIT_OVER = true; if (GUESTS_SIG !== null) { GUESTS_SIG = null; buildGuests(); } }, 6000);
+  function buildGuests() {
+    var list = readGuests();
+    var sig = JSON.stringify(list);
+    if (sig === GUESTS_SIG) return;
+    GUESTS_SIG = sig;
+    var wrap = byId('tgGuestList');
+    while (wrap.firstChild) wrap.removeChild(wrap.firstChild);
+    byId('tgSampleMessage').textContent = inviteMessage('(their personal Zoom link)');
+    // the empty message waits until the records have had time to load
+    var none = !list.length;
+    byId('tgGuestEmpty').hidden = !(none && LOAD_WAIT_OVER);
+    ROOT.querySelector('.guests-sample').hidden = none;
+    ROOT.querySelector('.guests-lead').hidden = none;
+    list.forEach(function (g) {
+      var row = document.createElement('div');
+      row.className = 'guest-row';
+      var who = document.createElement('div');
+      var nm = document.createElement('span');
+      nm.className = 'guest-name';
+      nm.textContent = g.name;
+      var dt = document.createElement('span');
+      dt.className = 'guest-date';
+      dt.textContent = g.date;
+      who.appendChild(nm);
+      who.appendChild(dt);
+      row.appendChild(who);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-copy';
+      btn.textContent = 'Copy Invitation';
+      btn.setAttribute('aria-label', 'Copy the invitation message for ' + g.name);
+      btn.addEventListener('click', function () {
+        copyText(inviteMessage(g.u), function (ok) {
+          btn.textContent = ok ? 'Copied' : 'Copy failed - try again';
+          btn.classList.toggle('is-copied', ok);
+          setTimeout(function () { btn.textContent = 'Copy Invitation'; btn.classList.remove('is-copied'); }, 2500);
+        });
+      });
+      row.appendChild(btn);
+      wrap.appendChild(row);
+    });
+    var join = readMerged('tgJoinUrl');
+    if (/^https?:\/\//.test(join)) {
+      byId('tgJoinLink').setAttribute('href', join);
+      byId('tgJoinWrap').hidden = false;
+    }
+  }
+  // rebuild whenever Ontraport fills in (or pages) the dynamic block
+  var GUEST_TIMER = null;
+  function watchGuests() {
+    if (watchGuests.on || !window.MutationObserver) return;
+    watchGuests.on = true;
+    new MutationObserver(function (muts) {
+      var ours = muts.every(function (m) { return byId('tgGuestList').contains(m.target); });
+      if (ours) return;
+      clearTimeout(GUEST_TIMER);
+      GUEST_TIMER = setTimeout(buildGuests, 250);
+    }).observe(document.body, { childList: true, subtree: true, characterData: true });
+  }
+  function fillTimes() {
+    // no cutoff time on the event means invitations close at the start time
+    var arr = byId('tgArrivalShow');
+    if (!readMerged('tgCutoff')) {
+      ROOT.querySelectorAll('.tg-cutoff-show').forEach(function (el) { el.textContent = readMerged('tgStartTime'); });
+    }
+    var a = arrivalTime(readMerged('tgStartTime'));
+    if (arr && a) arr.textContent = a;
+  }
+  fillTimes();
+  function applyState(closed) {
+    var guests = byId('guests'), invite = ROOT.querySelector('#invite');
+    if (!guests) return;
+    guests.hidden = !closed;
+    if (invite) invite.hidden = closed;
+    var heroOpen = ROOT.querySelector('.hero-open'), heroClosed = ROOT.querySelector('.hero-closed');
+    if (heroOpen && heroClosed) { heroOpen.hidden = closed; heroClosed.hidden = !closed; }
+    if (!closed) return;
+    buildGuests();
+    watchGuests();
+    // every "Invite Your Guests" link now points at the guest list
+    ROOT.querySelectorAll('a[href="#invite"]').forEach(function (a) {
+      a.setAttribute('href', '#guests');
+      a.textContent = 'See Your Guests';
+    });
+  }
+
+  function applyLock() {
+    var closed = isClosed() || param('preview') === 'closed';
+    var noLink = !closed && linkMissing();
+    byId('lockClosed').classList.toggle('is-on', closed);
+    byId('lockNoLink').classList.toggle('is-on', noLink);
+    ROOT.querySelector('.form-card').classList.toggle('is-locked', closed || noLink);
+    if ((closed || noLink) && byId('modalSuccess').style.display === 'none') {
+      byId('inviteModal').classList.remove('open');
+    }
+    applyState(closed);
+    return closed || noLink;
+  }
+  applyLock();
+  setInterval(applyLock, 30000);
+
+  /* ---- values ---- */
+  function values() {
+    var fname = byId('fname').value.trim();
+    return {
+      firstName: fname,
+      lastName: byId('lname').value.trim(),
+      email: byId('email').value.trim(),
+      doneForum: byId('forum-exp').value,          // 'yes' / 'no' - matched to the field's labels
+      message: finalMessage(fname)
+    };
+  }
+  function problem(v) {
+    if (!v.firstName || !v.lastName || !v.email) return 'Please fill out all fields before sending.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.email)) return 'Please check your guest’s email address.';
+    if (!v.doneForum) return 'Please select whether this person has done The Landmark Forum.';
+    return '';
+  }
+
+  /* ---- step 1: check, then show the preview ---- */
+  function sendInvite() {
+    if (applyLock()) return;
+    var v = values(), bad = problem(v);
+    say('tgFormError', bad);
+    if (bad) return;
+    say('tgModalError', '');
+    byId('mGuestName').textContent = v.firstName;
+    byId('mMsgPreview').textContent = v.message;
+    byId('modalPreview').style.display = '';
+    byId('modalSuccess').style.display = 'none';
+    byId('inviteModal').classList.add('open');
+  }
+
+  /* ---- step 2: hand it to Ontraport ---- */
+  var sending = false;
+  var SEND_BTN = byId('modalSendBtn');
+  var SEND_LABEL = SEND_BTN.textContent;
+
+  function showSuccess(name) {
+    byId('mGuestName2').textContent = name;
+    byId('modalPreview').style.display = 'none';
+    byId('modalSuccess').style.display = '';
+    byId('inviteModal').classList.add('open');
+  }
+  function resetSend() {
+    sending = false;
+    SEND_BTN.disabled = false;
+    SEND_BTN.textContent = SEND_LABEL;
+  }
+
+  function confirmSend() {
+    if (sending || applyLock()) return;
+    var v = values(), bad = problem(v);
+    say('tgModalError', bad);
+    if (bad) return;
+    var name = (v.firstName + ' ' + v.lastName).trim();
+
+    if (!FORM) {
+      if (!isLocalPreview()) {
+        say('tgModalError', 'This page isn\u2019t connected to its form yet, so the invitation can\u2019t be sent. Please let the Landmark team know.');
+        return;
+      }
+      // preview - the file opened on its own, with no Ontraport form around it
+      showSuccess(name);
+      return;
+    }
+    if (missing.length) {
+      say('tgModalError', 'This page isn’t connected to its form yet, so the invitation can’t be sent. Please let the Landmark team know.');
+      return;
+    }
+
+    var unplaced = Object.keys(TG.fields).filter(function (k) {
+      var value = v[k];
+      // the dropdown takes its own labels; a checkbox takes the plain yes/no
+      var f = opField(TG.fields[k]);
+      if (k === 'doneForum' && f && f.type !== 'checkbox') value = TG.forumAnswers[value] || value;
+      return !setOp(TG.fields[k], value);
+    }).concat(Object.keys(TG.fixedFields).filter(function (k) {
+      // keep this a one-letter key: Ontraport reads a bracketed word as a merge
+      // tag and blanks it when the page is saved
+      return !setOp(k, TG.fixedFields[k]);
+    }));
+    if (unplaced.length) {
+      say('tgModalError', 'This page isn’t matched to its form yet, so the invitation can’t be sent. Please let the Landmark team know.');
+      return;
+    }
+    dropCookieIdentity();
+    store('tg_guest_pending', Date.now() + '|' + name);
+
+    if (currentHash() === TG.successHash) {
+      var hop = document.createElement('a');
+      hop.href = '#' + TG.formAnchor;
+      hop.click();
+    }
+
+    sending = true;
+    SEND_BTN.disabled = true;
+    SEND_BTN.textContent = 'Sending…';
+    // Post into a hidden frame so the participant never leaves their own page,
+    // whatever the form's after-submit setting is (this is a dynamic template:
+    // every participant has a different address, so the form can't redirect back).
+    FORM.target = sendFrame();
+    NATIVE_SUBMIT.click();
+
+    // If nothing has come back in 25 seconds, Ontraport's own validation
+    // stopped the form, so hand the button back.
+    setTimeout(function () {
+      if (!sending) return;
+      resetSend();
+      store('tg_guest_pending', null);
+      say('tgModalError', 'We couldn’t send that invitation. Please check the details and try again.');
+    }, 25000);
+  }
+
+  // Ontraport's answer lands in this frame. Once it loads, reload this page
+  // with ?sent=1: the pending invite shows as sent, and the reload gives
+  // Ontraport's form fresh anti-spam tokens for the next guest.
+  var SEND_FRAME = null;
+  function sendFrame() {
+    if (!SEND_FRAME) {
+      SEND_FRAME = document.createElement('iframe');
+      SEND_FRAME.name = 'tgSendFrame';
+      SEND_FRAME.title = 'Invitation send';
+      SEND_FRAME.setAttribute('aria-hidden', 'true');
+      SEND_FRAME.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden;';
+      document.body.appendChild(SEND_FRAME);
+      SEND_FRAME.addEventListener('load', function () {
+        if (!sending) return;
+        location.replace(returnUrl());
+      });
+    }
+    return SEND_FRAME.name;
+  }
+  function returnUrl() {
+    var url = document.URL.split('#')[0];
+    var q = url.indexOf('?');
+    var base = q < 0 ? url : url.slice(0, q);
+    var keep = q < 0 ? [] : url.slice(q + 1).split('&').filter(function (p) {
+      return p && p.split('=')[0] !== TG.returnParam;
+    });
+    keep.push(TG.returnParam + '=1');
+    return base + '?' + keep.join('&');
+  }
+
+  // A click that reaches Ontraport's button any other way still gets the same
+  // checks - capture phase, so this runs before Ontraport's own handler.
+  if (FORM) {
+    FORM.addEventListener('click', function (e) {
+      if (!e.target.closest('[opt-type="submit-button-v3"]') || sending) return;
+      e.preventDefault();
+      e.stopPropagation();
+    }, true);
+  }
+
+  // Enter in a design field opens the preview instead of submitting the form.
+  ROOT.querySelectorAll('.form-card input').forEach(function (el) {
+    el.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      e.stopPropagation();
+      sendInvite();
+    });
+  });
+
+  function closeModal() {
+    if (sending) return;
+    var wasSuccess = byId('modalSuccess').style.display !== 'none';
+    byId('inviteModal').classList.remove('open');
+    if (wasSuccess) {
+      byId('fname').value = '';
+      byId('lname').value = '';
+      byId('email').value = '';
+      byId('forum-exp').selectedIndex = 0;
+      MSG_BOX.value = DEFAULT_MSG;
+      autoGrow(MSG_BOX);
+      lastGreeting = greetingFor('');
+      greetingIsOurs = true;
+      applyLock();
+    }
+  }
+
+  /* ---- back from Ontraport ----
+     Success is either a reload with ?sent=1, or a jump to #inviteModal. A
+     hash jump does not reload the page, so it is caught by hashchange below. */
+  function currentHash() {
+    var i = document.URL.indexOf('#');
+    return i < 0 ? '' : document.URL.slice(i + 1);
+  }
+  function completePending() {
+    var pending = recall('tg_guest_pending');
+    store('tg_guest_pending', null);
+    if (!pending) return false;
+    var at = parseInt(pending, 10), name = pending.slice(pending.indexOf('|') + 1);
+    if (Date.now() - at > 10 * 60 * 1000) return false;
+    resetSend();
+    showSuccess(name);
+    return true;
+  }
+  if (param(TG.returnParam) === '1' || currentHash() === TG.successHash) completePending();
+  else store('tg_guest_pending', null);
+  window.addEventListener('hashchange', function () {
+    if (sending && currentHash() === TG.successHash) completePending();
+  });
+
+  /* ---- FAQ ---- */
+  function toggleFaq(btn) {
+    var panel = btn.nextElementSibling;
+    var expanded = btn.getAttribute('aria-expanded') === 'true';
+    ROOT.querySelectorAll('.faq-trigger').forEach(function (b) {
+      b.setAttribute('aria-expanded', 'false');
+      b.nextElementSibling.style.height = '0';
+    });
+    if (!expanded) {
+      btn.setAttribute('aria-expanded', 'true');
+      panel.style.height = panel.scrollHeight + 'px';
+    }
+  }
+
+  /* ---- scroll-in animations ---- */
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.18 });
+    ROOT.querySelectorAll('.anim').forEach(function (el) { io.observe(el); });
+  } else {
+    ROOT.querySelectorAll('.anim').forEach(function (el) { el.classList.add('in'); });
+  }
+
+
+  /* ---- buttons (bound here - the markup carries no inline handlers) ---- */
+  function bindButtons(scope) {
+    if (!scope) return;
+    scope.querySelectorAll('[data-tg]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var action = el.getAttribute('data-tg');
+        if (action === 'faq') toggleFaq(el);
+        else if (action === 'send') sendInvite();
+        else if (action === 'confirm') confirmSend();
+        else if (action === 'close') closeModal();
+      });
+    });
+  }
+  bindButtons(ROOT);
+  bindButtons(PORTAL);
+  // a click on the dimmed backdrop, outside the card, closes the modal
+  byId('inviteModal').addEventListener('click', function (e) {
+    if (e.target === this) closeModal();
+  });
+})();
+</script>
