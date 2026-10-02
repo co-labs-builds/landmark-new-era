@@ -2980,6 +2980,13 @@ Portal.realtime = (function(){
    ========================================================= */
 Portal.init = function(){
   var data = window.PORTAL_DATA || {};
+  /* The Information Form no longer gates anything (2026-10-02, per direct
+     instruction): no join-link lock, no "Information form required" banner,
+     and the Prepare card reads as done. Everyone is treated as completed here,
+     the one place every renderer's data comes from, so the gating code in
+     render.pre/during/post stays intact and can be re-enabled by deleting this
+     line. registrations.f2579 itself is untouched. */
+  data.infoFormCompleted = true;
   Portal.account.setAvatar(data.profileImageUrl);
   Portal.account.populateForm(data);
   Portal.account.wirePhotoUpload();
