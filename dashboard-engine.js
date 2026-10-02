@@ -3886,12 +3886,95 @@ function rosterSetPageSize(size){
   pageState.roster = 1;
   paginate('roster');
 }
-function paginate(kind){
+/* ---------- Roster export (2026-10-02) ----------
+   The Export icon was a placeholder that only toasted "Export queued" and downloaded
+   nothing. This builds the CSV in the browser from dashboardLastRoster — the same records
+   the cards were rendered from — so there is no webhook round-trip and nothing to go stale
+   between what the CS sees and what lands in the file.
+
+   Exports what is on screen: the current search, tile filter, advanced query and
+   Active/Inactive view all apply, across every page (not just the visible one), in the
+   current sort order. With nothing narrowed, that is the whole active roster. */
+var ROSTER_EXPORT_ATT_STATUS = { '469': 'Present', '467': 'Absent - Excused', '468': 'Absent - NCNS' };
+var ROSTER_EXPORT_COLUMNS = [
+  ['Registration ID', function(r){ return r.id; }],
+  ['First name', function(r){ return r['f2213//firstname']; }],
+  ['Last name', function(r){ return r['f2213//lastname']; }],
+  ['Preferred name', function(r){ return r['f2213//f2792']; }],
+  ['Email', function(r){ return r.f3252; }],
+  ['Phone', function(r){ return r.f3253; }],
+  ['Status', function(r){ return rosterIsWithdrawn(r) ? 'Withdrawn' : (rosterIsTrue(r.f2293) ? 'LDP' : 'Active'); }],
+  ['Live now', function(r){ return rosterExportYesNo(r.f2853); }],
+  ['Day 1 attended', function(r){ return rosterExportYesNo(r.f2801); }],
+  ['Day 2 attended', function(r){ return rosterExportYesNo(r.f2802); }],
+  ['Day 3 attended', function(r){ return rosterExportYesNo(r.f2803); }],
+  ['Day 1 minutes', function(r){ return r.f2805; }],
+  ['Day 2 minutes', function(r){ return r.f2806; }],
+  ['Day 3 minutes', function(r){ return r.f2807; }],
+  ['Attendance status', function(r){ return ROSTER_EXPORT_ATT_STATUS[String(r.f3191 || '')] || ''; }],
+  ['LDP', function(r){ return rosterExportYesNo(r.f2293); }],
+  ['WBO', function(r){ return rosterExportYesNo(r.f2688); }],
+  ['Minor', function(r){ return rosterExportYesNo(r.f3206); }],
+  ['Reviewer', function(r){ return rosterExportYesNo(r.f3044); }],
+  ['Statistically excluded', function(r){ return rosterExportYesNo(r.f3046); }],
+  ['SE reason', function(r){ return ROSTER_SE_REASON_MAP[String(r.f3053 || '')] || ''; }],
+  ['Seminar potential', function(r){ var v = String(r.f2882 || ''); return v === '371' ? 'Potential' : (v === '370' ? 'Non-Potential' : ''); }],
+  ['Seminar registered', function(r){ return rosterExportYesNo(r.f2303); }],
+  ['AC potential', function(r){ var v = String(r.f2887 || ''); return v === '382' ? 'Potential' : (v === '381' ? 'Non-Potential' : ''); }],
+  ['AC registered', function(r){ return rosterExportYesNo(r.f2302); }],
+  ['Multi-device', function(r){ return rosterExportYesNo(r.f3184); }],
+  ['Shared device with', function(r){ return r.f3207; }]
+];
+function rosterExportYesNo(v){ return rosterIsTrue(v) ? 'Yes' : 'No'; }
+function rosterExportCell(v){
+  var s = v == null ? '' : String(v);
+  /* Spreadsheet formula guard: a cell starting = or @ (or +/- followed by a non-digit) is
+     executed by Excel/Sheets. Phone numbers like +1 555… start with + and a digit, so they
+     pass through untouched. */
+  if(/^[=@]/.test(s) || /^[+\-][^0-9]/.test(s)) s = "'" + s;
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function rosterExportCsv(){
+  if(!dashboardLastRoster){ toast('Roster is still loading — try again in a moment.', 'err'); return; }
+  var byId = {};
+  dashboardLastRoster.forEach(function(r){ byId[String(r.id)] = r; });
+  var rows = paginateFilteredCards('roster').filtered
+    .map(function(c){ return byId[String(c.dataset.regId)]; })
+    .filter(Boolean);
+  if(!rows.length){ toast('Nothing to export — no participants match the current view.', 'err'); return; }
+  var lines = [ROSTER_EXPORT_COLUMNS.map(function(col){ return rosterExportCell(col[0]); }).join(',')];
+  rows.forEach(function(r){
+    lines.push(ROSTER_EXPORT_COLUMNS.map(function(col){ return rosterExportCell(col[1](r)); }).join(','));
+  });
+  /* Leading BOM so Excel opens it as UTF-8 — without it, accented names and the em dashes in
+     reason labels come out as mojibake. */
+  var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  var d = new Date();
+  var stamp = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2) +
+    '-' + ('0' + d.getHours()).slice(-2) + ('0' + d.getMinutes()).slice(-2);
+  var name = 'roster-event-' + (DASHBOARD_DATA.eventId || 'unknown') + (rosterShowInactive ? '-inactive' : '') + '-' + stamp + '.csv';
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  toast('Exported ' + rows.length + ' ' + (rows.length === 1 ? 'record' : 'records') + ' to ' + name);
+}
+
+/* The cards a list currently shows across ALL its pages, in on-screen order. Split out of
+   paginate() 2026-10-02 so Export reads exactly the population the pager does — an export
+   that quietly included rows the CS had filtered away, or dropped the inactive ones they
+   were looking at, would be a different list from the one on screen. */
+function paginateFilteredCards(kind){
   var list = document.getElementById(kind + 'List');
   var searchEl = document.getElementById(kind + 'Search');
   var q = (searchEl.value || '').toLowerCase().trim();
   var cards = Array.prototype.filter.call(list.children, function(c){ return c.classList.contains('ev-card'); });
-  var filtered = cards.filter(function(c){
+  return { q: q, cards: cards, filtered: cards.filter(function(c){
     /* Inactive records are batched out of the working roster before any other filter runs.
        This is a VIEW MODE, not a filter: the CS's default list is the people they can
        actually act on, and inactive records are reachable only by switching into the
@@ -3905,7 +3988,12 @@ function paginate(kind){
     if(kind === 'roster' && rosterStatFilter && !ROSTER_STAT_FILTERS[rosterStatFilter].test(c)) return false;
     if(kind === 'roster' && rosterAdvancedQuery && !rosterAdvancedQuery.test(c)) return false;
     return true;
-  });
+  }) };
+}
+function paginate(kind){
+  var list = document.getElementById(kind + 'List');
+  var view = paginateFilteredCards(kind);
+  var q = view.q, cards = view.cards, filtered = view.filtered;
   var perPage = kind === 'roster' ? rosterPageSize : 10;
   var totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   if(pageState[kind] > totalPages) pageState[kind] = totalPages;
