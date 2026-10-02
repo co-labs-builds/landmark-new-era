@@ -3825,7 +3825,7 @@ function rosterClearSort(){
 /* Rows per page. Was a hardcoded 10 in three places inside paginate(); now one variable so
    the roster's new rows-per-page control can move it. Guests stay at 10 — that list is
    short and has no control of its own. */
-var rosterPageSize = 10;
+var rosterPageSize = 20;
 
 /* ---------- Active / Inactive view mode (2026-08-15) ----------
    The roster shows ACTIVE registrations by default and nothing else. Inactive records are
@@ -3878,7 +3878,7 @@ function rosterSyncInactiveButton(){
   btn.style.display = (count === 0 && !rosterShowInactive) ? 'none' : '';
 }
 function rosterSetPageSize(size){
-  var n = Number(size) || 10;
+  var n = Number(size) || 20;
   rosterPageSize = n;
   /* Back to page 1 rather than trying to keep the CS's scroll position: after a size change
      the old page number points at a different set of people, and silently landing them on
