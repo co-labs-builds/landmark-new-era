@@ -4120,62 +4120,119 @@ var ROSTER_ADV_PRESETS = [
   { key: 'acnp',         label: 'AC NP',            group: 'Follow-on' }
 ];
 
-/* Queryable fields for the builder. Each is a flag token plus a human label — deliberately
-   the same vocabulary the presets and the snapshot tiles use, so a CS who has learned one
-   has learned all three. Everything is boolean because everything on this row is: the
-   record either carries the flag or it doesn't. */
+/* Queryable attributes for the builder, reworked 2026-10-02. Every attribute used to be a
+   bare flag paired with a generic "is / is not", so a CS was reading rows like "Absent —
+   NCNS is not" and "Well Being Out is". Each attribute now carries its OWN wording: pick
+   "Seminar" and the second dropdown offers "is registered / is potential, not yet
+   registered / …"; pick "Day 1" and it offers "attended / did not attend".
+
+   Each choice is a test over the same data-flags tokens as before (rosterRecordFlags), so
+   nothing new is derived and the presets, tiles and builder still agree by construction:
+     any  — the record carries AT LEAST ONE of these flags (omitted = no requirement)
+     none — the record carries NONE of these flags
+   That also lets one choice say things a single flag could not, like "is not absent"
+   (neither excused nor NCNS) or "potential, not yet registered" (the conversion worklist).
+
+   Grouped in the attribute dropdown (optgroup) by the same split the roster uses. */
 var ROSTER_ADV_FIELDS = [
-  { key: 'live', label: 'Present now' },
-  { key: 'late', label: 'Late arrival' },
-  { key: 'absent', label: 'Absent — excused' },
-  { key: 'nsho', label: 'Absent — NCNS' },
-  { key: 'ldp', label: 'Left during programme' },
-  { key: 'wbo', label: 'Well Being Out' },
-  { key: 'withdrawn', label: 'Withdrawn' },
-  { key: 'queued', label: 'Needs attention' },
-  { key: 'unmatched', label: 'Zoom match unresolved' },
-  { key: 'shareddevice', label: 'Shared device' },
-  { key: 'multidevice', label: 'Multi-device' },
-  { key: 'current', label: 'Still participating' },
-  { key: 'reviewer', label: 'Reviewer' },
-  { key: 'se', label: 'Statistical exclusion' },
-  { key: 'minor', label: 'Minor' },
-  { key: 'seminar', label: 'Seminar registered' },
-  { key: 'sempot', label: 'Seminar potential' },
-  { key: 'semnp', label: 'Seminar non-potential' },
-  { key: 'ac', label: 'AC registered' },
-  { key: 'acpot', label: 'AC potential' },
-  { key: 'acnp', label: 'AC non-potential' },
-  { key: 'd1', label: 'Attended Day 1' },
-  { key: 'd2', label: 'Attended Day 2' },
-  { key: 'd3', label: 'Attended Day 3' }
+  { key: 'meeting', group: 'Attendance', label: 'Zoom presence', ops: [
+    { label: 'is in the meeting now', any: ['live'] },
+    { label: 'is not in the meeting now', none: ['live'] } ] },
+  { key: 'd1', group: 'Attendance', label: 'Day 1', ops: [
+    { label: 'attended', any: ['d1'] }, { label: 'did not attend', none: ['d1'] } ] },
+  { key: 'd2', group: 'Attendance', label: 'Day 2', ops: [
+    { label: 'attended', any: ['d2'] }, { label: 'did not attend', none: ['d2'] } ] },
+  { key: 'd3', group: 'Attendance', label: 'Day 3', ops: [
+    { label: 'attended', any: ['d3'] }, { label: 'did not attend', none: ['d3'] } ] },
+  { key: 'arrival', group: 'Attendance', label: 'Arrival', ops: [
+    { label: 'arrived late', any: ['late'] }, { label: 'did not arrive late', none: ['late'] } ] },
+  { key: 'absence', group: 'Attendance', label: 'Absence', ops: [
+    { label: 'is absent (excused or NCNS)', any: ['absent', 'nsho'] },
+    { label: 'is absent — excused', any: ['absent'] },
+    { label: 'is absent — NCNS', any: ['nsho'] },
+    { label: 'is not absent', none: ['absent', 'nsho'] } ] },
+  { key: 'course', group: 'Course status', label: 'Course status', ops: [
+    { label: 'is still participating', any: ['current'] },
+    { label: 'left during the programme (LDP)', any: ['ldp'] },
+    { label: 'is Well Being Out (WBO)', any: ['wbo'] },
+    { label: 'has withdrawn', any: ['withdrawn'] } ] },
+  { key: 'queued', group: 'Course status', label: 'Attention', ops: [
+    { label: 'needs attention', any: ['queued'] }, { label: 'does not need attention', none: ['queued'] } ] },
+  { key: 'zoom', group: 'Zoom & devices', label: 'Zoom match', ops: [
+    { label: 'is unresolved', any: ['unmatched'] }, { label: 'is matched', none: ['unmatched'] } ] },
+  { key: 'device', group: 'Zoom & devices', label: 'Device', ops: [
+    { label: 'is shared with another participant', any: ['shareddevice'] },
+    { label: 'is one of several (multi-device)', any: ['multidevice'] },
+    { label: 'is their own single device', none: ['shareddevice', 'multidevice'] } ] },
+  { key: 'reviewer', group: 'Classification', label: 'Reviewer', ops: [
+    { label: 'is a reviewer', any: ['reviewer'] }, { label: 'is not a reviewer', none: ['reviewer'] } ] },
+  { key: 'se', group: 'Classification', label: 'Statistical exclusion', ops: [
+    { label: 'is excluded', any: ['se'] }, { label: 'is not excluded', none: ['se'] } ] },
+  { key: 'minor', group: 'Classification', label: 'Minor', ops: [
+    { label: 'is a minor', any: ['minor'] }, { label: 'is not a minor', none: ['minor'] } ] },
+  { key: 'seminar', group: 'Follow-on', label: 'Seminar', ops: [
+    { label: 'is registered', any: ['seminar'] },
+    { label: 'is not registered', none: ['seminar'] },
+    { label: 'is potential', any: ['sempot'] },
+    { label: 'is potential, not yet registered', any: ['sempot'], none: ['seminar'] },
+    { label: 'is non-potential', any: ['semnp'] } ] },
+  { key: 'ac', group: 'Follow-on', label: 'Advanced Course', ops: [
+    { label: 'is registered', any: ['ac'] },
+    { label: 'is not registered', none: ['ac'] },
+    { label: 'is potential', any: ['acpot'] },
+    { label: 'is potential, not yet registered', any: ['acpot'], none: ['ac'] },
+    { label: 'is non-potential', any: ['acnp'] } ] }
 ];
+function rosterAdvField(key){ return ROSTER_ADV_FIELDS.filter(function(f){ return f.key === key; })[0] || null; }
+function rosterAdvOpMatches(card, op){
+  var any = op.any || [], none = op.none || [];
+  if(any.length && !any.some(function(f){ return rosterHasFlag(card, f); })) return false;
+  return !none.some(function(f){ return rosterHasFlag(card, f); });
+}
 
 var rosterAdvancedQuery = null;   // {label, test} once applied
-var rosterAdvConditions = [];      // [{field, op}] while being edited
+var rosterAdvConditions = [];      // [{field, op}] while being edited; op = index into field.ops
 
+/* The builder may now be EMPTY. It used to reseed a blank row whenever the last one was
+   removed, which is why the X on a lone row appeared to do nothing — the row was deleted and
+   instantly redrawn. Zero rows is a legitimate state ("no conditions"); "+ Add condition"
+   is the way back in. */
 function rosterToggleAdvanced(){
   var panel = document.getElementById('rosterAdvPanel');
   if(!panel) return;
   panel.hidden = !panel.hidden;
   document.getElementById('rosterAdvBtn').classList.toggle('on', !panel.hidden);
   if(!panel.hidden){
-    if(!rosterAdvConditions.length) rosterAdvConditions = [{ field: ROSTER_ADV_FIELDS[0].key, op: 'is' }];
     rosterRenderAdvanced();
     paginate('roster');
   }
 }
+/* New rows start with NO attribute chosen, so the wording dropdown has nothing to say until
+   the CS picks what they are asking about — rather than defaulting every new row to the
+   first attribute, which read as a condition the CS never chose. */
 function rosterAddCondition(){
-  rosterAdvConditions.push({ field: ROSTER_ADV_FIELDS[0].key, op: 'is' });
+  rosterAdvConditions.push({ field: '', op: 0 });
   rosterRenderAdvanced();
 }
+/* Removing a row takes effect immediately when a built query is in force. Previously it only
+   redrew the panel, so the roster kept filtering on the condition that had just disappeared
+   from view until Apply was pressed — the other half of "the X does nothing". */
 function rosterRemoveCondition(i){
   rosterAdvConditions.splice(i, 1);
-  rosterRenderAdvanced();
+  if(rosterBuilderQuery) rosterApplyAdvanced();
+  else rosterRenderAdvanced();
 }
 function rosterCondChanged(i, what, value){
-  if(!rosterAdvConditions[i]) return;
-  rosterAdvConditions[i][what] = value;
+  var c = rosterAdvConditions[i];
+  if(!c) return;
+  if(what === 'field'){
+    c.field = value;
+    c.op = 0;
+    // The wording list depends on the attribute, so the row has to be redrawn.
+    rosterRenderAdvanced();
+  } else {
+    c.op = Number(value) || 0;
+  }
 }
 /* One chip. The excluded state prefixes its own label with "not" rather than relying on
    colour alone — a red chip reading "Late" is ambiguous about whether it shows late people
@@ -4191,11 +4248,6 @@ function rosterPresetChipHtml(p){
     '" title="' + rosterEscAttr(title) + '" onclick="rosterCyclePreset(\'' + p.key + '\')">' + rosterEscHtml(text) + '</button>';
 }
 function rosterRenderAdvanced(){
-  /* Seed the first condition here rather than only in rosterToggleAdvanced(). The builder
-     is useless with zero rows — there is nothing to edit and "+ Add condition" is the only
-     way in — and seeding at the single point that draws it means the panel is always usable
-     however it came to be shown. */
-  if(!rosterAdvConditions.length) rosterAdvConditions = [{ field: ROSTER_ADV_FIELDS[0].key, op: 'is' }];
   var presetWrap = document.getElementById('rosterAdvPresets');
   if(presetWrap){
     /* Rendered as labelled groups, in declaration order, so adding a preset is a one-line
@@ -4217,18 +4269,33 @@ function rosterRenderAdvanced(){
   }
   var condWrap = document.getElementById('rosterAdvConds');
   if(condWrap){
-    condWrap.innerHTML = rosterAdvConditions.map(function(c, i){
-      var opts = ROSTER_ADV_FIELDS.map(function(f){
-        return '<option value="' + f.key + '"' + (f.key === c.field ? ' selected' : '') + '>' + rosterEscHtml(f.label) + '</option>';
-      }).join('');
+    if(!rosterAdvConditions.length){
+      condWrap.innerHTML = '<div class="advcond-empty">No conditions — use + Add condition to build one.</div>';
+    } else condWrap.innerHTML = rosterAdvConditions.map(function(c, i){
+      var groups = [];
+      ROSTER_ADV_FIELDS.forEach(function(f){
+        var g = groups.filter(function(x){ return x.name === f.group; })[0];
+        if(!g){ g = { name: f.group, items: [] }; groups.push(g); }
+        g.items.push(f);
+      });
+      var fieldOpts = '<option value=""' + (c.field ? '' : ' selected') + ' disabled>Choose an attribute…</option>' +
+        groups.map(function(g){
+          return '<optgroup label="' + rosterEscAttr(g.name) + '">' + g.items.map(function(f){
+            return '<option value="' + f.key + '"' + (f.key === c.field ? ' selected' : '') + '>' + rosterEscHtml(f.label) + '</option>';
+          }).join('') + '</optgroup>';
+        }).join('');
+      var field = rosterAdvField(c.field);
+      var opSelect = field
+        ? '<select aria-label="Condition" onchange="rosterCondChanged(' + i + ',\'op\',this.value)">' +
+            field.ops.map(function(op, oi){
+              return '<option value="' + oi + '"' + (oi === Number(c.op) ? ' selected' : '') + '>' + rosterEscHtml(op.label) + '</option>';
+            }).join('') + '</select>'
+        : '<select aria-label="Condition" disabled><option>—</option></select>';
       return '<div class="advcond">' +
         '<span class="advcond-l">' + (i === 0 ? 'Where' : '<span class="advcond-join" data-join="1"></span>') + '</span>' +
-        '<select onchange="rosterCondChanged(' + i + ',\'field\',this.value)">' + opts + '</select>' +
-        '<select onchange="rosterCondChanged(' + i + ',\'op\',this.value)">' +
-          '<option value="is"' + (c.op === 'is' ? ' selected' : '') + '>is</option>' +
-          '<option value="not"' + (c.op === 'not' ? ' selected' : '') + '>is not</option>' +
-        '</select>' +
-        '<button class="advcond-x" onclick="rosterRemoveCondition(' + i + ')" aria-label="Remove condition" title="Remove">✕</button>' +
+        '<select aria-label="Attribute" onchange="rosterCondChanged(' + i + ',\'field\',this.value)">' + fieldOpts + '</select>' +
+        opSelect +
+        '<button type="button" class="advcond-x" onclick="rosterRemoveCondition(' + i + ')" aria-label="Remove condition" title="Remove this condition">✕</button>' +
       '</div>';
     }).join('');
     rosterSyncCondJoinLabels();
@@ -4303,20 +4370,18 @@ function rosterComposeQuery(){
 function rosterApplyAdvanced(){
   rosterSyncCondJoinLabels();
   var mode = (document.getElementById('rosterAdvMatch') || {}).value || 'all';
-  var conds = rosterAdvConditions.filter(function(c){ return !!c.field; });
-  var labelFor = function(k){
-    var f = ROSTER_ADV_FIELDS.filter(function(x){ return x.key === k; })[0];
-    return f ? f.label : k;
-  };
+  // Rows with no attribute chosen yet are ignored rather than treated as an error.
+  var conds = rosterAdvConditions.map(function(c){
+    var f = rosterAdvField(c.field);
+    var op = f && f.ops[Number(c.op) || 0];
+    return op ? { field: f, op: op } : null;
+  }).filter(Boolean);
   /* Sets only the BUILDER layer. Any preset chips stay in force — applying a built query
      used to wipe them, which meant the panel could silently undo a click made outside it. */
   rosterBuilderQuery = !conds.length ? null : {
-    label: conds.map(function(c){ return (c.op === 'not' ? 'not ' : '') + labelFor(c.field); }).join(mode === 'any' ? ' or ' : ' and '),
+    label: conds.map(function(c){ return c.field.label + ' ' + c.op.label; }).join(mode === 'any' ? ' or ' : ' and '),
     test: function(card){
-      var results = conds.map(function(c){
-        var has = rosterHasFlag(card, c.field);
-        return c.op === 'not' ? !has : has;
-      });
+      var results = conds.map(function(c){ return rosterAdvOpMatches(card, c.op); });
       return mode === 'any' ? results.some(Boolean) : results.every(Boolean);
     }
   };
