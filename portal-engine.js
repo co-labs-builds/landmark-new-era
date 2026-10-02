@@ -282,6 +282,24 @@ Portal.programGrid = (function(){
       }).join('') + '</div>';
     }
 
+    // A `simple` card (a registered upcoming Seminar/AC, 2026-10-02) shows only
+    // its photo, pill and title; the whole card opens Program Detail, where the
+    // dates, times and description live. No blurb, no rows, no button.
+    if(card.simple){
+      el.className += ' simple';
+      el.style.cursor = 'pointer';
+      el.setAttribute('role', 'button');
+      el.setAttribute('tabindex', '0');
+      el.innerHTML =
+        '<div class="pav">' + pillHtml + '<img src="' + pdata.photo + '" alt="' + escapeHtml(title) + '"></div>' +
+        '<div class="pbody"><h3>' + escapeHtml(title) + '</h3></div>';
+      el.addEventListener('click', function(){ Portal.programGrid.openDetail(card); });
+      el.addEventListener('keydown', function(e){
+        if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); Portal.programGrid.openDetail(card); }
+      });
+      return el;
+    }
+
     var ctaClass = card.cta.variant === 'ghost' ? ' ghost' : card.cta.variant === 'cert' ? ' gcert' : '';
 
     el.innerHTML =
@@ -351,14 +369,35 @@ Portal.programGrid = (function(){
       var title = card.title || pdata.title;
       document.getElementById('pgEyebrow').innerHTML = card.pill ? card.pill.label : '';
       document.getElementById('pgTitle').innerHTML = title;
-      document.getElementById('pgStatus').innerHTML = (card.detailRows || []).map(function(r){
+      // Simple cards: the rows go in the .pgnext panel as a plain Dates /
+      // Times / Sessions list, ahead of the description; .pgstatus (a small
+      // uppercase status line) is left empty. Other cards keep the original
+      // " · "-joined status line. Either element is hidden when empty: .pgnext
+      // has padding and a fill, so an empty one showed as a blank grey bar.
+      var status = document.getElementById('pgStatus');
+      var next = document.getElementById('pgNext');
+      var desc = document.getElementById('pgDesc');
+      status.innerHTML = card.simple ? '' : (card.detailRows || []).map(function(r){
         return r.label + ' · ' + r.value;
       }).join(' &middot; ');
-      document.getElementById('pgDesc').innerHTML = pdata.detail.desc;
-      document.getElementById('pgNext').innerHTML = card.next || '';
+      next.innerHTML = card.simple
+        ? (card.detailRows || []).map(function(r){
+            return '<div style="margin:2px 0;"><b>' + escapeHtml(r.label) + '</b> &nbsp;' + escapeHtml(r.value) + '</div>';
+          }).join('')
+        : (card.next || '');
+      desc.innerHTML = pdata.detail.desc;
+      // Panel first for simple cards (dates before description), original
+      // order otherwise.
+      if(card.simple) desc.parentNode.insertBefore(next, desc);
+      else if(next.previousElementSibling === status) desc.parentNode.insertBefore(desc, next);
+      status.style.display = status.innerHTML ? '' : 'none';
+      next.style.display = next.innerHTML ? '' : 'none';
+      // No cta -> no button in the modal (a registered program has nowhere
+      // to send you; the old "View Details" button here did nothing).
       var cta = document.getElementById('pgCta');
-      cta.innerHTML = card.cta.label;
-      cta.onclick = card.onCta || function(){};
+      cta.style.display = card.cta ? '' : 'none';
+      cta.innerHTML = card.cta ? card.cta.label : '';
+      cta.onclick = (card.cta && card.onCta) || function(){};
       Portal.modal.open('pgModal', 'pgScrim');
     }
   };
@@ -951,7 +990,16 @@ Portal.techCheck = (function(){
     show(1);
   }
 
-  return { init: init };
+  // Opens the wizard from any trigger, not just the Prepare card's #techOpen
+  // (the Day One "Take your next steps" card, 2026-10-02). Safe to call from a
+  // listener that is re-wired on every render: init() is one-shot.
+  function open(){
+    init();
+    Portal.modal.open('techModal', 'techScrim');
+    show(1);
+  }
+
+  return { init: init, open: open };
 })();
 
 /* =========================================================
@@ -1156,17 +1204,53 @@ Portal.render._sec = {
   // dates AFTER registering (2026-08-15, per direct instruction). The AC card
   // keeps the evergreen Format line in both states rather than rendering rows
   // that would be permanently blank.
+  //
+  // 2026-10-02: the rows feed the registered card's pop-up (the card itself is
+  // title-only now), so they read as Dates / Times / Sessions:
+  //   Dates     first – last session from f3278 ("Oct 14 – Jan 13 · 10 evenings"),
+  //             falling back to f3274 Begins when the list is missing.
+  //   Times     the weekday off Begins, pluralised, plus f3275
+  //             ("Wednesdays, 6:00 PM - 8:30 PM Eastern Time").
+  //   Sessions  the f3278 list itself. n8n writes it single-line
+  //             ("Oct 14, 21, 28, Nov 11, ...") since a multi-line value broke
+  //             the page's inline PORTAL_DATA script.
   seminarDetailRows: function(post){
     var mf = Portal.render._sec.mergeVal;
     var begins = mf(post.seminarBegins);
     var ends = mf(post.seminarEnds);
-    var sessions = mf(post.seminarSessionDates)
-      .split(/[,\n]/).filter(function(s){ return s.trim(); }).length;
+    var list = mf(post.seminarSessionDates);
+    var parts = list.split(/[,\n]/).map(function(s){ return s.trim(); }).filter(Boolean);
+    // "Oct 14", "21", "Nov 11" -> the first token has a month; a bare day
+    // inherits the last month seen. Only used when every token is one of those
+    // two shapes, otherwise the range falls back to Begins.
+    var month = '', first = '', last = '', ok = parts.length > 0;
+    parts.forEach(function(p){
+      var m = /^([A-Za-z]{3,})\.?\s+(\d{1,2})$/.exec(p);
+      if(m){ month = m[1].slice(0, 3); }
+      else if(!/^\d{1,2}$/.test(p) || !month){ ok = false; return; }
+      var label = month + ' ' + (m ? m[2] : p);
+      if(!first) first = label;
+      last = label;
+    });
+    var count = parts.length;
+    var range = ok && first ? (first === last ? first : first + ' – ' + last) : ((begins && ends) ? begins + ' – ' + ends : begins);
+    var dates = range ? range + (ok && count > 1 ? ' · ' + count + ' evenings' : '') : '';
+    var weekday = /^([A-Za-z]+day)\b/.exec(begins);
+    var schedule = mf(post.seminarSchedule);
+    var times = schedule ? (weekday ? weekday[1] + 's, ' : '') + schedule : '';
     return [
-      { label: 'Dates', value: (begins && ends) ? begins + ' – ' + ends : begins },
-      { label: 'Schedule', value: mf(post.seminarSchedule) },
-      { label: 'Sessions', value: sessions ? sessions + ' evenings' : '' }
+      { label: 'Dates', value: dates },
+      { label: 'Times', value: times },
+      { label: 'Sessions', value: ok ? parts.join(', ') : '' }
     ].filter(function(r){ return r.value; });
+  },
+
+  // Event names carry the format and schedule after the course name
+  // ("What’s So: Clarity Beyond Interpretation [Online] — Wednesdays, 6:00 PM ET");
+  // the card shows just the course name.
+  shortTitle: function(t){
+    t = Portal.render._sec.mergeVal(t);
+    return t.replace(/\s*\[[^\]]*\].*$/, '').replace(/\s+[—–]\s+.*$/, '').trim();
   },
 
   seminarAcCards: function(data){
@@ -1183,8 +1267,11 @@ Portal.render._sec = {
       // title. Both fall through to Portal.pdata.seminar.title ("Seminar
       // Series") when unset, which is the common case: f3185 is blank on most
       // records that have f2303 checked.
-      title: (hasSeminarReg && data.post.seminarTitle)
+      title: (hasSeminarReg && Portal.render._sec.shortTitle(data.post.seminarTitle))
         || (data.seminarNext && data.seminarNext.title),
+      // Registered -> title-only card that opens the pop-up (dates, times,
+      // description) with no button in it. 2026-10-02, per direct instruction.
+      simple: hasSeminarReg,
       // Registered -> the seminar they're actually in (see seminarDetailRows
       // above). Not registered -> the recommendation's own labels, unchanged.
       // Either way empty rows are dropped rather than rendered as blank .pdet
@@ -1195,8 +1282,8 @@ Portal.render._sec = {
         { label: 'Begins', value: data.seminarNext.beginsLabel || 'Details available soon' },
         { label: 'Schedule', value: data.seminarNext.scheduleLabel || '' }
       ].filter(function(r){ return r.value; }) : [],
-      cta: (hasSeminarReg || data.seminarNext)
-        ? { label: hasSeminarReg ? 'View Details' : 'Learn More', variant: 'solid' }
+      cta: hasSeminarReg ? undefined
+        : data.seminarNext ? { label: 'Learn More', variant: 'solid' }
         : { label: 'Learn More', variant: 'ghost' }
     };
     var ac = {
@@ -1208,14 +1295,16 @@ Portal.render._sec = {
       // Registered -> name the AC they actually enrolled in (registrations.f3186
       // "AC Title"), falling through to the recommendation's title and then to
       // Portal.pdata's "Advanced Course".
-      title: (hasACReg && Portal.render._sec.mergeVal(data.post.acTitle))
+      title: (hasACReg && Portal.render._sec.shortTitle(data.post.acTitle))
         || (data.acNext && data.acNext.title),
+      // Same title-only card + button-free pop-up as a registered seminar.
+      simple: hasACReg,
       // No dates row in either state: AC participants choose their dates after
       // registering, so there is nothing date-shaped to show even once they're
       // enrolled. The Format line is evergreen and true regardless.
       detailRows: [{ label: 'Format', value: (data.acNext && data.acNext.formatLabel) || '3-day weekend + graduation evening' }],
-      cta: (hasACReg || data.acNext)
-        ? { label: hasACReg ? 'View Details' : 'View Advanced Course Dates', variant: 'solid' }
+      cta: hasACReg ? undefined
+        : data.acNext ? { label: 'View Advanced Course Dates', variant: 'solid' }
         : { label: 'Learn More', variant: 'ghost' }
     };
     return { seminar: seminar, ac: ac };
@@ -1842,11 +1931,20 @@ Portal.render.during = function(data, phase){
     '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-ac.jpg" alt=""><span class="abadge">Save $300</span></div><div class="abody"><div class="aeye">Keep Going</div><h4>Advanced Course &mdash; Reserve Your Spot</h4><p>Continue your momentum into the Advanced Course. Register before Friday to save $300.</p><a class="go" href="' + AC_ANNOUNCEMENT_URL + '" target="_blank" rel="noopener">Reserve your spot &rarr;</a></div></div>' : '';
   var giftCardHtml = announcements.giftOpen ?
     '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-during-acard-gift.jpg" alt=""></div><div class="abody"><div class="aeye serif-it" style="text-transform:none;letter-spacing:.02em;font-size:14px;">Give transformation.</div><h4 class="serif-it" style="color:var(--green);font-weight:300;font-size:20px;">Gift someone their ' + courseType + '.</h4><p>Many people are here this weekend because of the generosity of someone who came before them. If you feel moved, here’s an opportunity to make it possible for someone else.</p><a class="go serif-it" style="font-style:italic;font-weight:300;font-size:14px;" href="https://transformationfoundation.org/" target="_blank" rel="noopener">Contribute &rarr;</a></div></div>' : '';
+  // Tech Check on Day One (2026-10-02). The Prepare section that carries it on
+  // the Pre-event page is gone by midnight of day one, which is exactly when
+  // people most need to test camera and sound before the room opens. Shown for
+  // the whole first calendar day of the course, then dropped; never on the
+  // pre-grad / graduation states. Opens the same wizard as the Prepare card.
+  var dayOneEnds = hasStart ? Portal.dateUtil.startOfDay(startTs, ianaId) + 86400000 : NaN;
+  var showTechCard = phase === 'during' && !isNaN(dayOneEnds) && Date.now() < dayOneEnds;
+  var techCardHtml = showTechCard ?
+    '<div class="acard"><div class="aph"><img src="https://cdn.jsdelivr.net/gh/co-labs-builds/landmark-new-era@main/Assets/lm-mp-prepare-techcheck.jpg" alt=""></div><div class="abody"><div class="aeye">Before You Join</div><h4>Tech Check</h4><p>Test your connection, camera, and sound so joining is completely effortless.</p><a href="#" class="go" id="techOpenDay1">Check your setup &rarr;</a></div></div>' : '';
   var actionsHtml =
     '<section class="block paper" id="programs"><div class="wrap">' +
       '<div class="sec-head"><div class="eyebrow">This Weekend</div><h2>Take your next steps</h2></div>' +
       '<div class="actions">' +
-        inviteCardHtml + seminarCardHtml + acCardHtml + giftCardHtml +
+        techCardHtml + inviteCardHtml + seminarCardHtml + acCardHtml + giftCardHtml +
       '</div>' +
     '</div></section>';
 
@@ -2136,6 +2234,9 @@ Portal.render.during = function(data, phase){
   // the real link without a reload once the 30-minute mark passes.
   // Cleared/reset defensively in case render.during is ever invoked more
   // than once in a page's lifetime (shouldn't normally happen).
+  var techOpenDay1 = document.getElementById('techOpenDay1');
+  if(techOpenDay1) techOpenDay1.addEventListener('click', function(e){ e.preventDefault(); Portal.techCheck.open(); });
+
   renderJoinCta();
   if(Portal.render._joinCtaTimer) clearInterval(Portal.render._joinCtaTimer);
   Portal.render._joinCtaTimer = setInterval(renderJoinCta, 30000);
